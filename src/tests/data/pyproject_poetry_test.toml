@@ -1,0 +1,13 @@
+[tool.poetry]
+name = "dependency-check-test"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+test_main = {path = "foo", develop = true}
+test_1 = "*"
+
+[tool.poetry.dev-dependencies]
+test_dev_1 = {path = "bar", develop = true}
+
+[tool.poetry.group.dev.dependencies]
+test_dev_2 = {path = "baz", develop = true}

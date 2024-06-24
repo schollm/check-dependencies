@@ -1,3 +1,3 @@
-# flake8: noqa
+# pylint: skip-file
 import missing_src2
 import tests_main

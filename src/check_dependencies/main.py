@@ -1,4 +1,5 @@
 """Main module for check_dependencies"""
+
 import ast
 import logging
 from pathlib import Path
@@ -80,7 +81,7 @@ def _missing_imports_iter(
     try:
         parsed = ast.parse(file.read_text(), filename=str(file))
     except SyntaxError as exc:
-        logger.error(f"Could not parse %s: %s", file, exc)
+        logger.error("Could not parse %s: %s", file, exc)
         return
     for module, stmt in _imports_iter(parsed.body):
         pkg_ = pkg(module)

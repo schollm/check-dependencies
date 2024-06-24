@@ -1,7 +1,10 @@
 """A list of all builtin modules"""
 
+from __future__ import annotations
+
 import sys
 
+BUILTINS: set[str]
 if sys.version_info >= (3, 10):
     BUILTINS = set(sys.stdlib_module_names)  # pylint: disable=no-member
 else:

@@ -2,12 +2,14 @@
 Library for check_dependencies
 """
 
+from __future__ import annotations
+
 import ast
 import logging
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Optional, Sequence, cast
+from typing import Any, Callable, List, Optional, Sequence, cast
 
 import toml
 
@@ -16,6 +18,7 @@ logger = logging.getLogger("check_dependencies.lib")
 
 class Dependency(Enum):
     """Possible depdendency state"""
+
     NA = "!"  # Not Available
     EXTRA = "+"  # Extra dependency in config file
     OK = " "  # Correct import (declared in config file)
@@ -24,6 +27,7 @@ class Dependency(Enum):
 @dataclass()
 class Config:
     """Application config and helper functions"""
+
     file: Optional[str] = None
     include_dev: bool = False
     verbose: bool = False
@@ -40,20 +44,17 @@ class Config:
             try:
                 cfg = toml.load(Path(self.file))
             except FileNotFoundError:
-                logger.warning("Could not find config file: %s. Set to None", self.file)
-                self.file = None
-            else:
-                extra_cfg = _nested_item(
-                    cfg, "tool.check_dependencies.extra-requirements"
-                )
-                self.extra_requirements += cast(list[str], list(extra_cfg or []))
+                logger.fatal("Could not find config file: %s. Set to None", self.file)
+                raise
 
-                ignore_cfg = _nested_item(
-                    cfg, "tool.check_dependencies.ignore-requirements"
-                )
-                self.ignore_requirements += cast(list[str], list(ignore_cfg))
+            extra_cfg = _nested_item(cfg, "tool.check_dependencies.extra-requirements")
+            self.extra_requirements += cast(List[str], list(extra_cfg or []))
 
-        if not self.file:  # no else - self.file might be unset above
+            ignore_cfg = _nested_item(
+                cfg, "tool.check_dependencies.ignore-requirements"
+            )
+            self.ignore_requirements += cast(List[str], list(ignore_cfg))
+        else:
             logger.info("Config file unset, showing all imports")
             self.show_all = True
             self.include_dev = False
@@ -77,7 +78,7 @@ class Config:
 
         deps = set(_nested_item(cfg, "tool.poetry.dependencies"))
         if self_name := _nested_item(cfg, "tool.poetry.name"):
-            cast(list[str], self.extra_requirements).append(_canonical_pkg(self_name))
+            cast(List[str], self.extra_requirements).append(_canonical_pkg(self_name))
         if self.include_dev:
             deps |= set(_nested_item(cfg, "tool.poetry.group.dev.dependencies"))
             deps |= set(_nested_item(cfg, "tool.poetry.dev-dependencies"))

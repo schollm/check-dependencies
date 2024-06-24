@@ -1,16 +1,19 @@
-from __future__ import annotations
+"""Tests for the lib module."""
 
-import pytest
+from __future__ import annotations
 
 import ast
 from typing import Sequence
 
-from conftest import POETRY
+import pytest
 
 from check_dependencies.lib import Config, Dependency
+from tests.conftest import POETRY
 
 
 class TestConfig:
+    """Test suite for the Config class"""
+
     @pytest.mark.parametrize("show_all", [True, False])
     @pytest.mark.parametrize("include_dev", [True, False])
     @pytest.mark.parametrize("ignore_requirements", [(), ("test_1",)])
@@ -22,40 +25,35 @@ class TestConfig:
         ignore_requirements: Sequence[str],
         extra_requirements: Sequence[str],
     ) -> None:
-        cfg = Config(
-            file="non-existent.toml",
-            show_all=show_all,
-            include_dev=include_dev,
-            ignore_requirements=ignore_requirements,
-            extra_requirements=extra_requirements,
-        )
-        assert cfg.get_declared_dependencies() == set()
-        assert cfg.show_all is True
-        assert cfg.file is None
-        assert cfg.include_dev is False
-        assert cfg.ignore_requirements == ()
-        assert cfg.extra_requirements == ()
+        """Ensure we don't crash when the config file is missing"""
+        with pytest.raises(FileNotFoundError, match="non-existent.toml"):
+            Config(
+                file="non-existent.toml",
+                show_all=show_all,
+                include_dev=include_dev,
+                ignore_requirements=ignore_requirements,
+                extra_requirements=extra_requirements,
+            )
 
-    def test_get_declared_dependencies(self) -> None:
-        cfg = Config(file=POETRY, include_dev=False)
-        assert set(cfg.get_declared_dependencies()) == {
-            "test_main",
-            "test_1",
-        }
-
-    def test_get_declared_dependencies_dev(self) -> None:
-        cfg = Config(file=POETRY, include_dev=True)
-        assert set(cfg.get_declared_dependencies()) == {
-            "test_main",
-            "test_1",
-            "test_dev_1",
-            "test_dev_2",
-        }
+    @pytest.mark.parametrize(
+        "included_dev, expect",
+        [
+            (False, "test_main test_1"),
+            (True, "test_main test_1 test_dev_1 test_dev_2"),
+        ],
+    )
+    def test_get_declared_dependencies(self, included_dev, expect) -> None:
+        """Test the get_declared_dependencies function without included development dependencies"""
+        cfg = Config(file=POETRY, include_dev=included_dev)
+        assert set(cfg.get_declared_dependencies()) == set(expect.split())
 
 
 class TestMkSrcFormatter:
+    """Test suite for the mk_src_formatter function"""
+
     @pytest.fixture
     def stmt(self) -> ast.stmt:
+        """AST import statement fixture"""
         return ast.parse("import foo").body[0]
 
     @pytest.mark.parametrize("cfg_file", ["", None])
@@ -64,7 +62,7 @@ class TestMkSrcFormatter:
     @pytest.mark.parametrize(
         "verbose, expect", [(True, "src.py:1 foo"), (False, "foo")]
     )
-    def test_no_cfg(
+    def test_no_cfg(  # pylint: disable=too-many-arguments
         self,
         cfg_file: str,
         stmt: ast.stmt,
@@ -96,15 +94,17 @@ class TestMkSrcFormatter:
             (False, True, " ", "  foo"),
         ],
     )
-    def test(
+    def test(  # pylint: disable=too-many-arguments
         self, stmt: ast.stmt, verbose: bool, show_all: bool, cause: str, expected: str
     ) -> None:
+        """MkSrcFormatter generic tests"""
         cfg = Config(file=POETRY, verbose=verbose, show_all=show_all)
         fn = cfg.mk_src_formatter()
         assert fn("src.py", Dependency(cause), "foo", stmt) == expected
 
     @pytest.mark.parametrize("cfg_file", [POETRY, None])
     def test_cache(self, cfg_file: str | None, stmt: ast.stmt) -> None:
+        """Test the cache mechanism for the formatter"""
         cfg = Config(file=cfg_file, verbose=False)
         fn = cfg.mk_src_formatter()
         assert fn("src.py", Dependency.NA, "foo", stmt) is not None

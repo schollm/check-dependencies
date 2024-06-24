@@ -27,7 +27,6 @@ target-version = ['py39']
 
 [tool.isort]
 sections = ['FUTURE', 'STDLIB', 'THIRDPARTY', 'FIRSTPARTY', 'LOCALFOLDER']
-known_pytest = ['pytest']
 multi_line_output = 3
 line_length = 88
 include_trailing_comma = 'True'

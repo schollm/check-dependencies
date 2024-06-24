@@ -7,7 +7,7 @@ from typing import Sequence
 
 from conftest import POETRY
 
-from check_dependencies.lib import Dependency, Config
+from check_dependencies.lib import Config, Dependency
 
 
 class TestConfig:

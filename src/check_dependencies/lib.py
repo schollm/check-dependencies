@@ -1,6 +1,7 @@
 """
 Library for check_dependencies
 """
+
 import ast
 import logging
 from dataclasses import dataclass
@@ -42,10 +43,14 @@ class Config:
                 logger.warning("Could not find config file: %s. Set to None", self.file)
                 self.file = None
             else:
-                extra_cfg = _nested_item(cfg, "tool.check_dependencies.extra-requirements")
+                extra_cfg = _nested_item(
+                    cfg, "tool.check_dependencies.extra-requirements"
+                )
                 self.extra_requirements += cast(list[str], list(extra_cfg or []))
 
-                ignore_cfg = _nested_item(cfg, "tool.check_dependencies.ignore-requirements")
+                ignore_cfg = _nested_item(
+                    cfg, "tool.check_dependencies.ignore-requirements"
+                )
                 self.ignore_requirements += cast(list[str], list(ignore_cfg))
 
         if not self.file:  # no else - self.file might be unset above
@@ -132,6 +137,7 @@ def _nested_item(obj: dict[str, Any], keys: str) -> Any:
     for a in keys.split("."):
         obj = obj.get(a, {})
     return obj
+
 
 def _canonical_pkg(name: str) -> str:
     return name.replace("-", "_")

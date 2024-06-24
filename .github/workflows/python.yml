@@ -1,4 +1,4 @@
-name: Pytest
+name: Python Application
 
 on: [push]
 
@@ -19,12 +19,13 @@ jobs:
         python -m pip install --upgrade pip
         pip install pylint poetry
         poetry install
-    - name: PyLint
+    - name: Run Black
+      run: poetry run black --check src/
+    - name: Run isort
+      run: poetry run isort --check src/
+    - name: Analysing the code with pylint
       run: |
         poetry run pylint $(git ls-files '*.py')
-    - name: Fail on purpose
-      run: |
-        false
     - name: Run pytest
       run: |
         make test-pytest

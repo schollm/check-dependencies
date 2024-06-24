@@ -1,12 +1,14 @@
 """Main module for check_dependencies"""
 
+from __future__ import annotations
+
 import ast
 import logging
 from pathlib import Path
 from typing import Generator, Iterator, Sequence
 
 from check_dependencies.builtin_module import BUILTINS
-from check_dependencies.lib import Dependency, Config, pkg
+from check_dependencies.lib import Config, Dependency, pkg
 
 logger = logging.getLogger("check_dependencies")
 

@@ -7,10 +7,14 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Sequence
 
-from conftest import POETRY, POETRY_EXTRA, SRC, DATA
+from conftest import DATA, POETRY, POETRY_EXTRA, SRC
 
-from check_dependencies.lib import Dependency, Config
-from check_dependencies.main import _imports_iter, _missing_imports_iter, yield_wrong_imports
+from check_dependencies.lib import Config, Dependency
+from check_dependencies.main import (
+    _imports_iter,
+    _missing_imports_iter,
+    yield_wrong_imports,
+)
 
 
 class TestYieldWrongImports:
@@ -46,7 +50,7 @@ class TestYieldWrongImports:
             "missing",
             "test_1",
             "test_main",
-            'dependency_check_test',
+            "dependency_check_test",
             "missing_class",
             "missing_def",
         ]
@@ -68,9 +72,7 @@ class TestYieldWrongImports:
         ]
 
     def test_ignore_requirements(self) -> None:
-        assert self.fn(
-            cfg_file=POETRY_EXTRA, ignore_requirements=["test_extra"]
-        ) == [
+        assert self.fn(cfg_file=POETRY_EXTRA, ignore_requirements=["test_extra"]) == [
             "! missing",
             "! missing_class",
             "! missing_def",
@@ -88,7 +90,7 @@ class TestYieldWrongImports:
             "! missing",
             "  test_1",
             "  test_main",
-            '  dependency_check_test',
+            "  dependency_check_test",
             "! missing_class",
             "! missing_def",
         ]
@@ -123,7 +125,7 @@ class TestYieldWrongImports:
             f" OK {SRC}:4 test_1",
             f" OK {SRC}:5 test_main",
             f"!NA {SRC}:6 missing",
-            ' OK data/src.py:7 dependency_check_test',
+            " OK data/src.py:7 dependency_check_test",
             f"!NA {SRC}:10 missing_class",
             f"!NA {SRC}:14 missing",
             f"!NA {SRC}:15 missing_def",
@@ -141,15 +143,15 @@ class TestYieldWrongImports:
 
     def test_all_imports_all_files(self) -> None:
         res = self.fn(file_name=[DATA], show_all=True)
-        assert set(res)== {
-            '  dependency_check_test',
-            '  test_1',
-            '  test_main',
-            '! missing',
-            '! missing_class',
-            '! missing_def',
-            '! missing_src2',
-            '! tests_main',
+        assert set(res) == {
+            "  dependency_check_test",
+            "  test_1",
+            "  test_main",
+            "! missing",
+            "! missing_class",
+            "! missing_def",
+            "! missing_src2",
+            "! tests_main",
         }
 
 
@@ -186,12 +188,19 @@ def test_missing_imports_iter() -> None:
         "test_1",
         "test_main",
         "missing",
-        'dependency_check_test',
+        "dependency_check_test",
         "missing_class",
         "missing",
         "missing_def",
     ]
-    assert seen == {'dependency_check_test', "missing", "missing_class", "missing_def", "test_1", "test_main"}
+    assert seen == {
+        "dependency_check_test",
+        "missing",
+        "missing_class",
+        "missing_def",
+        "test_1",
+        "test_main",
+    }
     assert None not in {s for _, _, s in res}
 
 

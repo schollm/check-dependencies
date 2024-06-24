@@ -1,3 +1,4 @@
+"""CLI entry point for check_dependencies."""
 import argparse
 import logging
 import sys

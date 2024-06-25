@@ -1,0 +1,15 @@
+[project]
+name = "check-dependencies"
+dependencies = [
+    "test_main > 0",
+    # "test_1 < 2",
+    "test_extra > 99"  # to be ignored
+]
+
+[tool.check-dependencies]
+known-extra = [
+    "test_extra"
+]
+known-missing = [
+    "test_1", "missing", "missing_class", "missing_def"
+]

@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "dependency-check-test"
+name = "check-dependencies"
 
 [tool.poetry.dependencies]
 python = "^3.8"

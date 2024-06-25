@@ -8,12 +8,14 @@ import ast
 import logging
 from dataclasses import dataclass
 from enum import Enum
+from itertools import chain, takewhile
 from pathlib import Path
-from typing import Any, Callable, List, Optional, Sequence, cast
+from typing import Any, Callable, Iterator, Optional
 
 import toml
 
 logger = logging.getLogger("check_dependencies.lib")
+_PYPROJECT_TOML = Path("pyproject.toml")
 
 
 class Dependency(Enum):
@@ -25,64 +27,18 @@ class Dependency(Enum):
 
 
 @dataclass()
-class Config:
+class AppConfig:
     """Application config and helper functions"""
 
-    file: Optional[str] = None
     include_dev: bool = False
     verbose: bool = False
     show_all: bool = False
-    extra_requirements: Sequence[str] = ()
-    ignore_requirements: Sequence[str] = ()
+    known_extra: set[str] = frozenset()
+    known_missing: set[str] = frozenset()
 
     def __post_init__(self) -> None:
-        self.extra_requirements = list(filter(None, self.extra_requirements or []))
-        self.ignore_requirements = list(filter(None, self.ignore_requirements or []))
-        if self.file and Path(self.file).is_dir():
-            self.file = (Path(self.file) / "pyproject.toml").as_posix()
-        if self.file:
-            try:
-                cfg = toml.load(Path(self.file))
-            except FileNotFoundError:
-                logger.fatal("Could not find config file: %s. Set to None", self.file)
-                raise
-
-            extra_cfg = _nested_item(cfg, "tool.check_dependencies.extra-requirements")
-            self.extra_requirements += cast(List[str], list(extra_cfg or []))
-
-            ignore_cfg = _nested_item(
-                cfg, "tool.check_dependencies.ignore-requirements"
-            )
-            self.ignore_requirements += cast(List[str], list(ignore_cfg))
-        else:
-            logger.info("Config file unset, showing all imports")
-            self.show_all = True
-            self.include_dev = False
-            self.include_dev = False
-            self.ignore_requirements = ()
-            self.extra_requirements = ()
-
-    def get_declared_dependencies(self) -> set[str]:
-        """
-        Get dependencies from pyproject.toml file.
-        ! Currently only poetry style dependencies are supported
-        """
-        if not self.file:
-            return set()
-        if (cfg_pth := Path(self.file)).is_dir():
-            cfg_pth /= "pyproject.toml"
-        try:
-            cfg = toml.load(cfg_pth)
-        except FileNotFoundError:
-            return set()
-
-        deps = set(_nested_item(cfg, "tool.poetry.dependencies"))
-        if self_name := _nested_item(cfg, "tool.poetry.name"):
-            cast(List[str], self.extra_requirements).append(_canonical_pkg(self_name))
-        if self.include_dev:
-            deps |= set(_nested_item(cfg, "tool.poetry.group.dev.dependencies"))
-            deps |= set(_nested_item(cfg, "tool.poetry.dev-dependencies"))
-        return {_canonical_pkg(x) for x in deps} - {"python"}
+        self.known_extra = frozenset(filter(None, self.known_extra or []))
+        self.known_missing = frozenset(filter(None, self.known_missing or []))
 
     def mk_src_formatter(
         self,
@@ -91,46 +47,108 @@ class Config:
         cache: set[str] = set()
 
         def src_cause_formatter(
-            file: str, cause: Dependency, module: str, stmt: Optional[ast.stmt]
-        ) -> Optional[str]:
-            if not self.file:
-                if self.verbose:
-                    location = f"{file}:{getattr(stmt, 'lineno', -1)}"
-                    return f"{location} {module}"
-                if (pkg_ := pkg(module)) not in cache:
-                    cache.add(pkg_)
-                    return pkg_
+            src_pth: Path, cause: Dependency, module: str, stmt: Optional[ast.stmt]
+        ) -> Iterator[str]:
             if self.verbose:
-                location = f"{file}:{getattr(stmt, 'lineno', -1)}"
-                cause_str = f"{cause.value}{cause.name}" if self.file else ""
-                if self.show_all or not self.file or cause == Dependency.NA:
-                    return f"{cause_str} {location} {module}"
+                location = f"{src_pth}:{getattr(stmt, 'lineno', -1)}"
+                if cause == Dependency.NA or self.show_all:
+                    yield f"{cause.value}{cause.name} {location} {module}"
             else:
                 if (pkg_ := pkg(module)) not in cache:
                     cache.add(pkg_)
-                    cause_str = cause.value if self.file else " "
-                    if self.show_all or not self.file or cause == Dependency.NA:
-                        return f"{cause_str} {pkg_}"
-            return None
+                    if cause == Dependency.NA or self.show_all:
+                        yield f"{cause.value} {pkg_}"
 
         return src_cause_formatter
 
-    def mk_unused_formatter(self) -> Callable[[str], Optional[str]]:
+    def unused_fmt(self, module: str) -> Iterator[str]:
         """Formatter for unused but declared dependencies"""
+        info = Dependency.EXTRA.name if self.verbose else ""
+        yield f"{Dependency.EXTRA.value}{info} {module}"
 
-        def unused_formatter(module: str) -> Optional[str]:
-            if not self.file:
-                return None
-            if self.verbose:
-                return f"{Dependency.EXTRA.value}{Dependency.EXTRA.name} {module}"
-            return f"{Dependency.EXTRA.value} {module}"
 
-        return unused_formatter
+@dataclass(frozen=True)
+class PyProjectToml:
+    """Get project specific options (dependencies, config) from a pyproject.toml file."""
+
+    file: Path
+    cfg: dict[str, Any]
+    include_dev: bool = False
+
+    @classmethod
+    def from_pyproject(cls, file: Path, app_cfg: AppConfig):
+        """Create a PyProjectToml instance from a pyproject.toml file."""
+        pyproject_file = _get_pyproject_path(file)
+        return cls(
+            file=pyproject_file,
+            cfg=toml.load(pyproject_file),
+            include_dev=app_cfg.include_dev,
+        )
+
+    @property
+    def dependencies(self) -> frozenset[str]:
+        """Get dependencies from pyproject.toml file."""
+        if "dependencies" in self.cfg.get("project", {}):
+            return self._pep631_dependencies()
+        if "poetry" in self.cfg.get("tool", {}):
+            return self._poetry_dependencies()
+
+        logger.warning("No dependencies found in %s", _PYPROJECT_TOML)
+        return frozenset()
+
+    @property
+    def known_missing(self) -> frozenset[str]:
+        """
+        Dependencies that are known to be used in application but not declared in
+        requirements
+        """
+        # Add project name
+        pep631_name = pkg(_nested_item(self.cfg, "project.name") or "")
+        poetry_name = pkg(_nested_item(self.cfg, "tool.poetry.name") or "")
+        return frozenset(
+            filter(
+                None,
+                [
+                    *(pep631_name, poetry_name),
+                    *_nested_item(self.cfg, "tool.check-dependencies.known-missing"),
+                ],
+            )
+        )
+
+    @property
+    def known_extra(self) -> frozenset[str]:
+        """dependencies that are known to be unused in application"""
+        return frozenset(_nested_item(self.cfg, "tool.check-dependencies.known-extra"))
+
+    def _poetry_dependencies(self) -> frozenset[str]:
+        """Get dependencies from a poetry-style pyproject.toml file"""
+        deps = set(_nested_item(self.cfg, "tool.poetry.dependencies"))
+        if self.include_dev:
+            deps |= set(_nested_item(self.cfg, "tool.poetry.group.dev.dependencies"))
+            deps |= set(_nested_item(self.cfg, "tool.poetry.dev-dependencies"))
+
+        return frozenset(x for x in deps) - {"python"}
+
+    def _pep631_dependencies(self) -> frozenset[str]:
+        """Get dependencies from a PEP 631-style pyproject.toml file"""
+
+        def canonical(name: str) -> str:
+            return "".join(takewhile(lambda x: x.isalnum() or x in "-_", name)).replace(
+                "-", "_"
+            )
+
+        raw_deps = _nested_item(self.cfg, "project.dependencies")
+        deps = {canonical(raw_dep) for raw_dep in raw_deps}
+        for _, raw_extras in _nested_item(
+            self.cfg, "project.optional-dependencies"
+        ).items():
+            deps |= {canonical(raw_extra) for raw_extra in raw_extras}
+        return frozenset(deps)
 
 
 def pkg(module: str) -> str:
-    """Get the installable module name from an import statement"""
-    return module.split(".")[0]
+    """Get the installable module name from an import or package name statement"""
+    return module.split(".")[0].replace("-", "_")
 
 
 def _nested_item(obj: dict[str, Any], keys: str) -> Any:
@@ -140,5 +158,10 @@ def _nested_item(obj: dict[str, Any], keys: str) -> Any:
     return obj
 
 
-def _canonical_pkg(name: str) -> str:
-    return name.replace("-", "_")
+def _get_pyproject_path(path: Path):
+    for p in chain([path], path.resolve().parents):
+        if (p / _PYPROJECT_TOML).exists():
+            return p / _PYPROJECT_TOML
+    raise FileNotFoundError(
+        f"Could not find {_PYPROJECT_TOML} file within path hierarchy"
+    )

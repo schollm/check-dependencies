@@ -7,7 +7,7 @@ from check_dependencies.builtin_module import BUILTINS
 
 def test_is_set():
     """Are the builtin modules stored in a set?"""
-    assert isinstance(BUILTINS, set)
+    assert isinstance(BUILTINS, frozenset)
 
 
 def test_contains_future():

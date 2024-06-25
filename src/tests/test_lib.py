@@ -3,49 +3,42 @@
 from __future__ import annotations
 
 import ast
-from typing import Sequence
 
 import pytest
+import toml
 
-from check_dependencies.lib import Config, Dependency
-from tests.conftest import POETRY
+from check_dependencies.lib import AppConfig, Dependency, PyProjectToml
+from tests.conftest import DATA, PEP631, POETRY
 
 
-class TestConfig:
-    """Test suite for the Config class"""
+class TestPyProjectToml:
+    """Test suite for the PyProjectToml class"""
 
-    @pytest.mark.parametrize("show_all", [True, False])
-    @pytest.mark.parametrize("include_dev", [True, False])
-    @pytest.mark.parametrize("ignore_requirements", [(), ("test_1",)])
-    @pytest.mark.parametrize("extra_requirements", [(), ("test_1",)])
-    def test_missing_file(
-        self,
-        show_all: bool,
-        include_dev: bool,
-        ignore_requirements: Sequence[str],
-        extra_requirements: Sequence[str],
-    ) -> None:
+    def test_missing_file(self, monkeypatch) -> None:
         """Ensure we don't crash when the config file is missing"""
-        with pytest.raises(FileNotFoundError, match="non-existent.toml"):
-            Config(
-                file="non-existent.toml",
-                show_all=show_all,
-                include_dev=include_dev,
-                ignore_requirements=ignore_requirements,
-                extra_requirements=extra_requirements,
-            )
+        monkeypatch.setattr(
+            "check_dependencies.lib._PYPROJECT_TOML",
+            "pyproject.check-dependencies-non-existent.toml",
+        )
+        with pytest.raises(
+            FileNotFoundError, match="pyproject.check-dependencies-non-existent.toml"
+        ):
+            _ = PyProjectToml.from_pyproject(DATA, AppConfig()).dependencies
 
     @pytest.mark.parametrize(
-        "included_dev, expect",
+        "pyproject, included_dev, add_expect",
         [
-            (False, "test_main test_1"),
-            (True, "test_main test_1 test_dev_1 test_dev_2"),
+            (PEP631, True, []),
+            (PEP631, False, []),
+            (POETRY, False, []),
+            (POETRY, True, ["test_dev_1", "test_dev_2"]),
         ],
     )
-    def test_get_declared_dependencies(self, included_dev, expect) -> None:
+    def test_dependencies(self, pyproject, included_dev, add_expect) -> None:
         """Test the get_declared_dependencies function without included development dependencies"""
-        cfg = Config(file=POETRY, include_dev=included_dev)
-        assert set(cfg.get_declared_dependencies()) == set(expect.split())
+
+        cfg = PyProjectToml(DATA, cfg=toml.load(pyproject), include_dev=included_dev)
+        assert set(cfg.dependencies) == {"test_main", "test_1"}.union(add_expect or {})
 
 
 class TestMkSrcFormatter:
@@ -54,34 +47,14 @@ class TestMkSrcFormatter:
     @pytest.fixture
     def stmt(self) -> ast.stmt:
         """AST import statement fixture"""
-        return ast.parse("import foo").body[0]
-
-    @pytest.mark.parametrize("cfg_file", ["", None])
-    @pytest.mark.parametrize("show_all", [True, False])
-    @pytest.mark.parametrize("cause", ["!", " "])
-    @pytest.mark.parametrize(
-        "verbose, expect", [(True, "src.py:1 foo"), (False, "foo")]
-    )
-    def test_no_cfg(  # pylint: disable=too-many-arguments
-        self,
-        cfg_file: str,
-        stmt: ast.stmt,
-        verbose: bool,
-        show_all: bool,
-        cause: str,
-        expect: str,
-    ) -> None:
-        """Without config we cannot get a NA status"""
-        cfg = Config(file=cfg_file, verbose=verbose, show_all=show_all)
-        fn = cfg.mk_src_formatter()
-        assert fn("src.py", Dependency(cause), "foo", stmt) == expect
+        return ast.parse("import foo.bar").body[0]
 
     @pytest.mark.parametrize("verbose", [True, False])
     def test_no_show_all_on_status_ok(self, stmt: ast.stmt, verbose: bool) -> None:
         """If the import is expected, we do not show it"""
-        cfg = Config(file=POETRY, verbose=verbose, show_all=False)
+        cfg = AppConfig(verbose=verbose, show_all=False)
         fn = cfg.mk_src_formatter()
-        assert fn("src.py", Dependency.OK, "foo", stmt) is None
+        assert not list(fn("src.py", Dependency.OK, "foo", stmt))
 
     @pytest.mark.parametrize(
         "verbose, show_all, cause, expected",
@@ -98,14 +71,13 @@ class TestMkSrcFormatter:
         self, stmt: ast.stmt, verbose: bool, show_all: bool, cause: str, expected: str
     ) -> None:
         """MkSrcFormatter generic tests"""
-        cfg = Config(file=POETRY, verbose=verbose, show_all=show_all)
+        cfg = AppConfig(verbose=verbose, show_all=show_all)
         fn = cfg.mk_src_formatter()
-        assert fn("src.py", Dependency(cause), "foo", stmt) == expected
+        assert next(fn("src.py", Dependency(cause), "foo", stmt)) == expected
 
-    @pytest.mark.parametrize("cfg_file", [POETRY, None])
-    def test_cache(self, cfg_file: str | None, stmt: ast.stmt) -> None:
+    def test_cache(self, stmt: ast.stmt) -> None:
         """Test the cache mechanism for the formatter"""
-        cfg = Config(file=cfg_file, verbose=False)
+        cfg = AppConfig(verbose=False)
         fn = cfg.mk_src_formatter()
-        assert fn("src.py", Dependency.NA, "foo", stmt) is not None
-        assert fn("src.py", Dependency.NA, "foo", stmt) is None
+        assert list(fn("src.py", Dependency.NA, "foo", stmt))
+        assert not list(fn("src.py", Dependency.NA, "foo", stmt))

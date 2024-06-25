@@ -4,45 +4,77 @@ It can be used as a stand-alone or as part of a CI/CD to check if an application
 
 ## Usage
 ```commandline
-usage: check_imports [-h] [--config-file CONFIG_FILE] [--include-dev] [--verbose] [--all] [--extra EXTRA] [--ignore IGNORE] file_name [file_name ...]
+usage: check_dependencies [-h] [--include-extra] [--verbose] [--all] [--missing MISSING] [--extra EXTRA] file_name [file_name ...]
 
 Find undeclared and unused (or all) imports in Python files
 
 positional arguments:
-  file_name             Python Source file to analyse
+  file_name          Python Source file to analyse
 
 optional arguments:
-  -h, --help            show this help message and exit
-  --config-file CONFIG_FILE
-                        Location of pyproject.toml file, can be file or a directory containing pyproject.toml file
-  --include-dev         Include dev dependencies
-  --verbose             Show every import of a package
-  --all                 Show all imports (including correct ones)
-  --extra EXTRA         Comma seperated list of extra requirements. Assume they are part of the requirements
-  --ignore IGNORE       Comma seperated list of requirements to ignore. Assume they are not part of the requirements
+  -h, --help         show this help message and exit
+  --include-extra    Include dev dependencies
+  --verbose          Show every import of a package
+  --all              Show all imports (including correct ones)
+  --missing MISSING  Comma seperated list of requirements known to be missing. Assume they are part of the requirements
+  --extra EXTRA      Comma seperated list of requirements known to not be imported. Assume they are not part of the requirements```
 ```
 
+### Output
+The output is a list of imports with a prefix indicating the status of the import.
+- `!` - Undeclared import
+- `+` - Extra import, declared in pyproject.toml, but not used in the file
+- ` ` - Correct import (only shown with `--all`)
+
+**In case of `--verbose`**, the output is a list of all imports in the file, prefixed with:
+- `!NA` - Undeclared import
+- `+EXTRA` - Extra import, declared in pyproject.toml, but not used in the file
+- ` OK` - Correct import (only shown with `--all`)
+
+Additionally, each import is prefixed with the file name and line number
+where it is imported.
+
+
+### Examples
+#### Basic usage
 ```commandline
-> python -m  --config-file --all project/ project/src/**/*.py
+> python -m check_dependencies  project/src/
   pandas
 ! matplotlib
   numpy
 + requests
+```
 
-> python -m check_dependencies --config-file --verbose project/ project/src/**/*.py
+#### Output all dependencies
+Output all dependencies, including the correct ones.
+```commandline
+> python -m check_dependencies --all project/src/
+  pandas
+! matplotlib
+  numpy
++ requests
+```
+#### Verbose output
+Output each erroneous import and extra dependency with cause, file name and line number.
+```commandline
+> python -m check_dependencies --verbose project/src/
 !NA matplotlib project/src/main.py:4
-+EXTRA project/pyproject.toml requests 
++EXTRA project/pyproject.toml requests
+```
 
-> python -m check_dependencies --config-file --verbose --all project/ project/src/**/*.py
+#### Combine verbose and all
+Output all imports, including the correct ones with file name and line number.
+```commandline
+> python -m check_dependencies --verbose --all project/src/
  OK project/src/data.py:5 pandas
  OK project/src/main.py:3 pandas
  OK project/src/plotting.py:4 pandas
 !NA project/src/plotting.py:5 matplotlib
  OK project/src/plotting.py:6 numpy
- 
- **** Dependencies in config file not used in application:
-+EXTRA project/pyproject.toml requests 
 
+### Dependencies in config file not used in application:
+# Config file: project/pyproject.toml
++EXTRA requests
 ```
 
 ### Configuration
@@ -55,37 +87,23 @@ ignore extra requirements that are not used in the application.
 
 ```toml
 [tool.check_dependencies]
-extra-requirements = [
+known-missing = [
   undeclared_package,
   another_package
 ]
-ignore-requirements = [
+known-extra = [
   package_as_extra_for_another_package,
   yet_another_package
 ]
 ```
-
-### Output
-The output is a list of imports with a prefix indicating the status of the import.
-- `!` - Undeclared import
-- `+` - Extra import, declared in pyproject.toml, but not used in the file
-- `  ` - Correct import (only shown with `--all`)
-
-In case of `--verbose`, the output is a list of all imports in the file, prefixed with:
-- `!NA` - Undeclared import
-- `+EXTRA` - Extra import, declared in pyproject.toml, but not used in the file
-- `  OK` - Correct import (only shown with `--all`)
-
-In case of `--verbose`, each import is prefixed with the file name and line number
-where it is declared. 
 
 #### Exit code
 - 0: No missing or superfluous dependencies found
 - 2: Missing (used, but not declared in pyproject.toml) dependencies found
 - 4: Extra (declared in pyproject.toml, but unused) dependencies found
 - 6: Both missing and superfluous dependencies found
-- 1: Another error occured
-
+- 8: Could not find associated pyproject.toml file
+- 1: Another error occurred
 
 ## Development
 Feature requests and merge requests are welcome. For major changes, please open an 

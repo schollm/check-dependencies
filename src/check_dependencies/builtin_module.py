@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import sys
 
-BUILTINS: set[str]
+BUILTINS: frozenset[str]
 if sys.version_info >= (3, 10):
-    BUILTINS = set(sys.stdlib_module_names)  # pylint: disable=no-member
+    BUILTINS = frozenset(sys.stdlib_module_names)  # pylint: disable=no-member
 else:
     # Use the list of builtins from Python 3.9
-    BUILTINS = set(
+    BUILTINS = frozenset(
         """\
 __future__
 _abc

@@ -4,7 +4,7 @@ import argparse
 import logging
 import sys
 
-from check_dependencies.lib import Config
+from check_dependencies.lib import AppConfig
 from check_dependencies.main import yield_wrong_imports
 
 logging.basicConfig(
@@ -26,14 +26,6 @@ parser.add_argument(
     "file_name", type=str, nargs="+", help="Python Source file to analyse"
 )
 parser.add_argument(
-    "--config-file",
-    type=str,
-    required=False,
-    default="",
-    help="Location of pyproject.toml file, can be file or a directory"
-    " containing pyproject.toml file",
-)
-parser.add_argument(
     "--include-dev",
     action="store_true",
     default=False,
@@ -52,28 +44,27 @@ parser.add_argument(
     help="Show all imports (including correct ones)",
 )
 parser.add_argument(
-    "--extra",
+    "--missing",
     type=str,
-    help="Comma seperated list of extra requirements."
+    help="Comma seperated list of requirements known to be missing."
     " Assume they are part of the requirements",
     default="",
 )
 parser.add_argument(
-    "--ignore",
+    "--extra",
     type=str,
-    help="Comma seperated list of requirements to ignore."
+    help="Comma seperated list of requirements known to not be imported."
     " Assume they are not part of the requirements",
     default="",
 )
 args = parser.parse_args()
 
-cfg = Config(
-    file=args.config_file,
+cfg = AppConfig(
     include_dev=args.include_dev,
     verbose=args.verbose,
     show_all=args.all,
-    extra_requirements=args.extra.split(","),
-    ignore_requirements=args.ignore.split(","),
+    known_extra=set(args.extra.split(",")),
+    known_missing=set(args.missing.split(",")),
 )
 
 wrong_import_lines = yield_wrong_imports(args.file_name, cfg)

@@ -1,10 +1,11 @@
 # pylint: skip-file
-import dependency_check_test
 import missing.bar
 import missing.foo
 import test_1
 import test_main  # This is a test import provided by the test environment
 from missing import baz
+
+import check_dependencies
 
 
 class X:

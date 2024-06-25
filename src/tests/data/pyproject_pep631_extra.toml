@@ -1,0 +1,10 @@
+[project]
+name = "check-dependencies"
+dependencies = [
+    "test_main > 0",
+    "test_1 < 2"
+]
+[project.optional-dependencies]
+test_optional = [
+    "test_extra > 0"
+]

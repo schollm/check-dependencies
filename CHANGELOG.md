@@ -10,8 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changes
 - Remove `--config-file` option: Always use the `pyprojec.toml` file associated with the source
 - Renames in `pyproject.toml` section `tool.check_dependencies`:
-  - `ignore-requirements` to `known-missing` 
-  - `extra-requirements` to `known-extra` 
+  - `ignore-requirements` to `known-missing`
+  - `extra-requirements` to `known-extra`
 - Rename CLI options:
   - `--extra` to `--missing`
   - `--ignore` to `--extra`

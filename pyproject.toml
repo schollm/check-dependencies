@@ -4,8 +4,32 @@ version = "0.10.1"
 authors = ["Micha Scholl <schollm-git@gmx.com>"]
 readme = "README.md"
 description = "Check dependencies of a python project against pyproject.toml requirements"
+homepage = "https://github.com/schollm/check-dependencies"
+repository = "https://github.com/schollm/check-dependencies"
+documentation = "https://github.com/schollm/check-dependencies/blob/main/README.md"
+license = "MIT"
+keywords = ["packaging", "development", "requirements", "dependencies"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Software Development :: Testing",
+    "Topic :: Utilities",
+]
 [tool.poetry.scripts]
 check-dependencies = 'check_dependencies.__main__:main'
+
+[tool.poetry.urls]
+"Bug Tracker" = "https://github.com/schollm/check-dependencies/issues"
 
 [tool.poetry.dependencies]
 python = ">=3.8"

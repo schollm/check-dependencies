@@ -4,7 +4,7 @@ It can be used as a stand-alone or as part of a CI/CD to check if an application
 
 ## Usage
 ```commandline
-usage: check_dependencies [-h] [--include-extra] [--verbose] [--all] [--missing MISSING] [--extra EXTRA] file_name [file_name ...]
+usage: check-dependencies [-h] [--include-extra] [--verbose] [--all] [--missing MISSING] [--extra EXTRA] file_name [file_name ...]
 
 Find undeclared and unused (or all) imports in Python files
 
@@ -38,7 +38,7 @@ where it is imported.
 ### Examples
 #### Basic usage
 ```commandline
-> python -m check_dependencies  project/src/
+> check-dependencies  project/src/
   pandas
 ! matplotlib
   numpy
@@ -48,7 +48,7 @@ where it is imported.
 #### Output all dependencies
 Output all dependencies, including the correct ones.
 ```commandline
-> python -m check_dependencies --all project/src/
+> check-dependencies --all project/src/
   pandas
 ! matplotlib
   numpy
@@ -57,7 +57,7 @@ Output all dependencies, including the correct ones.
 #### Verbose output
 Output each erroneous import and extra dependency with cause, file name and line number.
 ```commandline
-> python -m check_dependencies --verbose project/src/
+> check-dependencies --verbose project/src/
 !NA matplotlib project/src/main.py:4
 +EXTRA project/pyproject.toml requests
 ```
@@ -65,7 +65,7 @@ Output each erroneous import and extra dependency with cause, file name and line
 #### Combine verbose and all
 Output all imports, including the correct ones with file name and line number.
 ```commandline
-> python -m check_dependencies --verbose --all project/src/
+> check-dependencies --verbose --all project/src/
  OK project/src/data.py:5 pandas
  OK project/src/main.py:3 pandas
  OK project/src/plotting.py:4 pandas

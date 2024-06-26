@@ -4,6 +4,8 @@ version = "0.10.1"
 authors = ["Micha Scholl <schollm-git@gmx.com>"]
 readme = "README.md"
 description = "Check dependencies of a python project against pyproject.toml requirements"
+[tool.poetry.scripts]
+check-dependencies = 'check_dependencies.__main__:main'
 
 [tool.poetry.dependencies]
 python = ">=3.8"

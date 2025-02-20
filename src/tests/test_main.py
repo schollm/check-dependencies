@@ -150,17 +150,19 @@ class TestYieldWrongImports:
         Even for multiple files, make sure we only print out one instance of a
         missing import.
         """
-        res = self.fn(file_names=[DATA], show_all=show_all, include_extra=include_extra)
+        res = self.fn(
+            file_names=[DATA.as_posix()], show_all=show_all, include_extra=include_extra
+        )
         assert len(res) == len(set(res))
 
     def test_directory_both_files(self) -> None:
         """Given a directory, we should check all files for missing imports."""
-        res = self.fn(file_names=[DATA])
+        res = self.fn(file_names=[DATA.as_posix()])
         assert set(res) > {"! missing", "! missing_src2"}
 
     def test_all_imports_all_files(self) -> None:
         """show_all=True should show all imports in all files."""
-        res = self.fn(file_names=[DATA], show_all=True)
+        res = self.fn(file_names=[DATA.as_posix()], show_all=True)
         assert set(res) == {
             "  check_dependencies",
             "  test_1",

@@ -40,12 +40,16 @@ pytest = "^6.2"
 mypy = "^1.10.0"
 ruff = "^0.9.6"
 [tool.ruff.lint.per-file-ignores]
-"src/tests/**" = ["S101"]
+"src/tests/**" = [
+    "S101",  # use of assert
+    "FBT001",  # Boolean-typed positional argument in function definition
+    "D400"   # docstring should end with a period
+]
 
 [tool.ruff]
 exclude =["src/tests/data"]
 [tool.ruff.lint]
-select = ["F", "E", "W", "C", "I", "N",  "UP", "YTT", "A", "S"]
+select = ["ALL"] # ["F", "E", "W", "C", "I", "N",  "UP", "YTT", "A", "S", ]
 
 [build-system]
 requires = ["poetry-core"]

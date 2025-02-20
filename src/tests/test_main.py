@@ -44,7 +44,7 @@ class TestYieldWrongImports:
                         known_extra=known_extra,
                         known_missing=known_missing,
                     ),
-                )
+                ),
             )
 
     def test(self, pyproject) -> None:
@@ -107,8 +107,7 @@ class TestYieldWrongImports:
         ]
 
     def test_include_extra_requirements(self) -> None:
-        """
-        Include extra requirements that are not part of the dependencies in the check
+        """Include extra requirements that are not part of the dependencies in the check
         """
         res = self.fn(known_missing=["missing", "test_1"])
         assert res == ["! missing_class", "! missing_def"]
@@ -142,7 +141,8 @@ class TestYieldWrongImports:
     @pytest.mark.parametrize("include_extra", [True, False])
     def test_directory_only_one_use(self, show_all, include_extra) -> None:
         """Even for multiple files, make sure we only print out one instance of
-        a missing import"""
+        a missing import
+        """
         res = self.fn(file_names=[DATA], show_all=show_all, include_extra=include_extra)
         assert len(res) == len(set(res))
 

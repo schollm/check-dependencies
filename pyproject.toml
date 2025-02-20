@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "check-dependencies"
-version = "0.10.2"
+version = "0.11.0"
 authors = ["Micha Scholl <schollm-git@gmx.com>"]
 readme = "README.md"
 description = "Check dependencies of a python project against pyproject.toml requirements"

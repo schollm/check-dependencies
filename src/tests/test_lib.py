@@ -35,7 +35,10 @@ class TestPyProjectToml:
         ],
     )
     def test_dependencies(self, pyproject, included_dev, add_expect) -> None:
-        """Test the get_declared_dependencies function without included development dependencies"""
+        """
+        Test the get_declared_dependencies function without included development
+        dependencies
+        """
 
         cfg = PyProjectToml(DATA, cfg=toml.load(pyproject), include_dev=included_dev)
         assert set(cfg.dependencies) == {"test_main", "test_1"}.union(add_expect or {})

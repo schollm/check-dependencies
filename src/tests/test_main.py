@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import ast
+from collections.abc import Sequence
 from pathlib import Path
 from textwrap import dedent
-from typing import Sequence
 from unittest.mock import patch
 
 import pytest
@@ -107,7 +107,9 @@ class TestYieldWrongImports:
         ]
 
     def test_include_extra_requirements(self) -> None:
-        """Include extra requirements that are not part of the dependencies in the check"""
+        """
+        Include extra requirements that are not part of the dependencies in the check
+        """
         res = self.fn(known_missing=["missing", "test_1"])
         assert res == ["! missing_class", "! missing_def"]
 

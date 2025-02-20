@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import ast
 import logging
+from collections.abc import Generator, Iterator, Sequence
 from os.path import commonpath
 from pathlib import Path
-from typing import Generator, Iterator, Sequence
 
 from check_dependencies.builtin_module import BUILTINS
 from check_dependencies.lib import AppConfig, Dependency, PyProjectToml, pkg
@@ -20,7 +20,10 @@ ERR_NO_PYPROJECT = 8
 def yield_wrong_imports(
     file_names: Sequence[str], app_cfg: AppConfig
 ) -> Generator[str, None, int]:
-    """Yield output lines of missing/unused imports (or all imports in case of cfg.show_all)"""
+    """
+    Yield output lines of missing/unused imports (or all
+    imports in case of cfg.show_all)
+    """
     used_deps: set[str] = set()
     src_fmt = app_cfg.mk_src_formatter()
     try:

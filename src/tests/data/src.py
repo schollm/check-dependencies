@@ -1,4 +1,3 @@
-# pylint: skip-file
 import missing.bar
 import missing.foo
 import test_1

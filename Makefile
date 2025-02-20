@@ -1,10 +1,7 @@
 .PHONY: .ALWAYS
 .ALWAYS:
 
-test: .ALWAYS test-src  ## Run all tests
-
-test-src: .ALWAYS test-format test-pytest test-static  ## Run almost all tests (use test-all to include cli tests)
-test-format: test-isort test-black test-pylint
+test: .ALWAYS test-lint test-pytest test-mypy ## Run almost all tests (use test-all to include cli tests)
 
 test-pytest: .ALWAYS  ## Run pytest
 	poetry run pytest src/tests/ --cov check_dependencies --cov-branch --cov-report=xml:.out/coverage.xml --cov-report term-missing \
@@ -14,17 +11,11 @@ test-mypy: .ALWAYS  ## Run mypy
 	poetry run mypy --non-interactive --install-types --show-error-codes --strict --junit-xml=.out/junit-mypy-strict.xml \
 	--exclude=src/tests/data  src/
 
-test-isort: .ALWAYS
-	poetry run isort --check src
+test-lint: .ALWAYS
+	poetry run sh -c "ruff format --check src/ && ruff check src/"
 
-test-black: .ALWAYS
-	poetry run black --check src
-
-test-pylint: .ALWAYS
-	poetry run pylint src/
-
-test-static: test-black test-isort test-flake8 test-flake8 test-mypy .ALWAYS  ## Run static tests
+test-static: test-lint test-mypy .ALWAYS  ## Run static tests
 
 format: .ALWAYS
-	poetry run isort src
+	poetry run sh -c "ruff format src/; ruff check --fix"
 	poetry run black src

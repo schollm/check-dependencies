@@ -6,11 +6,12 @@ from __future__ import annotations
 
 import ast
 import logging
+from collections.abc import Iterator
 from dataclasses import dataclass
 from enum import Enum
 from itertools import chain, takewhile
 from pathlib import Path
-from typing import Any, Callable, Iterator, Optional
+from typing import Any, Callable
 
 import toml
 
@@ -42,12 +43,12 @@ class AppConfig:
 
     def mk_src_formatter(
         self,
-    ) -> Callable[[str, Dependency, str, Optional[ast.stmt]], Optional[str]]:
+    ) -> Callable[[str, Dependency, str, ast.stmt | None], str | None]:
         """Formatter for missing or used dependencies"""
         cache: set[str] = set()
 
         def src_cause_formatter(
-            src_pth: Path, cause: Dependency, module: str, stmt: Optional[ast.stmt]
+            src_pth: Path, cause: Dependency, module: str, stmt: ast.stmt | None
         ) -> Iterator[str]:
             if self.verbose:
                 location = f"{src_pth}:{getattr(stmt, 'lineno', -1)}"
@@ -69,7 +70,9 @@ class AppConfig:
 
 @dataclass(frozen=True)
 class PyProjectToml:
-    """Get project specific options (dependencies, config) from a pyproject.toml file."""
+    """
+    Get project specific options (dependencies, config) from a pyproject.toml file.
+    """
 
     file: Path
     cfg: dict[str, Any]

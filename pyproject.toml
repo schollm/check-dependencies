@@ -38,22 +38,15 @@ toml = "*"
 [tool.poetry.group.dev.dependencies]
 pytest = "^6.2"
 mypy = "^1.10.0"
-black = "^24.4.2"
-isort = "^5.13.2"
-pylint = "^3.2.3"
-pytest-cov = "^5.0.0"
+ruff = "^0.9.6"
+[tool.ruff.lint.per-file-ignores]
+"src/tests/**" = ["S101"]
+
+[tool.ruff]
+exclude =["src/tests/data"]
+[tool.ruff.lint]
+select = ["F", "E", "W", "C", "I", "N",  "UP", "YTT", "A", "S"]
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
-
-[tool.black]
-line-length = 88
-target-version = ['py39']
-
-[tool.isort]
-sections = ['FUTURE', 'STDLIB', 'THIRDPARTY', 'FIRSTPARTY', 'LOCALFOLDER']
-multi_line_output = 3
-line_length = 88
-include_trailing_comma = 'True'
-profile = "black"

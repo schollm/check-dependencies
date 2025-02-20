@@ -4,8 +4,7 @@
 test: .ALWAYS test-lint test-pytest test-mypy ## Run almost all tests (use test-all to include cli tests)
 
 test-pytest: .ALWAYS  ## Run pytest
-	poetry run pytest src/tests/ --cov check_dependencies --cov-branch --cov-report=xml:.out/coverage.xml --cov-report term-missing \
-          --junit-xml=.out/junit-pytest.xml
+	poetry run pytest src/tests/ --junit-xml=.out/junit-pytest.xml # --cov check_dependencies --cov-branch --cov-report=xml:.out/coverage.xml --cov-report term-missing
 
 test-mypy: .ALWAYS  ## Run mypy
 	poetry run mypy --non-interactive --install-types --show-error-codes --strict --junit-xml=.out/junit-mypy-strict.xml \

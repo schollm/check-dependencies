@@ -39,6 +39,7 @@ toml = "*"
 pytest = "^6.2"
 mypy = "^1.10.0"
 ruff = "^0.9.6"
+types-toml = "^0.10.8.20240310"
 
 [tool.ruff]
 exclude =["src/tests/data"]

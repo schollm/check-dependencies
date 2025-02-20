@@ -12,7 +12,7 @@ from check_dependencies.builtin_module import BUILTINS
 from check_dependencies.lib import AppConfig, Dependency, PyProjectToml, pkg
 
 if TYPE_CHECKING:
-    from collections.abc import Generator, Iterator, Sequence
+    from collections.abc import Generator, Iterable, Iterator, Sequence
 
 logger = logging.getLogger("check_dependencies")
 ERR_MISSING_DEPENDENCY = 2
@@ -97,7 +97,7 @@ def _collect_files(file_names: Sequence[str]) -> Iterator[Path]:
 
 def _missing_imports_iter(
     file: Path,
-    dependencies: frozenset[str],
+    dependencies: Iterable[str],
 ) -> Iterator[tuple[Dependency, str, ast.stmt]]:
     """Find missing imports in a Python file.
 

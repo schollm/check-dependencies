@@ -13,7 +13,8 @@ import toml
 
 if TYPE_CHECKING:
     import ast
-    from collections.abc import Iterator
+    from collections.abc import Iterable, Iterator
+
 
 logger = logging.getLogger("check_dependencies.lib")
 _PYPROJECT_TOML = Path("pyproject.toml")
@@ -34,8 +35,8 @@ class AppConfig:
     include_dev: bool = False
     verbose: bool = False
     show_all: bool = False
-    known_extra: set[str] = frozenset()
-    known_missing: set[str] = frozenset()
+    known_extra: Iterable[str] = frozenset()
+    known_missing: Iterable[str] = frozenset()
 
     def __post_init__(self) -> None:
         """Dataclass post init method to ensure sets are frozen."""

@@ -8,7 +8,7 @@ from check_dependencies.lib import AppConfig
 from check_dependencies.main import yield_wrong_imports
 
 
-def main():
+def main() -> None:
     """CLI entry point for check_dependencies."""
     logging.basicConfig(
         level=logging.INFO,
@@ -26,7 +26,10 @@ def main():
     )
 
     parser.add_argument(
-        "file_name", type=str, nargs="+", help="Python Source file to analyse",
+        "file_name",
+        type=str,
+        nargs="+",
+        help="Python Source file to analyse",
     )
     parser.add_argument(
         "--include-dev",

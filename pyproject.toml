@@ -39,6 +39,7 @@ toml = "*"
 pytest = "^6.2"
 mypy = "^1.10.0"
 ruff = "^0.9.6"
+
 [tool.ruff.lint.per-file-ignores]
 "src/tests/**" = [
     "S101",  # use of assert
@@ -48,8 +49,12 @@ ruff = "^0.9.6"
 
 [tool.ruff]
 exclude =["src/tests/data"]
+
 [tool.ruff.lint]
 select = ["ALL"] # ["F", "E", "W", "C", "I", "N",  "UP", "YTT", "A", "S", ]
+ignore = ["COM812", "D213", "D203"]
+[tool.ruff.lint.flake8-pytest-style]
+parametrize-names-type = "csv"
 
 [build-system]
 requires = ["poetry-core"]

@@ -76,7 +76,7 @@ def main() -> None:
     wrong_import_lines = yield_wrong_imports(args.file_name, cfg)
     try:
         while True:
-            print(next(wrong_import_lines))
+            print(next(wrong_import_lines))  # noqa: T201
     except StopIteration as ex:  # Return value is the exit status
         sys.exit(ex.value)
 

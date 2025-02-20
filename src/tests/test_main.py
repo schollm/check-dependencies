@@ -35,7 +35,7 @@ class TestYieldWrongImports:
         known_extra: Sequence[str] = (),
         known_missing: Sequence[str] = (),
     ) -> list[str]:
-        """Helper function to call the yield wrong imports function."""
+        """Call the yield wrong imports function with patched pyproject.toml."""
         with patch("check_dependencies.lib._PYPROJECT_TOML", overwrite_cfg):
             return list(
                 yield_wrong_imports(
@@ -110,7 +110,10 @@ class TestYieldWrongImports:
         ]
 
     def test_include_extra_requirements(self) -> None:
-        """Include extra requirements that are not part of the dependencies in the check."""
+        """Test known_missing.
+
+        Include requirements as known-missing - they should not appear in the output.
+        """
         res = self.fn(known_missing=["missing", "test_1"])
         assert res == ["! missing_class", "! missing_def"]
 
@@ -126,7 +129,7 @@ class TestYieldWrongImports:
         ]
 
     def test_verbose_show_all(self) -> None:
-        """This is the most verbose output possible."""
+        """Test for the most verbose output."""
         assert self.fn(verbose=True, show_all=True) == [
             f"!NA {SRC}:1 missing.bar",
             f"!NA {SRC}:2 missing.foo",
@@ -142,8 +145,10 @@ class TestYieldWrongImports:
     @pytest.mark.parametrize("show_all", [True, False])
     @pytest.mark.parametrize("include_extra", [True, False])
     def test_directory_only_one_use(self, show_all: bool, include_extra: bool) -> None:
-        """Even for multiple files, make sure we only print out one instance of
-        a missing import.
+        """Print out only one instance of a missing import.
+
+        Even for multiple files, make sure we only print out one instance of a
+        missing import.
         """
         res = self.fn(file_names=[DATA], show_all=show_all, include_extra=include_extra)
         assert len(res) == len(set(res))

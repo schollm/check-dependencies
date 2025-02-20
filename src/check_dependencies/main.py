@@ -24,8 +24,9 @@ def yield_wrong_imports(
     file_names: Sequence[str],
     app_cfg: AppConfig,
 ) -> Generator[str, None, int]:
-    """Yield output lines of missing/unused imports (or all
-    imports in case of cfg.show_all).
+    """Yield output lines of missing/unused imports.
+
+    If cfg.show_all is True, all imports are shown.
     """
     used_deps: set[str] = set()
     src_fmt = app_cfg.mk_src_formatter()
@@ -82,6 +83,7 @@ def yield_wrong_imports(
 
 def _collect_files(file_names: Sequence[str]) -> Iterator[Path]:
     """Collect all Python files in a list of files or directories.
+
     Ensure no file is visited more than once.
     """
     visited = set()
@@ -95,7 +97,7 @@ def _collect_files(file_names: Sequence[str]) -> Iterator[Path]:
 
 def _missing_imports_iter(
     file: Path,
-    dependencies: set[str],
+    dependencies: frozenset[str],
 ) -> Iterator[tuple[Dependency, str, ast.stmt]]:
     """Find missing imports in a Python file.
 
@@ -106,8 +108,8 @@ def _missing_imports_iter(
     """
     try:
         parsed = ast.parse(file.read_text(), filename=str(file))
-    except SyntaxError as exc:
-        logger.exception("Could not parse %s: %s", file, exc)
+    except SyntaxError:
+        logger.exception("Could not parse %s", file)
         return
     for module, stmt in _imports_iter(parsed.body):
         pkg_ = pkg(module)

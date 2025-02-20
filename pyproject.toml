@@ -40,19 +40,23 @@ pytest = "^6.2"
 mypy = "^1.10.0"
 ruff = "^0.9.6"
 
-[tool.ruff.lint.per-file-ignores]
-"src/tests/**" = [
-    "S101",  # use of assert
-    "FBT001",  # Boolean-typed positional argument in function definition
-    "D400"   # docstring should end with a period
-]
-
 [tool.ruff]
 exclude =["src/tests/data"]
 
 [tool.ruff.lint]
-select = ["ALL"] # ["F", "E", "W", "C", "I", "N",  "UP", "YTT", "A", "S", ]
+select = ["ALL"]
 ignore = ["COM812", "D213", "D203"]
+
+
+[tool.ruff.lint.per-file-ignores]
+"src/tests/**" = [
+    "S101",  # use of assert
+    "FBT001",  # Boolean-typed positional argument in function definition
+    "FBT002",  # Boolean default positional argument in function definition
+    "PLR0913",  # Too many arguments in function definition (7 > 5)
+    "D400"   # docstring should end with a period
+]
+
 [tool.ruff.lint.flake8-pytest-style]
 parametrize-names-type = "csv"
 

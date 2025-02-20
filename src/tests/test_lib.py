@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+from pathlib import Path
 
 import pytest
 import toml
@@ -41,9 +42,7 @@ class TestPyProjectToml:
         included_dev: bool,
         add_expect: list[str],
     ) -> None:
-        """Test the get_declared_dependencies function without included development
-        dependencies.
-        """
+        """Test get_declared_dependencies function without included development deps."""
         cfg = PyProjectToml(DATA, cfg=toml.load(pyproject), include_dev=included_dev)
         assert set(cfg.dependencies) == {"test_main", "test_1"}.union(add_expect or {})
 
@@ -61,7 +60,7 @@ class TestMkSrcFormatter:
         """If the import is expected, we do not show it."""
         cfg = AppConfig(verbose=verbose, show_all=False)
         fn = cfg.mk_src_formatter()
-        assert not list(fn("src.py", Dependency.OK, "foo", stmt))
+        assert not list(fn(Path("src.py"), Dependency.OK, "foo", stmt))
 
     @pytest.mark.parametrize(
         "verbose, show_all, cause, expected",
@@ -85,7 +84,7 @@ class TestMkSrcFormatter:
         """MkSrcFormatter generic tests."""
         cfg = AppConfig(verbose=verbose, show_all=show_all)
         fn = cfg.mk_src_formatter()
-        assert next(fn("src.py", Dependency(cause), "foo", stmt)) == expected
+        assert next(fn(Path("src.py"), Dependency(cause), "foo", stmt)) == expected
 
     def test_cache(self, stmt: ast.stmt) -> None:
         """Test the cache mechanism for the formatter."""

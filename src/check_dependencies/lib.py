@@ -38,17 +38,18 @@ class AppConfig:
     known_missing: set[str] = frozenset()
 
     def __post_init__(self) -> None:
+        """Dataclass post init method to ensure sets are frozen."""
         self.known_extra = frozenset(filter(None, self.known_extra or []))
         self.known_missing = frozenset(filter(None, self.known_missing or []))
 
     def mk_src_formatter(
         self,
-    ) -> Callable[[str, Dependency, str, ast.stmt | None], str | None]:
+    ) -> Callable[[Path | str, Dependency, str, ast.stmt | None], Iterator[str]]:
         """Formatter for missing or used dependencies."""
         cache: set[str] = set()
 
         def src_cause_formatter(
-            src_pth: Path,
+            src_pth: Path | str,
             cause: Dependency,
             module: str,
             stmt: ast.stmt | None,
@@ -72,7 +73,7 @@ class AppConfig:
 
 @dataclass(frozen=True)
 class PyProjectToml:
-    """Get project specific options (dependencies, config) from a pyproject.toml file."""
+    """Project specific options (dependencies, config) from a pyproject.toml file."""
 
     file: Path
     cfg: dict[str, Any]
@@ -101,9 +102,7 @@ class PyProjectToml:
 
     @property
     def known_missing(self) -> frozenset[str]:
-        """Dependencies that are known to be used in application but not declared in
-        requirements.
-        """
+        """Known to be used in application but not declared in requirements."""
         # Add project name
         pep631_name = pkg(_nested_item(self.cfg, "project.name", str) or "")
         poetry_name = pkg(_nested_item(self.cfg, "tool.poetry.name", str) or "")
@@ -175,7 +174,8 @@ def _nested_item(obj: dict[str, Any], keys: str, class_: type[T]) -> T:
             return class_()
         obj = obj[a]
     if not isinstance(obj, class_):
-        raise TypeError(f"Expected {class_} but got {type(obj)}")
+        msg = f"Expected {class_} but got {type(obj)}"
+        raise TypeError(msg)
     return cast(T, obj)
 
 
@@ -183,6 +183,5 @@ def _get_pyproject_path(path: Path) -> Path:
     for p in chain([path], path.resolve().parents):
         if (p / _PYPROJECT_TOML).exists():
             return p / _PYPROJECT_TOML
-    raise FileNotFoundError(
-        f"Could not find {_PYPROJECT_TOML} file within path hierarchy",
-    )
+    msg = f"Could not find {_PYPROJECT_TOML} file within path hierarchy"
+    raise FileNotFoundError(msg)

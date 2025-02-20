@@ -8,7 +8,7 @@ from check_dependencies.lib import AppConfig
 from check_dependencies.main import yield_wrong_imports
 
 
-def main():
+def main() -> None:
     """CLI entry point for check_dependencies."""
     logging.basicConfig(
         level=logging.INFO,
@@ -26,7 +26,10 @@ def main():
     )
 
     parser.add_argument(
-        "file_name", type=str, nargs="+", help="Python Source file to analyse"
+        "file_name",
+        type=str,
+        nargs="+",
+        help="Python Source file to analyse",
     )
     parser.add_argument(
         "--include-dev",
@@ -73,7 +76,7 @@ def main():
     wrong_import_lines = yield_wrong_imports(args.file_name, cfg)
     try:
         while True:
-            print(next(wrong_import_lines))
+            print(next(wrong_import_lines))  # noqa: T201
     except StopIteration as ex:  # Return value is the exit status
         sys.exit(ex.value)
 

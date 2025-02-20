@@ -26,7 +26,7 @@ def main():
     )
 
     parser.add_argument(
-        "file_name", type=str, nargs="+", help="Python Source file to analyse"
+        "file_name", type=str, nargs="+", help="Python Source file to analyse",
     )
     parser.add_argument(
         "--include-dev",

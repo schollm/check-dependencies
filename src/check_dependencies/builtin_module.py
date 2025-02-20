@@ -325,5 +325,5 @@ zipapp
 zipfile
 zipimport
 zlib
-zoneinfo""".split()
+zoneinfo""".split(),
     )

@@ -18,17 +18,16 @@ ERR_NO_PYPROJECT = 8
 
 
 def yield_wrong_imports(
-    file_names: Sequence[str], app_cfg: AppConfig
+    file_names: Sequence[str], app_cfg: AppConfig,
 ) -> Generator[str, None, int]:
-    """
-    Yield output lines of missing/unused imports (or all
+    """Yield output lines of missing/unused imports (or all
     imports in case of cfg.show_all)
     """
     used_deps: set[str] = set()
     src_fmt = app_cfg.mk_src_formatter()
     try:
         pyproject_candidate = Path(
-            commonpath(Path(p).expanduser().resolve() for p in file_names)
+            commonpath(Path(p).expanduser().resolve() for p in file_names),
         )
     except ValueError as exc:
         logger.fatal("Could not find pyproject.toml in common path: %s", exc)
@@ -42,12 +41,12 @@ def yield_wrong_imports(
         BUILTINS,  # builtins
     )
     allowed_dependencies = frozenset().union(
-        expected_dependencies, app_cfg.known_missing, src_cfg.known_missing
+        expected_dependencies, app_cfg.known_missing, src_cfg.known_missing,
     )
 
     for src_pth in _collect_files(file_names):
         for cause, module, stmt in _missing_imports_iter(
-            src_pth, dependencies=allowed_dependencies
+            src_pth, dependencies=allowed_dependencies,
         ):
             if cause != Dependency.OK:
                 exit_status |= ERR_MISSING_DEPENDENCY
@@ -58,8 +57,8 @@ def yield_wrong_imports(
         msg
         for dep in sorted(
             src_cfg.dependencies.difference(
-                used_deps, app_cfg.known_extra, src_cfg.known_extra
-            )
+                used_deps, app_cfg.known_extra, src_cfg.known_extra,
+            ),
         )
         for msg in app_cfg.unused_fmt(dep)
     ]:
@@ -73,8 +72,7 @@ def yield_wrong_imports(
 
 
 def _collect_files(file_names: Sequence[str]) -> Iterator[Path]:
-    """
-    Collect all Python files in a list of files or directories.
+    """Collect all Python files in a list of files or directories.
     Ensure no file is visited more than once
     """
     visited = set()
@@ -87,10 +85,9 @@ def _collect_files(file_names: Sequence[str]) -> Iterator[Path]:
 
 
 def _missing_imports_iter(
-    file: Path, dependencies: set[str]
+    file: Path, dependencies: set[str],
 ) -> Iterator[tuple[Dependency, str, ast.stmt]]:
-    """
-    Find missing imports in a Python file
+    """Find missing imports in a Python file
     :param file: Pyton file to analyse
     :param dependencies: Declared dependencies from pyproject file
     :param seen: Cache of seen packages - this is changed during the iteration

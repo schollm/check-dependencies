@@ -1,5 +1,4 @@
-"""
-Library for check_dependencies
+"""Library for check_dependencies
 """
 
 from __future__ import annotations
@@ -48,17 +47,16 @@ class AppConfig:
         cache: set[str] = set()
 
         def src_cause_formatter(
-            src_pth: Path, cause: Dependency, module: str, stmt: ast.stmt | None
+            src_pth: Path, cause: Dependency, module: str, stmt: ast.stmt | None,
         ) -> Iterator[str]:
             if self.verbose:
                 location = f"{src_pth}:{getattr(stmt, 'lineno', -1)}"
                 if cause == Dependency.NA or self.show_all:
                     yield f"{cause.value}{cause.name} {location} {module}"
-            else:
-                if (pkg_ := pkg(module)) not in cache:
-                    cache.add(pkg_)
-                    if cause == Dependency.NA or self.show_all:
-                        yield f"{cause.value} {pkg_}"
+            elif (pkg_ := pkg(module)) not in cache:
+                cache.add(pkg_)
+                if cause == Dependency.NA or self.show_all:
+                    yield f"{cause.value} {pkg_}"
 
         return src_cause_formatter
 
@@ -70,8 +68,7 @@ class AppConfig:
 
 @dataclass(frozen=True)
 class PyProjectToml:
-    """
-    Get project specific options (dependencies, config) from a pyproject.toml file.
+    """Get project specific options (dependencies, config) from a pyproject.toml file.
     """
 
     file: Path
@@ -101,8 +98,7 @@ class PyProjectToml:
 
     @property
     def known_missing(self) -> frozenset[str]:
-        """
-        Dependencies that are known to be used in application but not declared in
+        """Dependencies that are known to be used in application but not declared in
         requirements
         """
         # Add project name
@@ -115,12 +111,12 @@ class PyProjectToml:
                     *(pep631_name, poetry_name),
                     *_nested_item(self.cfg, "tool.check-dependencies.known-missing"),
                 ],
-            )
+            ),
         )
 
     @property
     def known_extra(self) -> frozenset[str]:
-        """dependencies that are known to be unused in application"""
+        """Dependencies that are known to be unused in application"""
         return frozenset(_nested_item(self.cfg, "tool.check-dependencies.known-extra"))
 
     def _poetry_dependencies(self) -> frozenset[str]:
@@ -137,13 +133,13 @@ class PyProjectToml:
 
         def canonical(name: str) -> str:
             return "".join(takewhile(lambda x: x.isalnum() or x in "-_", name)).replace(
-                "-", "_"
+                "-", "_",
             )
 
         raw_deps = _nested_item(self.cfg, "project.dependencies")
         deps = {canonical(raw_dep) for raw_dep in raw_deps}
         for _, raw_extras in _nested_item(
-            self.cfg, "project.optional-dependencies"
+            self.cfg, "project.optional-dependencies",
         ).items():
             deps |= {canonical(raw_extra) for raw_extra in raw_extras}
         return frozenset(deps)
@@ -166,5 +162,5 @@ def _get_pyproject_path(path: Path):
         if (p / _PYPROJECT_TOML).exists():
             return p / _PYPROJECT_TOML
     raise FileNotFoundError(
-        f"Could not find {_PYPROJECT_TOML} file within path hierarchy"
+        f"Could not find {_PYPROJECT_TOML} file within path hierarchy",
     )

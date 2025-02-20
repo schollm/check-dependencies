@@ -1,14 +1,13 @@
 """Common fixtures and constans for tests."""
 
+import contextlib
 from pathlib import Path
 
 import pytest
 
 DATA = Path(__file__).parent / "data"
-try:
-    DATA = DATA.resolve().relative_to(Path().resolve())
-except ValueError:
-    pass
+with contextlib.suppress(ValueError):
+    DATA = DATA.resolve().relative_to(Path.cwd())
 
 SRC = (DATA / "src.py").as_posix()
 PEP631 = DATA / "pyproject_pep631.toml"

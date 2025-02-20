@@ -4,12 +4,15 @@ from __future__ import annotations
 
 import ast
 import logging
-from collections.abc import Generator, Iterator, Sequence
 from os.path import commonpath
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from check_dependencies.builtin_module import BUILTINS
 from check_dependencies.lib import AppConfig, Dependency, PyProjectToml, pkg
+
+if TYPE_CHECKING:
+    from collections.abc import Generator, Iterator, Sequence
 
 logger = logging.getLogger("check_dependencies")
 ERR_MISSING_DEPENDENCY = 2
@@ -104,7 +107,7 @@ def _missing_imports_iter(
     try:
         parsed = ast.parse(file.read_text(), filename=str(file))
     except SyntaxError as exc:
-        logger.error("Could not parse %s: %s", file, exc)
+        logger.exception("Could not parse %s: %s", file, exc)
         return
     for module, stmt in _imports_iter(parsed.body):
         pkg_ = pkg(module)

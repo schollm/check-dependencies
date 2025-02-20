@@ -2,16 +2,18 @@
 
 from __future__ import annotations
 
-import ast
 import logging
-from collections.abc import Iterator
 from dataclasses import dataclass
 from enum import Enum
 from itertools import chain, takewhile
 from pathlib import Path
-from typing import Any, Callable, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Callable, TypeVar, cast
 
 import toml
+
+if TYPE_CHECKING:
+    import ast
+    from collections.abc import Iterator
 
 logger = logging.getLogger("check_dependencies.lib")
 _PYPROJECT_TOML = Path("pyproject.toml")
@@ -149,11 +151,11 @@ class PyProjectToml:
 
         raw_deps = _nested_item(self.cfg, "project.dependencies", list)
         deps = {canonical(raw_dep) for raw_dep in raw_deps}
-        for _, raw_extras in _nested_item(
+        for raw_extras in _nested_item(
             self.cfg,
             "project.optional-dependencies",
             dict,
-        ).items():
+        ).values():
             deps |= {canonical(raw_extra) for raw_extra in raw_extras}
         return frozenset(deps)
 

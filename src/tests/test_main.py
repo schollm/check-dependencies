@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import ast
-from collections.abc import Sequence
 from pathlib import Path
 from textwrap import dedent
+from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 import pytest
@@ -17,6 +17,9 @@ from check_dependencies.main import (
     yield_wrong_imports,
 )
 from tests.conftest import DATA, POETRY, PYPROJECT_CFG, SRC
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 class TestYieldWrongImports:
@@ -41,8 +44,8 @@ class TestYieldWrongImports:
                         include_dev=include_extra,
                         verbose=verbose,
                         show_all=show_all,
-                        known_extra=known_extra,
-                        known_missing=known_missing,
+                        known_extra=set(known_extra),
+                        known_missing=set(known_missing),
                     ),
                 ),
             )
@@ -114,26 +117,26 @@ class TestYieldWrongImports:
     def test_verbose(self) -> None:
         """Verbose output should include the file and line number of the import."""
         assert self.fn(verbose=True) == [
-            f"!NA {SRC}:2 missing.bar",
-            f"!NA {SRC}:3 missing.foo",
-            f"!NA {SRC}:6 missing",
-            f"!NA {SRC}:12 missing_class",
-            f"!NA {SRC}:16 missing",
-            f"!NA {SRC}:17 missing_def",
+            f"!NA {SRC}:1 missing.bar",
+            f"!NA {SRC}:2 missing.foo",
+            f"!NA {SRC}:5 missing",
+            f"!NA {SRC}:11 missing_class",
+            f"!NA {SRC}:15 missing",
+            f"!NA {SRC}:16 missing_def",
         ]
 
     def test_verbose_show_all(self) -> None:
         """This is the most verbose output possible."""
         assert self.fn(verbose=True, show_all=True) == [
-            f"!NA {SRC}:2 missing.bar",
-            f"!NA {SRC}:3 missing.foo",
-            f" OK {SRC}:4 test_1",
-            f" OK {SRC}:5 test_main",
-            f"!NA {SRC}:6 missing",
-            f" OK {SRC}:8 check_dependencies",
-            f"!NA {SRC}:12 missing_class",
-            f"!NA {SRC}:16 missing",
-            f"!NA {SRC}:17 missing_def",
+            f"!NA {SRC}:1 missing.bar",
+            f"!NA {SRC}:2 missing.foo",
+            f" OK {SRC}:3 test_1",
+            f" OK {SRC}:4 test_main",
+            f"!NA {SRC}:5 missing",
+            f" OK {SRC}:7 check_dependencies",
+            f"!NA {SRC}:11 missing_class",
+            f"!NA {SRC}:15 missing",
+            f"!NA {SRC}:16 missing_def",
         ]
 
     @pytest.mark.parametrize("show_all", [True, False])

@@ -1,4 +1,4 @@
-"""A list of all builtin modules"""
+"""A list of all builtin modules."""
 
 from __future__ import annotations
 

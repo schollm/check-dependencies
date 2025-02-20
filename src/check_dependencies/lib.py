@@ -1,5 +1,4 @@
-"""Library for check_dependencies
-"""
+"""Library for check_dependencies."""
 
 from __future__ import annotations
 
@@ -10,7 +9,7 @@ from dataclasses import dataclass
 from enum import Enum
 from itertools import chain, takewhile
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, TypeVar, cast
 
 import toml
 
@@ -19,7 +18,7 @@ _PYPROJECT_TOML = Path("pyproject.toml")
 
 
 class Dependency(Enum):
-    """Possible depdendency state"""
+    """Possible dependency state."""
 
     NA = "!"  # Not Available
     EXTRA = "+"  # Extra dependency in config file
@@ -28,7 +27,7 @@ class Dependency(Enum):
 
 @dataclass()
 class AppConfig:
-    """Application config and helper functions"""
+    """Application config and helper functions."""
 
     include_dev: bool = False
     verbose: bool = False
@@ -43,11 +42,14 @@ class AppConfig:
     def mk_src_formatter(
         self,
     ) -> Callable[[str, Dependency, str, ast.stmt | None], str | None]:
-        """Formatter for missing or used dependencies"""
+        """Formatter for missing or used dependencies."""
         cache: set[str] = set()
 
         def src_cause_formatter(
-            src_pth: Path, cause: Dependency, module: str, stmt: ast.stmt | None,
+            src_pth: Path,
+            cause: Dependency,
+            module: str,
+            stmt: ast.stmt | None,
         ) -> Iterator[str]:
             if self.verbose:
                 location = f"{src_pth}:{getattr(stmt, 'lineno', -1)}"
@@ -61,22 +63,21 @@ class AppConfig:
         return src_cause_formatter
 
     def unused_fmt(self, module: str) -> Iterator[str]:
-        """Formatter for unused but declared dependencies"""
+        """Formatter for unused but declared dependencies."""
         info = Dependency.EXTRA.name if self.verbose else ""
         yield f"{Dependency.EXTRA.value}{info} {module}"
 
 
 @dataclass(frozen=True)
 class PyProjectToml:
-    """Get project specific options (dependencies, config) from a pyproject.toml file.
-    """
+    """Get project specific options (dependencies, config) from a pyproject.toml file."""
 
     file: Path
     cfg: dict[str, Any]
     include_dev: bool = False
 
     @classmethod
-    def from_pyproject(cls, file: Path, app_cfg: AppConfig):
+    def from_pyproject(cls, file: Path, app_cfg: AppConfig) -> PyProjectToml:
         """Create a PyProjectToml instance from a pyproject.toml file."""
         pyproject_file = _get_pyproject_path(file)
         return cls(
@@ -99,65 +100,84 @@ class PyProjectToml:
     @property
     def known_missing(self) -> frozenset[str]:
         """Dependencies that are known to be used in application but not declared in
-        requirements
+        requirements.
         """
         # Add project name
-        pep631_name = pkg(_nested_item(self.cfg, "project.name") or "")
-        poetry_name = pkg(_nested_item(self.cfg, "tool.poetry.name") or "")
+        pep631_name = pkg(_nested_item(self.cfg, "project.name", str) or "")
+        poetry_name = pkg(_nested_item(self.cfg, "tool.poetry.name", str) or "")
         return frozenset(
             filter(
-                None,
+                lambda x: x,
                 [
-                    *(pep631_name, poetry_name),
-                    *_nested_item(self.cfg, "tool.check-dependencies.known-missing"),
+                    pep631_name,
+                    poetry_name,
+                    *_nested_item(
+                        self.cfg,
+                        "tool.check-dependencies.known-missing",
+                        list,
+                    ),
                 ],
             ),
         )
 
     @property
     def known_extra(self) -> frozenset[str]:
-        """Dependencies that are known to be unused in application"""
-        return frozenset(_nested_item(self.cfg, "tool.check-dependencies.known-extra"))
+        """Dependencies that are known to be unused in application."""
+        return frozenset(
+            _nested_item(self.cfg, "tool.check-dependencies.known-extra", list),
+        )
 
     def _poetry_dependencies(self) -> frozenset[str]:
-        """Get dependencies from a poetry-style pyproject.toml file"""
-        deps = set(_nested_item(self.cfg, "tool.poetry.dependencies"))
+        """Get dependencies from a poetry-style pyproject.toml file."""
+        deps = set(_nested_item(self.cfg, "tool.poetry.dependencies", dict))
         if self.include_dev:
-            deps |= set(_nested_item(self.cfg, "tool.poetry.group.dev.dependencies"))
-            deps |= set(_nested_item(self.cfg, "tool.poetry.dev-dependencies"))
+            deps |= set(
+                _nested_item(self.cfg, "tool.poetry.group.dev.dependencies", dict),
+            )
+            deps |= set(_nested_item(self.cfg, "tool.poetry.dev-dependencies", dict))
 
         return frozenset(x for x in deps) - {"python"}
 
     def _pep631_dependencies(self) -> frozenset[str]:
-        """Get dependencies from a PEP 631-style pyproject.toml file"""
+        """Get dependencies from a PEP 631-style pyproject.toml file."""
 
         def canonical(name: str) -> str:
             return "".join(takewhile(lambda x: x.isalnum() or x in "-_", name)).replace(
-                "-", "_",
+                "-",
+                "_",
             )
 
-        raw_deps = _nested_item(self.cfg, "project.dependencies")
+        raw_deps = _nested_item(self.cfg, "project.dependencies", list)
         deps = {canonical(raw_dep) for raw_dep in raw_deps}
         for _, raw_extras in _nested_item(
-            self.cfg, "project.optional-dependencies",
+            self.cfg,
+            "project.optional-dependencies",
+            dict,
         ).items():
             deps |= {canonical(raw_extra) for raw_extra in raw_extras}
         return frozenset(deps)
 
 
 def pkg(module: str) -> str:
-    """Get the installable module name from an import or package name statement"""
+    """Get the installable module name from an import or package name statement."""
     return module.split(".")[0].replace("-", "_")
 
 
-def _nested_item(obj: dict[str, Any], keys: str) -> Any:
-    """Get items from a nested dictionary where the keys are dot-separated"""
+T = TypeVar("T")
+
+
+def _nested_item(obj: dict[str, Any], keys: str, class_: type[T]) -> T:
+    """Get items from a nested dictionary where the keys are dot-separated."""
     for a in keys.split("."):
-        obj = obj.get(a, {})
-    return obj
+        if a not in obj:
+            return class_()
+        obj = obj[a]
+    if not isinstance(obj, class_):
+        raise TypeError(f"Expected {class_} but got {type(obj)}")
+    return cast(T, obj)
 
 
-def _get_pyproject_path(path: Path):
+def _get_pyproject_path(path: Path) -> Path:
     for p in chain([path], path.resolve().parents):
         if (p / _PYPROJECT_TOML).exists():
             return p / _PYPROJECT_TOML

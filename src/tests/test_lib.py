@@ -6,10 +6,14 @@ import ast
 from pathlib import Path
 
 import pytest
-import toml
 
 from check_dependencies.lib import AppConfig, Dependency, PyProjectToml
 from tests.conftest import DATA, PEP631, POETRY
+
+try:
+    import tomllib
+except ImportError:
+    import toml as tomllib
 
 
 class TestPyProjectToml:
@@ -43,7 +47,11 @@ class TestPyProjectToml:
         add_expect: list[str],
     ) -> None:
         """Test get_declared_dependencies function without included development deps."""
-        cfg = PyProjectToml(DATA, cfg=toml.load(pyproject), include_dev=included_dev)
+        cfg = PyProjectToml(
+            DATA,
+            cfg=tomllib.loads(pyproject.read_text("utf-8")),
+            include_dev=included_dev,
+        )
         assert set(cfg.dependencies) == {"test_main", "test_1"}.union(add_expect or {})
 
 

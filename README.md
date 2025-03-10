@@ -1,7 +1,9 @@
 # Check Dependencies
 Check all imports from python files and compares them against the declared imports of a pyproject dependency list of expected imports. 
+
 It can be used as a stand-alone or as part of a CI/CD to check if an application has all the necessary, but no superfluous imports.
 
+This is a pure-Python zero-dependency (Up until Python 3.11 one, toml) package.
 ## Usage
 ```commandline
 usage: check-dependencies [-h] [--include-extra] [--verbose] [--all] [--missing MISSING] [--extra EXTRA] file_name [file_name ...]

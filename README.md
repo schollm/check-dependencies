@@ -117,12 +117,10 @@ a change. Currently, the only dependencies is `toml` to support Python 3.10 and 
 
 ### Coding Standards
 
-| **Type**      | Package  | Comment                         |
-|---------------|----------|---------------------------------|
-| **Linter**    | `black`  | Also for auto-formatted modules |
-| **Logging**   | `logger` | Minimize additional packages    |
-| **Packaging** | `poetry` |                                 |
-| **Tests**     | `pytest` |                                 |
-| **Typing**    | `mypy`   | Type all methods                |
-| **Linting**   | `flake8` |                 |
-| **Imports**   | `isort`  |                                 |
+| **Type**       | Package  | Comment                      |
+|----------------|----------|------------------------------|
+| **Logging**    | `logger` | Minimize additional packages |
+| **Packaging**  | `uv`     |                              |
+| **Tests**      | `pytest` |                              |
+| **Typing**     | `mypy`   | Type all methods             |
+| **Linting**    | `ruff`   | Also used for formatting     |

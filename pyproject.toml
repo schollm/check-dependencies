@@ -1,14 +1,18 @@
-[tool.poetry]
+[project]
+authors = [
+    {name = "Micha Scholl", email = "schollm-git@gmx.com"},
+]
+license = {text = "MIT"}
+requires-python = ">=3.8"
+dependencies = [
+    'toml; python_version < "3.11"',
+]
 name = "check-dependencies"
 version = "0.11.1"
-authors = ["Micha Scholl <schollm-git@gmx.com>"]
 readme = "README.md"
 description = "Check dependencies of a python project against pyproject.toml requirements"
-homepage = "https://github.com/schollm/check-dependencies"
-repository = "https://github.com/schollm/check-dependencies"
-documentation = "https://github.com/schollm/check-dependencies/blob/main/README.md"
-license = "MIT"
 keywords = ["packaging", "development", "requirements", "dependencies"]
+
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -25,21 +29,6 @@ classifiers = [
     "Topic :: Software Development :: Testing",
     "Topic :: Utilities",
 ]
-[tool.poetry.scripts]
-check-dependencies = 'check_dependencies.__main__:main'
-
-[tool.poetry.urls]
-"Bug Tracker" = "https://github.com/schollm/check-dependencies/issues"
-
-[tool.poetry.dependencies]
-python = ">=3.8"
-toml = "*"
-
-[tool.poetry.group.dev.dependencies]
-pytest = "^6.2"
-mypy = "^1.10.0"
-ruff = "^0.9.6"
-types-toml = "^0.10.8.20240310"
 
 [tool.ruff]
 exclude =["src/tests/data"]
@@ -61,6 +50,26 @@ ignore = ["COM812", "D213", "D203"]
 [tool.ruff.lint.flake8-pytest-style]
 parametrize-names-type = "csv"
 
+[tool.pdm.build]
+includes = []
+
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[project.urls]
+"Bug Tracker" = "https://github.com/schollm/check-dependencies/issues"
+homepage = "https://github.com/schollm/check-dependencies"
+repository = "https://github.com/schollm/check-dependencies"
+documentation = "https://github.com/schollm/check-dependencies/blob/main/README.md"
+
+[project.scripts]
+check-dependencies = "check_dependencies.__main__:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=6.2",
+    "mypy>=1.10.0",
+    "ruff>=0.9.6",
+    "types-toml>=0.10.8.20240310",
+]

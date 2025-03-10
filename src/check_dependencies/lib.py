@@ -9,7 +9,10 @@ from itertools import chain, takewhile
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, TypeVar, cast
 
-import toml
+try:
+    import tomllib
+except ImportError:
+    import toml as tomllib
 
 if TYPE_CHECKING:
     import ast
@@ -86,7 +89,7 @@ class PyProjectToml:
         pyproject_file = _get_pyproject_path(file)
         return cls(
             file=pyproject_file,
-            cfg=toml.load(pyproject_file),
+            cfg=tomllib.loads(pyproject_file.read_text("utf-8")),
             include_dev=app_cfg.include_dev,
         )
 

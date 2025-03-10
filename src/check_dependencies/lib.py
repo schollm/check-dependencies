@@ -56,7 +56,7 @@ class AppConfig:
             stmt: ast.stmt | None,
         ) -> Iterator[str]:
             if self.verbose:
-                location = f"{src_pth}:{getattr(stmt, 'lineno', -1)}"
+                location = f"{Path(src_pth).as_posix()}:{getattr(stmt, 'lineno', -1)}"
                 if cause == Dependency.NA or self.show_all:
                     yield f"{cause.value}{cause.name} {location} {module}"
             elif (pkg_ := pkg(module)) not in cache:

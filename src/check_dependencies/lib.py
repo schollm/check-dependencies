@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any, Callable, TypeVar, cast
 try:
     import tomllib
 except ImportError:
-    import toml as tomllib
+    import toml as tomllib  # type: ignore[no-redef]
 
 if TYPE_CHECKING:
     import ast
@@ -180,7 +180,7 @@ def _nested_item(obj: dict[str, Any], keys: str, class_: type[T]) -> T:
     if not isinstance(obj, class_):
         msg = f"Expected {class_} but got {type(obj)}"
         raise TypeError(msg)
-    return cast(T, obj)
+    return cast("T", obj)
 
 
 def _get_pyproject_path(path: Path) -> Path:

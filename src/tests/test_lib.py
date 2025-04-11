@@ -13,7 +13,7 @@ from tests.conftest import DATA, PEP631, POETRY
 try:
     import tomllib
 except ImportError:
-    import toml as tomllib
+    import toml as tomllib  # type: ignore[no-redef]
 
 
 class TestPyProjectToml:

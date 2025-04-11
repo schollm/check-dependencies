@@ -5,7 +5,7 @@ It can be used as a stand-alone or as part of a CI/CD to check if an application
 
 This is a pure-Python zero-dependency (Up until Python 3.11 one, toml) package.
 ## Usage
-```commandline
+```text
 usage: check-dependencies [-h] [--include-extra] [--verbose] [--all] [--missing MISSING] [--extra EXTRA] file_name [file_name ...]
 
 Find undeclared and unused (or all) imports in Python files
@@ -92,12 +92,12 @@ ignore extra requirements that are not used in the application.
 ```toml
 [tool.check_dependencies]
 known-missing = [
-  undeclared_package,
-  another_package
+  "undeclared_package",
+  "another_package"
 ]
 known-extra = [
-  package_as_extra_for_another_package,
-  yet_another_package
+  "package_as_extra_for_another_package",
+  "yet_another_package"
 ]
 ```
 

@@ -53,14 +53,15 @@ def main() -> None:
         "--missing",
         type=str,
         help="Comma seperated list of requirements known to be missing."
-        " Assume they are part of the requirements",
+        " Assume they are part of the requirements.",
         default="",
     )
     parser.add_argument(
         "--extra",
         type=str,
         help="Comma seperated list of requirements known to not be imported."
-        " Assume they are not part of the requirements",
+        " Assume they are not part of the requirements. This can be plugins or similar"
+        "that affect the package but are not imported explicitly.",
         default="",
     )
     args = parser.parse_args()

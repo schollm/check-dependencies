@@ -18,8 +18,10 @@ optional arguments:
   --include-extra    Include dev dependencies
   --verbose          Show every import of a package
   --all              Show all imports (including correct ones)
-  --missing MISSING  Comma seperated list of requirements known to be missing. Assume they are part of the requirements
-  --extra EXTRA      Comma seperated list of requirements known to not be imported. Assume they are not part of the requirements```
+  --missing MISSING  Comma seperated list of requirements known to be missing. 
+                     Assume they are part of the requirements.
+  --extra EXTRA      Comma seperated list of requirements known to not be imported.
+                     Assume they are not part of the requirements.
 ```
 
 ### Output
@@ -39,8 +41,8 @@ where it is imported.
 
 ### Examples
 #### Basic usage
-```commandline
-> check-dependencies  project/src/
+```text
+check-dependencies  project/src/
   pandas
 ! matplotlib
   numpy
@@ -49,8 +51,8 @@ where it is imported.
 
 #### Output all dependencies
 Output all dependencies, including the correct ones.
-```commandline
-> check-dependencies --all project/src/
+```text
+check-dependencies --all project/src/
   pandas
 ! matplotlib
   numpy
@@ -58,8 +60,8 @@ Output all dependencies, including the correct ones.
 ```
 #### Verbose output
 Output each erroneous import and extra dependency with cause, file name and line number.
-```commandline
-> check-dependencies --verbose project/src/
+```text
+check-dependencies --verbose project/src/
 !NA matplotlib project/src/main.py:4
 +EXTRA project/pyproject.toml requests
 ```
@@ -67,7 +69,7 @@ Output each erroneous import and extra dependency with cause, file name and line
 #### Combine verbose and all
 Output all imports, including the correct ones with file name and line number.
 ```commandline
-> check-dependencies --verbose --all project/src/
+check-dependencies --verbose --all project/src/
  OK project/src/data.py:5 pandas
  OK project/src/main.py:3 pandas
  OK project/src/plotting.py:4 pandas

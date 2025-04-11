@@ -5,7 +5,7 @@ It can be used as a stand-alone or as part of a CI/CD to check if an application
 
 This is a pure-Python zero-dependency (Up until Python 3.11 one, toml) package.
 ## Usage
-```commandline
+```text
 usage: check-dependencies [-h] [--include-extra] [--verbose] [--all] [--missing MISSING] [--extra EXTRA] file_name [file_name ...]
 
 Find undeclared and unused (or all) imports in Python files
@@ -18,8 +18,10 @@ optional arguments:
   --include-extra    Include dev dependencies
   --verbose          Show every import of a package
   --all              Show all imports (including correct ones)
-  --missing MISSING  Comma seperated list of requirements known to be missing. Assume they are part of the requirements
-  --extra EXTRA      Comma seperated list of requirements known to not be imported. Assume they are not part of the requirements```
+  --missing MISSING  Comma seperated list of requirements known to be missing. 
+                     Assume they are part of the requirements.
+  --extra EXTRA      Comma seperated list of requirements known to not be imported.
+                     Assume they are not part of the requirements.
 ```
 
 ### Output
@@ -39,8 +41,8 @@ where it is imported.
 
 ### Examples
 #### Basic usage
-```commandline
-> check-dependencies  project/src/
+```text
+check-dependencies  project/src/
   pandas
 ! matplotlib
   numpy
@@ -49,8 +51,8 @@ where it is imported.
 
 #### Output all dependencies
 Output all dependencies, including the correct ones.
-```commandline
-> check-dependencies --all project/src/
+```text
+check-dependencies --all project/src/
   pandas
 ! matplotlib
   numpy
@@ -58,8 +60,8 @@ Output all dependencies, including the correct ones.
 ```
 #### Verbose output
 Output each erroneous import and extra dependency with cause, file name and line number.
-```commandline
-> check-dependencies --verbose project/src/
+```text
+check-dependencies --verbose project/src/
 !NA matplotlib project/src/main.py:4
 +EXTRA project/pyproject.toml requests
 ```
@@ -67,7 +69,7 @@ Output each erroneous import and extra dependency with cause, file name and line
 #### Combine verbose and all
 Output all imports, including the correct ones with file name and line number.
 ```commandline
-> check-dependencies --verbose --all project/src/
+check-dependencies --verbose --all project/src/
  OK project/src/data.py:5 pandas
  OK project/src/main.py:3 pandas
  OK project/src/plotting.py:4 pandas
@@ -90,12 +92,12 @@ ignore extra requirements that are not used in the application.
 ```toml
 [tool.check_dependencies]
 known-missing = [
-  undeclared_package,
-  another_package
+  "undeclared_package",
+  "another_package"
 ]
 known-extra = [
-  package_as_extra_for_another_package,
-  yet_another_package
+  "package_as_extra_for_another_package",
+  "yet_another_package"
 ]
 ```
 

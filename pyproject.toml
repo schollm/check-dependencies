@@ -9,7 +9,7 @@ dependencies = [
     "types-toml>=0.10.8.20240310",
 ]
 name = "check-dependencies"
-version = "0.12.3"
+version = "0.12.4"
 readme = "README.md"
 description = "Check dependencies of a python project against pyproject.toml requirements"
 keywords = ["packaging", "development", "requirements", "dependencies"]

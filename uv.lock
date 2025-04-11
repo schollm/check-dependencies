@@ -12,7 +12,6 @@ version = "0.12.5"
 source = { editable = "." }
 dependencies = [
     { name = "toml", marker = "python_full_version < '3.11'" },
-    { name = "types-toml" },
 ]
 
 [package.dev-dependencies]
@@ -25,10 +24,7 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [
-    { name = "toml", marker = "python_full_version < '3.11'" },
-    { name = "types-toml", specifier = ">=0.10.8.20240310" },
-]
+requires-dist = [{ name = "toml", marker = "python_full_version < '3.11'" }]
 
 [package.metadata.requires-dev]
 dev = [

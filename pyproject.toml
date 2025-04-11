@@ -6,6 +6,7 @@ license = {text = "MIT"}
 requires-python = ">=3.8"
 dependencies = [
     'toml; python_version < "3.11"',
+    "types-toml>=0.10.8.20240310",
 ]
 name = "check-dependencies"
 version = "0.12.2"

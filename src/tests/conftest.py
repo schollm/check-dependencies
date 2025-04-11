@@ -20,10 +20,10 @@ PYPROJECT_CFG = DATA / "pyproject_cfg.toml"
 @pytest.fixture(params=[PEP631, POETRY])
 def pyproject(request: pytest.FixtureRequest) -> Path:
     """Fixture for testing pyproject.toml files."""
-    return request.param  # type: ignore[attr-defined]
+    return request.param  # type: ignore[no-any-return]
 
 
 @pytest.fixture(params=[PEP631_EXTRA, POETRY_EXTRA])
 def pyproject_extra(request: pytest.FixtureRequest) -> Path:
     """Fixture for testing extra requirements."""
-    return request.param  # type: ignore[attr-defined]
+    return request.param  # type: ignore[no-any-return]

@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from check_dependencies.lib import AppConfig, Dependency, PyProjectToml
-from tests.conftest import DATA, PEP631, POETRY
+from check_dependencies.lib import AppConfig, Dependency, PyProjectToml, _nested_item
+from tests.conftest import DATA, PEP631, POETRY, PYPROJECT_EMPTY
 
 try:
     import tomllib
@@ -53,6 +53,16 @@ class TestPyProjectToml:
             include_dev=included_dev,
         )
         assert set(cfg.dependencies) == {"test_main", "test_1"}.union(add_expect or {})
+
+    def test_unsupported_dependencies(self, caplog: pytest.LogCaptureFixture) -> None:
+        """Test unsupported dependencies in pyproject.toml."""
+        cfg = PyProjectToml(
+            PYPROJECT_EMPTY,
+            cfg=tomllib.loads(PYPROJECT_EMPTY.read_text("utf-8")),
+            include_dev=False,
+        )
+        assert set(cfg.dependencies) == set()
+        assert "No dependencies found in" in caplog.text
 
 
 class TestMkSrcFormatter:
@@ -100,3 +110,23 @@ class TestMkSrcFormatter:
         fn = cfg.mk_src_formatter()
         assert list(fn("src.py", Dependency.NA, "foo", stmt))
         assert not list(fn("src.py", Dependency.NA, "foo", stmt))
+
+
+class TestNestedItem:
+    """Test suite for nested item."""
+
+    @pytest.mark.parametrize(
+        "key, type_, expected",
+        [
+            ("a.b.c", int, 1),
+            ("a.b.d", int, 2),
+        ],
+    )
+    def test_nested_item(self, key: str, type_: type, expected: object) -> None:
+        """Test nested item."""
+        assert _nested_item({"a": {"b": {"c": 1, "d": 2}}}, key, type_) == expected
+
+    def test_raise_wrong_type(self) -> None:
+        """Raise wrong type."""
+        with pytest.raises(TypeError):
+            _nested_item({"a": 1}, "a", str)

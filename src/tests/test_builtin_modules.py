@@ -12,6 +12,8 @@ def test_is_set() -> None:
 
 def test_contains_future() -> None:
     """Test a single sample module."""
+    from check_dependencies.builtin_module import BUILTINS
+
     assert "__future__" in BUILTINS
 
 

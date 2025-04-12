@@ -75,3 +75,12 @@ documentation = "https://github.com/schollm/check-dependencies/blob/main/README.
 [project.scripts]
 check-dependencies = "check_dependencies.__main__:main"
 
+[tool.pytest.ini_options]
+addopts = """
+  --junit-xml=.out/junit-pytest.xml
+  --cov=src/check_dependencies
+  --cov-report=xml:.out/coverage.xml
+  --cov-report=html:.out/coverage-html
+  --cov-report term-missing
+  --cov-branch
+"""

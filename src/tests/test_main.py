@@ -13,9 +13,10 @@ import pytest
 
 from check_dependencies.lib import AppConfig, Dependency
 from check_dependencies.main import (
+    ERR_NO_PYPROJECT,
     _imports_iter,
     _missing_imports_iter,
-    yield_wrong_imports, ERR_NO_PYPROJECT,
+    yield_wrong_imports,
 )
 from tests.conftest import DATA, POETRY, PYPROJECT_CFG, SRC
 
@@ -80,12 +81,13 @@ class TestYieldWrongImports:
             "! missing_def",
             "+ test_extra",
         ]
+
     def test_extra_requirements_verbose(self, pyproject_extra: Path) -> None:
         """Ensure extra requirements are printed by default."""
-        assert set(self.fn(overwrite_cfg=pyproject_extra, verbose=True)) >  {
-            "", '### Dependencies in config file not used in application:',
+        assert set(self.fn(overwrite_cfg=pyproject_extra, verbose=True)) > {
+            "",
+            "### Dependencies in config file not used in application:",
         }
-        pass
 
     def test_extra_requirements_as_cfg(self) -> None:
         """Do not flog unused requirements passed in as an extra."""
@@ -208,7 +210,8 @@ class TestYieldWrongImports:
             "! tests_main",
         }
 
-    def test_fail_on_missing_pyproject(self):
+    def test_fail_on_missing_pyproject(self) -> None:
+        """Test that we fail if the pyproject.toml is missing."""
         with pytest.raises(StopIteration) as excinfo:
             next(yield_wrong_imports(["/"], AppConfig()))
         assert excinfo.value.value == ERR_NO_PYPROJECT

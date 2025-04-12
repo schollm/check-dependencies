@@ -45,14 +45,35 @@ jobs:
       run: uv sync
     - name: Run pytest
       run: |
-        echo ${{ github.action }}
-        echo ${{ github.action_path }}
-        echo ${{ github.action_ref }}
-        echo ${{ github.action_status }}
-        echo ${{ github.job }}
-        echo ${{ matrix.coverage }}
         make test-pytest
-
+    - name: Produce the coverage report
+      if: matrix.coverage==true
+      uses: insightsengineering/coverage-action@v2
+      with:
+        # Path to the Cobertura XML report.
+        path: ./.out/coverage.xml
+        # Minimum total coverage, if you want to the
+        # workflow to enforce it as a standard.
+        # This has no effect if the `fail` arg is set to `false`.
+        threshold: 80.0
+        # Fail the workflow if the minimum code coverage
+        # reuqirements are not satisfied.
+        fail: true
+        # Publish the rendered output as a PR comment
+        publish: true
+        # Create a coverage diff report.
+        diff: true
+        # Branch to diff against.
+        # Compare the current coverage to the coverage
+        # determined on this branch.
+        diff-branch: main
+        # This is where the coverage reports for the
+        # `diff-branch` are stored.
+        # Branch is created if it doesn't already exist'.
+        diff-storage: _xml_coverage_reports
+        # A custom title that can be added to the code
+        # coverage summary in the PR comment.
+        coverage-summary-title: "Code Coverage Summary"
   build:
     runs-on: ubuntu-latest
     steps:

@@ -36,6 +36,12 @@ dev = [
     "mypy>=1.10.0",
     "ruff>=0.9.6",
     "types-toml>=0.10.8.20240310",
+    "pytest-cov>=5.0.0",
+]
+[tool.check-dependencies]
+
+known-missing = [
+    "tomllib"  # Missing until Python 3.11
 ]
 
 [tool.ruff]
@@ -74,3 +80,12 @@ documentation = "https://github.com/schollm/check-dependencies/blob/main/README.
 [project.scripts]
 check-dependencies = "check_dependencies.__main__:main"
 
+[tool.pytest.ini_options]
+addopts = """
+  --junit-xml=.out/junit-pytest.xml
+  --cov=src/check_dependencies
+  --cov-report=xml:.out/coverage.xml
+  --cov-report=html:.out/coverage-html
+  --cov-report term-missing
+  --cov-branch
+"""

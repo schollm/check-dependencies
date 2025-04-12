@@ -34,11 +34,10 @@ def yield_wrong_imports(
         pyproject_candidate = Path(
             commonpath(Path(p).expanduser().resolve() for p in file_names),
         )
-    except ValueError as exc:
-        logger.fatal("Could not find pyproject.toml in common path: %s", exc)
+        src_cfg = PyProjectToml.from_pyproject(pyproject_candidate, app_cfg=app_cfg)
+    except FileNotFoundError as exc:
+        logger.fatal("Could not find pyproject.toml: %s", exc)
         return ERR_NO_PYPROJECT
-
-    src_cfg = PyProjectToml.from_pyproject(pyproject_candidate, app_cfg=app_cfg)
     exit_status = 0
 
     expected_dependencies = frozenset().union(
@@ -119,6 +118,12 @@ def _missing_imports_iter(
 
 def _imports_iter(body: list[ast.stmt]) -> Iterator[tuple[str, ast.stmt]]:
     """Yield all import statements from a body of code."""
+    try:
+        iter(body)
+    except TypeError:
+        # not iterable, so return empty
+        return
+
     for x in body:
         if isinstance(x, ast.Import):
             for alias in x.names:
@@ -127,4 +132,5 @@ def _imports_iter(body: list[ast.stmt]) -> Iterator[tuple[str, ast.stmt]]:
             # level > 0 means relative import
             yield x.module or "", x
         elif hasattr(x, "body"):
-            yield from _imports_iter(x.body)
+            for f in x._fields:
+                yield from _imports_iter(getattr(x, f))

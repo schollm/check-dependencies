@@ -3,15 +3,17 @@
 from __future__ import annotations
 
 import ast
+import importlib
 from pathlib import Path
 from textwrap import dedent
 from typing import TYPE_CHECKING
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from check_dependencies.lib import AppConfig, Dependency
 from check_dependencies.main import (
+    ERR_NO_PYPROJECT,
     _imports_iter,
     _missing_imports_iter,
     yield_wrong_imports,
@@ -20,6 +22,19 @@ from tests.conftest import DATA, POETRY, PYPROJECT_CFG, SRC
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+
+
+def test__main__(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test the main module.
+
+    This also tests if all dependencies are defined correctly.
+    """
+    main_module = Path(__file__).parents[1] / "check_dependencies"
+
+    monkeypatch.setattr("sys.argv", ["check_dependencies", main_module.as_posix()])
+    with pytest.raises(SystemExit) as excinfo:
+        importlib.__import__("check_dependencies.__main__")  # pylint: disable=import-outside-toplevel
+    assert excinfo.value.code == 0
 
 
 class TestYieldWrongImports:
@@ -66,6 +81,13 @@ class TestYieldWrongImports:
             "! missing_def",
             "+ test_extra",
         ]
+
+    def test_extra_requirements_verbose(self, pyproject_extra: Path) -> None:
+        """Ensure extra requirements are printed by default."""
+        assert set(self.fn(overwrite_cfg=pyproject_extra, verbose=True)) > {
+            "",
+            "### Dependencies in config file not used in application:",
+        }
 
     def test_extra_requirements_as_cfg(self) -> None:
         """Do not flog unused requirements passed in as an extra."""
@@ -174,6 +196,26 @@ class TestYieldWrongImports:
             "! tests_main",
         }
 
+    def test_doublette_entries(self) -> None:
+        """Test that doublette entries are not printed twice."""
+        res = self.fn(file_names=[DATA.as_posix(), DATA.as_posix()], show_all=True)
+        assert set(res) == {
+            "  check_dependencies",
+            "  test_1",
+            "  test_main",
+            "! missing",
+            "! missing_class",
+            "! missing_def",
+            "! missing_src2",
+            "! tests_main",
+        }
+
+    def test_fail_on_missing_pyproject(self) -> None:
+        """Test that we fail if the pyproject.toml is missing."""
+        with pytest.raises(StopIteration) as excinfo:
+            next(yield_wrong_imports(["/"], AppConfig()))
+        assert excinfo.value.value == ERR_NO_PYPROJECT
+
 
 @pytest.mark.parametrize(
     "stmt, expected",
@@ -189,12 +231,20 @@ class TestYieldWrongImports:
         ("import foo.bar", ["foo.bar"]),
         ("class X:\n    import foo", ["foo"]),
         ("def x():\n    import foo", ["foo"]),
+        ("try:\n    import foo\nexcept ImportError:\n    import bar", ["foo", "bar"]),
     ],
 )
 def test_imports_iter(stmt: str, expected: list[str]) -> None:
     """Test the imports iterator for statement junks."""
     parsed = ast.parse(dedent(stmt))
     assert [x[0] for x in _imports_iter(parsed.body)] == expected
+
+
+def test_missing_import_iter_raises_on_invalid_python_code() -> None:
+    """Test that missing imports iterator raises on invalid Python code."""
+    my_path = MagicMock()
+    my_path.read_text.return_value = "()foo"
+    assert list(_missing_imports_iter(my_path, set())) == []
 
 
 def test_missing_imports_iter() -> None:

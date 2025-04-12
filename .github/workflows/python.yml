@@ -13,6 +13,41 @@ jobs:
           args: "check"
       - name: 'Ruff format check'
         run: ruff format --check
+  debug:
+    runs-on: ubuntu-latest
+    env:
+        GITHUB_WORKSPACE: ${{ github.workspace }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+        GITHUB_REF: ${{ github.ref }}
+        GITHUB_SHA: ${{ github.sha }}
+        GITHUB_EVENT_NAME: ${{ github.event_name }}
+        GITHUB_ACTOR: ${{ github.actor }}
+        GITHUB_RUN_ID: ${{ github.run_id }}
+        GITHUB_RUN_NUMBER: ${{ github.run_number }}
+        GItHUB: ${{ toJson(github) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: DEBUG
+        run: |
+          echo "DEBUG"
+          echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
+          echo "GITHUB_REPOSITORY: $GITHUB_REPOSITORY"
+          echo "GITHUB_REF: $GITHUB_REF"
+          echo "GITHUB_SHA: $GITHUB_SHA"
+          echo "GITHUB_EVENT_NAME: $GITHUB_EVENT_NAME"
+          echo "GITHUB_ACTOR: $GITHUB_ACTOR"
+          echo "GITHUB_RUN_ID: $GITHUB_RUN_ID"
+          echo "GITHUB_RUN_NUMBER: $GITHUB_RUN_NUMBER"
+          echo GITHUB_WORKSPACE="$GITHUB_WORKSPACE"
+          echo GITHUB_REPOSITORY="$GITHUB_REPOSITORY"
+          echo GITHUB_REF="$GITHUB_REF"
+          echo GITHUB_SHA="$GITHUB_SHA"
+          echo GITHUB_EVENT_NAME="$GITHUB_EVENT_NAME"
+          echo GITHUB_ACTOR="$GITHUB_ACTOR"
+          echo GITHUB_RUN_ID="$GITHUB_RUN_ID"
+          echo GITHUB_RUN_NUMBER="$GITHUB_RUN_NUMBER"
+          echo GItHUB="$GItHUB"
+          
 
   test:
     strategy:
@@ -64,6 +99,7 @@ jobs:
       with:
         recreate: true
         path: code-coverage-results.md
+        number: ${{ github.event.issue.number }}!
   build:
     runs-on: ubuntu-latest
     steps:

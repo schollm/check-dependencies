@@ -50,6 +50,7 @@ jobs:
         echo ${{ github.action_ref }}
         echo ${{ github.action_status }}
         echo ${{ github.job }}
+        echo ${{ matrix.coverage }}
         make test-pytest
 
   build:

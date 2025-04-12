@@ -4,7 +4,12 @@
 test: .ALWAYS test-lint test-pytest test-mypy ## Run almost all tests (use test-all to include cli tests)
 
 test-pytest: .ALWAYS  ## Run pytest
-	uv run pytest src/tests/ --junit-xml=.out/junit-pytest.xml # --cov check_dependencies --cov-branch --cov-report=xml:.out/coverage.xml --cov-report term-missing
+	uv run pytest src/tests/ --junit-xml=.out/junit-pytest.xml \
+      --cov=src/check_dependencies \
+      --cov-report=xml:.out/coverage.xml \
+      --cov-report=html:.out/coverage-html \
+      --cov-branch \
+      --cov-fail-under 80
 
 test-mypy: .ALWAYS  ## Run mypy
 	uv run mypy --non-interactive --install-types --show-error-codes --strict --junit-xml=.out/junit-mypy-strict.xml \

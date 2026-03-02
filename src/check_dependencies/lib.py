@@ -139,8 +139,16 @@ class PyProjectToml:
 
         E.g. ``{"jwt": "pyjwt", "shapefile": "pyshp"}`` means that the package
         ``pyjwt`` is imported as ``jwt`` and ``pyshp`` as ``shapefile``.
+
+        Values are normalized via :func:`normalize_pkg` so that e.g. ``PyJWT``,
+        ``pyjwt``, and ``py-jwt`` all resolve to the same key.
         """
-        return dict(_nested_item(self.cfg, "tool.check-dependencies.provides", dict))
+        return {
+            k: normalize_pkg(v)
+            for k, v in _nested_item(
+                self.cfg, "tool.check-dependencies.provides", dict
+            ).items()
+        }
 
     def _poetry_dependencies(self) -> frozenset[str]:
         """Get dependencies from a poetry-style pyproject.toml file."""
@@ -176,6 +184,17 @@ class PyProjectToml:
 def pkg(module: str) -> str:
     """Get the installable module name from an import or package name statement."""
     return module.split(".")[0].replace("-", "_")
+
+
+def normalize_pkg(name: str) -> str:
+    """Normalize a package name: lowercase and replace hyphens with underscores.
+
+    This makes package name comparison case-insensitive and treats hyphens and
+    underscores as equivalent, consistent with PEP 503 / PyPI conventions.
+    E.g. ``scikit-learn``, ``scikit_learn``, and ``SciKit-Learn`` all normalize
+    to ``scikit_learn``.
+    """
+    return name.lower().replace("-", "_")
 
 
 T = TypeVar("T")

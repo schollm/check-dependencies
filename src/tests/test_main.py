@@ -29,12 +29,51 @@ def test__main__(monkeypatch: pytest.MonkeyPatch) -> None:
 
     This also tests if all dependencies are defined correctly.
     """
-    main_module = Path(__file__).parents[1] / "check_dependencies"
+    from check_dependencies.__main__ import main as cli_main  # pylint: disable=import-outside-toplevel
 
+    main_module = Path(__file__).parents[1] / "check_dependencies"
     monkeypatch.setattr("sys.argv", ["check_dependencies", main_module.as_posix()])
     with pytest.raises(SystemExit) as excinfo:
-        importlib.__import__("check_dependencies.__main__")  # pylint: disable=import-outside-toplevel
+        cli_main()
     assert excinfo.value.code == 0
+
+
+@pytest.mark.parametrize(
+    "argv_provides, expected_provides",
+    [
+        # single flag
+        (["--provides", "PIL=Pillow"], {"PIL": "pillow"}),
+        # multiple flags (primary new feature)
+        (["--provides", "PIL=Pillow", "--provides", "jwt=PyJWT"], {"PIL": "pillow", "jwt": "pyjwt"}),
+        # normalization: uppercase → lowercase
+        (["--provides", "jwt=PyJWT"], {"jwt": "pyjwt"}),
+        # normalization: hyphen → underscore
+        (["--provides", "sklearn=scikit-learn"], {"sklearn": "scikit_learn"}),
+        # normalization: mixed case + hyphen
+        (["--provides", "sklearn=SciKit-Learn"], {"sklearn": "scikit_learn"}),
+        # backward-compat: comma-separated in a single flag
+        (["--provides", "PIL=Pillow,jwt=PyJWT"], {"PIL": "pillow", "jwt": "pyjwt"}),
+    ],
+)
+def test__main__provides_parsing(
+    monkeypatch: pytest.MonkeyPatch,
+    argv_provides: list[str],
+    expected_provides: dict[str, str],
+) -> None:
+    """Test that --provides flags are parsed, merged, and normalized correctly."""
+    from check_dependencies.__main__ import main as cli_main  # pylint: disable=import-outside-toplevel
+
+    captured: dict[str, dict[str, str]] = {}
+
+    def _mock_yield(_file_names: object, app_cfg: AppConfig) -> object:  # type: ignore[misc]
+        captured["provides"] = app_cfg.provides
+        return iter([])
+
+    monkeypatch.setattr("check_dependencies.__main__.yield_wrong_imports", _mock_yield)
+    monkeypatch.setattr("sys.argv", ["check_dependencies", *argv_provides, "file.py"])
+    with pytest.raises(SystemExit):
+        cli_main()
+    assert captured["provides"] == expected_provides
 
 
 class TestYieldWrongImports:

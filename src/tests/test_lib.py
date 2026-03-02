@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from check_dependencies.lib import AppConfig, Dependency, PyProjectToml, _nested_item
+from check_dependencies.lib import AppConfig, Dependency, PyProjectToml, _nested_item, normalize_pkg
 from tests.conftest import DATA, PEP631, POETRY, PYPROJECT_EMPTY, PYPROJECT_PROVIDES
 
 try:
@@ -81,6 +81,45 @@ class TestPyProjectToml:
             include_dev=False,
         )
         assert cfg.provides == {"test_1": "test_alias_pkg"}
+
+    @pytest.mark.parametrize(
+        "raw, expected",
+        [
+            ("pyjwt", "pyjwt"),
+            ("PyJWT", "pyjwt"),
+            ("scikit-learn", "scikit_learn"),
+            ("scikit_learn", "scikit_learn"),
+            ("SciKit-Learn", "scikit_learn"),
+            ("Pillow", "pillow"),
+        ],
+    )
+    def test_provides_normalizes_values(self, raw: str, expected: str) -> None:
+        """PyProjectToml.provides normalizes package name values."""
+        cfg = PyProjectToml(
+            DATA,
+            cfg={"tool": {"check-dependencies": {"provides": {"some_import": raw}}}},
+            include_dev=False,
+        )
+        assert cfg.provides == {"some_import": expected}
+
+
+class TestNormalizePkg:
+    """Test suite for the normalize_pkg helper."""
+
+    @pytest.mark.parametrize(
+        "name, expected",
+        [
+            ("pyjwt", "pyjwt"),
+            ("PyJWT", "pyjwt"),
+            ("scikit-learn", "scikit_learn"),
+            ("scikit_learn", "scikit_learn"),
+            ("SciKit-Learn", "scikit_learn"),
+            ("Pillow", "pillow"),
+        ],
+    )
+    def test_normalize_pkg(self, name: str, expected: str) -> None:
+        """normalize_pkg lowercases and replaces hyphens with underscores."""
+        assert normalize_pkg(name) == expected
 
 
 class TestMkSrcFormatter:

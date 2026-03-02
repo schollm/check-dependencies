@@ -4,7 +4,7 @@ import argparse
 import logging
 import sys
 
-from check_dependencies.lib import AppConfig
+from check_dependencies.lib import AppConfig, normalize_pkg
 from check_dependencies.main import yield_wrong_imports
 
 
@@ -67,17 +67,23 @@ def main() -> None:
     parser.add_argument(
         "--provides",
         type=str,
-        help="Comma-separated list of IMPORT=PACKAGE mappings for packages whose import"
-        " name differs from the package name. E.g. PIL=Pillow,jwt=PyJWT",
-        default="",
+        action="append",
+        default=[],
+        metavar="IMPORT=PACKAGE",
+        help="Map an import name to its package name for packages whose import name"
+        " differs from the package name. Can be specified multiple times."
+        " E.g. --provides PIL=Pillow --provides jwt=PyJWT."
+        " The package name is normalized (case-insensitive, hyphens and underscores"
+        " are equivalent), so PIL=Pillow, PIL=pillow and PIL=PIL-ow are all the same.",
     )
     args = parser.parse_args()
 
     provides: dict[str, str] = {}
-    for pair in filter(None, args.provides.split(",")):
-        import_name, sep, pkg_name = pair.partition("=")
-        if import_name and sep and pkg_name:
-            provides[import_name.strip()] = pkg_name.strip()
+    for provides_str in args.provides:
+        for pair in filter(None, provides_str.split(",")):
+            import_name, sep, pkg_name = pair.partition("=")
+            if import_name and sep and pkg_name:
+                provides[import_name.strip()] = normalize_pkg(pkg_name.strip())
 
     cfg = AppConfig(
         include_dev=args.include_dev,
@@ -96,4 +102,5 @@ def main() -> None:
         sys.exit(ex.value)
 
 
-main()
+if __name__ == "__main__":
+    main()

@@ -22,10 +22,12 @@ optional arguments:
                      Assume they are part of the requirements.
   --extra EXTRA      Comma seperated list of requirements known to not be imported.
                      Assume they are not part of the requirements.
-  --provides PROVIDES
-                     Comma-separated list of IMPORT=PACKAGE mappings for packages
-                     whose import name differs from the package name.
-                     E.g. PIL=Pillow,jwt=PyJWT
+  --provides IMPORT=PACKAGE
+                     Map an import name to its package name for packages whose
+                     import name differs from the package name. Can be specified
+                     multiple times. E.g. --provides PIL=Pillow --provides jwt=PyJWT.
+                     Package name is normalized (case-insensitive, hyphens and
+                     underscores equivalent), so PIL=Pillow and PIL=pillow are the same.
 ```
 
 ### Output

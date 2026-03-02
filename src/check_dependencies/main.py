@@ -44,10 +44,12 @@ def yield_wrong_imports(
         src_cfg.dependencies,  # dependencies from pyproject.toml
         BUILTINS,  # builtins
     )
+    provides = src_cfg.provides  # import_name -> package_name
     allowed_dependencies = frozenset().union(
         expected_dependencies,
         app_cfg.known_missing,
         src_cfg.known_missing,
+        provides.keys(),  # import aliases are also allowed
     )
 
     for src_pth in _collect_files(file_names):
@@ -57,7 +59,12 @@ def yield_wrong_imports(
         ):
             if cause != Dependency.OK:
                 exit_status |= ERR_MISSING_DEPENDENCY
-            used_deps.add(pkg(module))
+            pkg_ = pkg(module)
+            used_deps.add(pkg_)
+            # If this import name is provided by a differently-named package,
+            # mark that package as used too so it isn't flagged as extra.
+            if pkg_ in provides:
+                used_deps.add(provides[pkg_])
             yield from src_fmt(src_pth, cause, module, stmt)
 
     if superfluous_requirements := [

@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from check_dependencies.lib import AppConfig, Dependency, PyProjectToml, _nested_item
-from tests.conftest import DATA, PEP631, POETRY, PYPROJECT_EMPTY
+from tests.conftest import DATA, PEP631, POETRY, PYPROJECT_EMPTY, PYPROJECT_PROVIDES
 
 try:
     import tomllib
@@ -63,6 +63,24 @@ class TestPyProjectToml:
         )
         assert set(cfg.dependencies) == set()
         assert "No dependencies found in" in caplog.text
+
+    def test_provides_empty(self) -> None:
+        """Test that provides returns an empty dict when not configured."""
+        cfg = PyProjectToml(
+            DATA,
+            cfg=tomllib.loads(PEP631.read_text("utf-8")),
+            include_dev=False,
+        )
+        assert cfg.provides == {}
+
+    def test_provides(self) -> None:
+        """Test that provides returns the correct mapping."""
+        cfg = PyProjectToml(
+            DATA,
+            cfg=tomllib.loads(PYPROJECT_PROVIDES.read_text("utf-8")),
+            include_dev=False,
+        )
+        assert cfg.provides == {"test_1": "test_alias_pkg"}
 
 
 class TestMkSrcFormatter:

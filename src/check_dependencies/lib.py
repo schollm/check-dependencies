@@ -132,6 +132,15 @@ class PyProjectToml:
             _nested_item(self.cfg, "tool.check-dependencies.known-extra", list),
         )
 
+    @property
+    def provides(self) -> dict[str, str]:
+        """Mapping from import name to package name for packages whose import name differs.
+
+        E.g. ``{"jwt": "pyjwt", "shapefile": "pyshp"}`` means that the package
+        ``pyjwt`` is imported as ``jwt`` and ``pyshp`` as ``shapefile``.
+        """
+        return dict(_nested_item(self.cfg, "tool.check-dependencies.provides", dict))
+
     def _poetry_dependencies(self) -> frozenset[str]:
         """Get dependencies from a poetry-style pyproject.toml file."""
         deps = set(_nested_item(self.cfg, "tool.poetry.dependencies", dict))

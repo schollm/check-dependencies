@@ -18,7 +18,7 @@ from check_dependencies.main import (
     _missing_imports_iter,
     yield_wrong_imports,
 )
-from tests.conftest import DATA, POETRY, PYPROJECT_CFG, SRC
+from tests.conftest import DATA, POETRY, PYPROJECT_CFG, PYPROJECT_PROVIDES, SRC
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -49,6 +49,7 @@ class TestYieldWrongImports:
         show_all: bool = False,
         known_extra: Sequence[str] = (),
         known_missing: Sequence[str] = (),
+        provides: dict[str, str] | None = None,
     ) -> list[str]:
         """Call the yield wrong imports function with patched pyproject.toml."""
         with patch("check_dependencies.lib._PYPROJECT_TOML", overwrite_cfg):
@@ -61,6 +62,7 @@ class TestYieldWrongImports:
                         show_all=show_all,
                         known_extra=set(known_extra),
                         known_missing=set(known_missing),
+                        provides=provides or {},
                     ),
                 ),
             )
@@ -92,6 +94,36 @@ class TestYieldWrongImports:
     def test_extra_requirements_as_cfg(self) -> None:
         """Do not flog unused requirements passed in as an extra."""
         assert not self.fn(overwrite_cfg=PYPROJECT_CFG)
+
+    def test_provides_from_config(self) -> None:
+        """Packages with a provides mapping should not appear as missing or extra.
+
+        The pyproject_pep631_provides.toml declares 'test_alias_pkg' as a dependency
+        with ``provides.test_1 = "test_alias_pkg"``.  Since src.py imports test_1,
+        neither ``! test_1`` (missing) nor ``+ test_alias_pkg`` (extra) should appear.
+        """
+        result = self.fn(overwrite_cfg=PYPROJECT_PROVIDES)
+        assert "! test_1" not in result
+        assert "+ test_alias_pkg" not in result
+        assert result == ["! missing", "! missing_class", "! missing_def"]
+
+    def test_provides_from_app_cfg(self) -> None:
+        """AppConfig.provides (CLI --provides) resolves false positives like the config."""
+        # POETRY has test_alias_pkg NOT declared, but we pass provides via AppConfig
+        # to map test_1 -> test_main (test_main IS declared in POETRY).
+        result = self.fn(overwrite_cfg=POETRY, provides={"test_1": "test_main"})
+        assert "! test_1" not in result
+        assert "+ test_main" not in result
+
+    def test_provides_app_cfg_overrides_file_cfg(self) -> None:
+        """CLI --provides takes precedence over [tool.check-dependencies.provides]."""
+        # Config maps test_1 -> test_alias_pkg.  CLI overrides to test_1 -> test_main.
+        result = self.fn(
+            overwrite_cfg=PYPROJECT_PROVIDES,
+            provides={"test_1": "test_main"},
+        )
+        assert "! test_1" not in result
+        assert "+ test_main" not in result
 
     def test_ignore_requirements(self, pyproject_extra: Path) -> None:
         """Ensure ignored requirements are not printed."""

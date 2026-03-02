@@ -44,7 +44,7 @@ def yield_wrong_imports(
         src_cfg.dependencies,  # dependencies from pyproject.toml
         BUILTINS,  # builtins
     )
-    provides = src_cfg.provides  # import_name -> package_name
+    provides = {**src_cfg.provides, **app_cfg.provides}  # CLI overrides config file
     allowed_dependencies = frozenset().union(
         expected_dependencies,
         app_cfg.known_missing,

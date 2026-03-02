@@ -64,7 +64,20 @@ def main() -> None:
         "that affect the package but are not imported explicitly.",
         default="",
     )
+    parser.add_argument(
+        "--provides",
+        type=str,
+        help="Comma-separated list of IMPORT=PACKAGE mappings for packages whose import"
+        " name differs from the package name. E.g. PIL=Pillow,jwt=PyJWT",
+        default="",
+    )
     args = parser.parse_args()
+
+    provides: dict[str, str] = {}
+    for pair in filter(None, args.provides.split(",")):
+        import_name, sep, pkg_name = pair.partition("=")
+        if import_name and sep and pkg_name:
+            provides[import_name.strip()] = pkg_name.strip()
 
     cfg = AppConfig(
         include_dev=args.include_dev,
@@ -72,6 +85,7 @@ def main() -> None:
         show_all=args.all,
         known_extra=set(args.extra.split(",")),
         known_missing=set(args.missing.split(",")),
+        provides=provides,
     )
 
     wrong_import_lines = yield_wrong_imports(args.file_name, cfg)

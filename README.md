@@ -6,7 +6,7 @@ It can be used as a stand-alone or as part of a CI/CD to check if an application
 This is a pure-Python zero-dependency (Up until Python 3.11 one, toml) package.
 ## Usage
 ```text
-usage: check-dependencies [-h] [--include-extra] [--verbose] [--all] [--missing MISSING] [--extra EXTRA] file_name [file_name ...]
+usage: check-dependencies [-h] [--include-extra] [--verbose] [--all] [--missing MISSING] [--extra EXTRA] [--provides PROVIDES] file_name [file_name ...]
 
 Find undeclared and unused (or all) imports in Python files
 
@@ -22,6 +22,10 @@ optional arguments:
                      Assume they are part of the requirements.
   --extra EXTRA      Comma seperated list of requirements known to not be imported.
                      Assume they are not part of the requirements.
+  --provides PROVIDES
+                     Comma-separated list of IMPORT=PACKAGE mappings for packages
+                     whose import name differs from the package name.
+                     E.g. PIL=Pillow,jwt=PyJWT
 ```
 
 ### Output
@@ -90,7 +94,7 @@ The second entry, `[tool.check_dependencies.ignore-requirements]` does the oppos
 ignore extra requirements that are not used in the application.
 
 ```toml
-[tool.check_dependencies]
+[tool.check-dependencies]
 known-missing = [
   "undeclared_package",
   "another_package"
@@ -99,6 +103,12 @@ known-extra = [
   "package_as_extra_for_another_package",
   "yet_another_package"
 ]
+
+[tool.check-dependencies.provides]
+# Maps import name -> package name for packages whose import name differs
+PIL = "Pillow"
+jwt = "PyJWT"
+shapefile = "pyshp"
 ```
 
 #### Exit code

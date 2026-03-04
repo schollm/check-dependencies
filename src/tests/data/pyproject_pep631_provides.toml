@@ -6,4 +6,4 @@ dependencies = [
 ]
 
 [tool.check-dependencies.provides]
-test_1 = "test_alias_pkg"
+"test_alias_pkg" = ["test_1"]

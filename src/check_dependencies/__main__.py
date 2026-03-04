@@ -4,7 +4,7 @@ import argparse
 import logging
 import sys
 
-from check_dependencies.lib import AppConfig, normalize_pkg
+from check_dependencies.app_config import AppConfig
 from check_dependencies.main import yield_wrong_imports
 
 
@@ -78,20 +78,14 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    provides: dict[str, str] = {}
-    for provides_str in args.provides:
-        for pair in filter(None, provides_str.split(",")):
-            import_name, sep, pkg_name = pair.partition("=")
-            if import_name and sep and pkg_name:
-                provides[import_name.strip()] = normalize_pkg(pkg_name.strip())
-
-    cfg = AppConfig(
+    cfg = AppConfig.from_cli_args(
+        file_names=args.file_name,
+        known_extra=args.extra,
+        known_missing=args.missing,
+        provides=args.provides,
         include_dev=args.include_dev,
         verbose=args.verbose,
         show_all=args.all,
-        known_extra=set(args.extra.split(",")),
-        known_missing=set(args.missing.split(",")),
-        provides=provides,
     )
 
     wrong_import_lines = yield_wrong_imports(args.file_name, cfg)

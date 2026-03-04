@@ -41,7 +41,12 @@ dev = [
 [tool.check-dependencies]
 
 known-missing = [
-    "tomllib"  # Missing until Python 3.11
+    "tomllib",  # Missing until Python 3.11
+    "toml",  # Missing after Python 3.11
+]
+known-extra = [
+    "tomllib",  # Missing until Python 3.11
+    "toml",  # Missing after Python 3.11
 ]
 
 [tool.ruff]
@@ -83,9 +88,14 @@ check-dependencies = "check_dependencies.__main__:main"
 [tool.pytest.ini_options]
 addopts = """
   --junit-xml=.out/junit-pytest.xml
-  --cov=src/check_dependencies
+  --cov=check_dependencies
   --cov-report=xml:.out/coverage.xml
   --cov-report=html:.out/coverage-html
   --cov-report term-missing
   --cov-branch
 """
+
+[tool.uv.workspace]
+members = [
+    "src/tests/data/foo",
+]

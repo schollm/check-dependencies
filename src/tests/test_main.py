@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import ast
-import importlib
 from pathlib import Path
 from textwrap import dedent
 from typing import TYPE_CHECKING
@@ -11,9 +10,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from check_dependencies.lib import AppConfig, Dependency
+from check_dependencies.__main__ import main as cli_main
+from check_dependencies.app_config import AppConfig, Packages
+from check_dependencies.lib import Dependency
 from check_dependencies.main import (
-    ERR_NO_PYPROJECT,
     _imports_iter,
     _missing_imports_iter,
     yield_wrong_imports,
@@ -29,8 +29,6 @@ def test__main__(monkeypatch: pytest.MonkeyPatch) -> None:
 
     This also tests if all dependencies are defined correctly.
     """
-    from check_dependencies.__main__ import main as cli_main  # pylint: disable=import-outside-toplevel
-
     main_module = Path(__file__).parents[1] / "check_dependencies"
     monkeypatch.setattr("sys.argv", ["check_dependencies", main_module.as_posix()])
     with pytest.raises(SystemExit) as excinfo:
@@ -42,38 +40,48 @@ def test__main__(monkeypatch: pytest.MonkeyPatch) -> None:
     "argv_provides, expected_provides",
     [
         # single flag
-        (["--provides", "PIL=Pillow"], {"PIL": "pillow"}),
+        (["--provides", "Pillow=PIL"], [("pillow", {"PIL"})]),
         # multiple flags (primary new feature)
-        (["--provides", "PIL=Pillow", "--provides", "jwt=PyJWT"], {"PIL": "pillow", "jwt": "pyjwt"}),
+        (
+            ["--provides", "Pillow=PIL", "--provides", "PyJWT=jwt"],
+            [("pillow", {"PIL"}), ("pyjwt", {"jwt"})],
+        ),
         # normalization: uppercase → lowercase
-        (["--provides", "jwt=PyJWT"], {"jwt": "pyjwt"}),
+        (["--provides", "PyJWT=jwt"], [("pyjwt", {"jwt"})]),
+        # multiple modules provided by the same package
+        (["--provides", "foo=fox,foo=bar"], [("foo", {"fox", "bar"})]),
         # normalization: hyphen → underscore
-        (["--provides", "sklearn=scikit-learn"], {"sklearn": "scikit_learn"}),
+        (["--provides", "scikit-learn=sklearn"], [("scikit_learn", {"sklearn"})]),
         # normalization: mixed case + hyphen
-        (["--provides", "sklearn=SciKit-Learn"], {"sklearn": "scikit_learn"}),
+        (["--provides", "SciKit-Learn=sklearn"], [("scikit_learn", {"sklearn"})]),
         # backward-compat: comma-separated in a single flag
-        (["--provides", "PIL=Pillow,jwt=PyJWT"], {"PIL": "pillow", "jwt": "pyjwt"}),
+        (
+            ["--provides", "Pillow=PIL,PyJWT=jwt"],
+            [("pillow", {"PIL"}), ("pyjwt", {"jwt"})],
+        ),
     ],
 )
 def test__main__provides_parsing(
     monkeypatch: pytest.MonkeyPatch,
     argv_provides: list[str],
-    expected_provides: dict[str, str],
+    expected_provides: list[tuple[str, set[str]]],
 ) -> None:
     """Test that --provides flags are parsed, merged, and normalized correctly."""
-    from check_dependencies.__main__ import main as cli_main  # pylint: disable=import-outside-toplevel
-
-    captured: dict[str, dict[str, str]] = {}
+    captured: dict[str, Packages] = {}
 
     def _mock_yield(_file_names: object, app_cfg: AppConfig) -> object:  # type: ignore[misc]
         captured["provides"] = app_cfg.provides
         return iter([])
 
     monkeypatch.setattr("check_dependencies.__main__.yield_wrong_imports", _mock_yield)
-    monkeypatch.setattr("sys.argv", ["check_dependencies", *argv_provides, "file.py"])
+    monkeypatch.setattr(
+        "sys.argv", ["check_dependencies", *argv_provides, DATA.as_posix()]
+    )
     with pytest.raises(SystemExit):
         cli_main()
-    assert captured["provides"] == expected_provides
+    packages = captured["provides"]
+    for expected_pkg, expected_import in expected_provides:
+        assert packages.modules(expected_pkg) == expected_import
 
 
 class TestYieldWrongImports:
@@ -88,20 +96,21 @@ class TestYieldWrongImports:
         show_all: bool = False,
         known_extra: Sequence[str] = (),
         known_missing: Sequence[str] = (),
-        provides: dict[str, str] | None = None,
+        provides: list[tuple[str, str]] | None = None,
     ) -> list[str]:
         """Call the yield wrong imports function with patched pyproject.toml."""
-        with patch("check_dependencies.lib._PYPROJECT_TOML", overwrite_cfg):
+        with patch("check_dependencies.pyproject_toml._PYPROJECT_TOML", overwrite_cfg):
             return list(
                 yield_wrong_imports(
                     file_names,
-                    AppConfig(
+                    AppConfig.from_cli_args(
+                        file_names=file_names,
                         include_dev=include_extra,
                         verbose=verbose,
                         show_all=show_all,
-                        known_extra=set(known_extra),
-                        known_missing=set(known_missing),
-                        provides=provides or {},
+                        known_extra=",".join(known_extra),
+                        known_missing=",".join(known_missing),
+                        provides=provides or [],
                     ),
                 ),
             )
@@ -147,7 +156,7 @@ class TestYieldWrongImports:
         assert result == ["! missing", "! missing_class", "! missing_def"]
 
     def test_provides_from_app_cfg(self) -> None:
-        """AppConfig.provides (CLI --provides) resolves false positives like the config."""
+        """AppConfig.provides (CLI --provides) resolves false positives like config."""
         # POETRY has test_alias_pkg NOT declared, but we pass provides via AppConfig
         # to map test_1 -> test_main (test_main IS declared in POETRY).
         result = self.fn(overwrite_cfg=POETRY, provides={"test_1": "test_main"})
@@ -283,9 +292,16 @@ class TestYieldWrongImports:
 
     def test_fail_on_missing_pyproject(self) -> None:
         """Test that we fail if the pyproject.toml is missing."""
-        with pytest.raises(StopIteration) as excinfo:
-            next(yield_wrong_imports(["/"], AppConfig()))
-        assert excinfo.value.value == ERR_NO_PYPROJECT
+        with pytest.raises(FileNotFoundError):
+            AppConfig.from_cli_args(
+                file_names=["nonexistent.py"],
+                known_extra="",
+                known_missing="",
+                provides=[],
+                include_dev=False,
+                verbose=False,
+                show_all=False,
+            )
 
 
 @pytest.mark.parametrize(
@@ -315,12 +331,14 @@ def test_missing_import_iter_raises_on_invalid_python_code() -> None:
     """Test that missing imports iterator raises on invalid Python code."""
     my_path = MagicMock()
     my_path.read_text.return_value = "()foo"
-    assert list(_missing_imports_iter(my_path, set())) == []
+    assert list(_missing_imports_iter(my_path, set(), Packages([]))) == []
 
 
 def test_missing_imports_iter() -> None:
-    """Test the missing imports iterator."""
-    res = list(_missing_imports_iter(Path(SRC), {"test_0", "test_1", "extra"}))
+    """Test the missing import iterator."""
+    res = list(
+        _missing_imports_iter(Path(SRC), {"test_0", "test_1", "extra"}, Packages([]))
+    )
     assert {c for c, _, _ in res} == {Dependency.NA, Dependency.OK}
     assert [m for _, m, _ in res] == [
         "missing.bar",
@@ -345,5 +363,5 @@ def test_missing_imports_iter() -> None:
 )
 def test_mk_unused_formatter(verbose: bool, expected: str) -> None:
     """Test the unused formatter."""
-    cfg = AppConfig(verbose=verbose)
+    cfg = AppConfig.from_cli_args(file_names=[DATA.as_posix()], verbose=verbose)
     assert list(cfg.unused_fmt("foo")) == [expected]

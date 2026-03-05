@@ -10,7 +10,6 @@ from typing import (
     Collection,
     Iterable,
     Iterator,
-    Self,
     Sequence,
 )
 
@@ -45,7 +44,7 @@ class AppConfig:
         include_dev: bool = False,
         verbose: bool = False,
         show_all: bool = False,
-    ) -> Self:
+    ) -> AppConfig:
         """Create an AppConfig instance from CLI arguments."""
         provides_list: list[tuple[str, str]] = []
         for package, _, module in (

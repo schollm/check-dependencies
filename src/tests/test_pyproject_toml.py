@@ -20,6 +20,14 @@ from check_dependencies.pyproject_toml import get_pyproject_path
 class TestPyProjectToml:
     """Test suite for the PyProjectToml class."""
 
+    def cfg(self, path: Path, include_dev: bool = False) -> PyProjectToml:
+        """Create a PyProjectToml instance."""
+        return PyProjectToml(
+            cfg=tomllib.loads(path.read_text("utf-8")),
+            path=path,
+            include_dev=include_dev,
+        )
+
     @pytest.mark.parametrize(
         "pyproject, included_dev, add_expect",
         [
@@ -36,35 +44,23 @@ class TestPyProjectToml:
         add_expect: list[str],
     ) -> None:
         """Test get_declared_dependencies function without included development deps."""
-        cfg = PyProjectToml(
-            cfg=tomllib.loads(pyproject.read_text("utf-8")),
-            include_dev=included_dev,
-        )
+        cfg = self.cfg(pyproject, include_dev=included_dev)
         assert set(cfg.dependencies) == {"test_main", "test_1"}.union(add_expect or {})
 
     def test_unsupported_dependencies(self, caplog: pytest.LogCaptureFixture) -> None:
         """Test unsupported dependencies in pyproject.toml."""
-        cfg = PyProjectToml(
-            cfg=tomllib.loads(PYPROJECT_EMPTY.read_text("utf-8")),
-            include_dev=False,
-        )
+        cfg = self.cfg(PYPROJECT_EMPTY)
         assert set(cfg.dependencies) == set()
         assert "No dependencies found in" in caplog.text
 
     def test_provides_empty(self) -> None:
         """Test that provides returns an empty dict when not configured."""
-        cfg = PyProjectToml(
-            cfg=tomllib.loads(PEP631.read_text("utf-8")),
-            include_dev=False,
-        )
+        cfg = self.cfg(PEP631)
         assert cfg.provides == []
 
     def test_provides(self) -> None:
         """Test that provides returns the correct mapping."""
-        cfg = PyProjectToml(
-            cfg=tomllib.loads(PYPROJECT_PROVIDES.read_text("utf-8")),
-            include_dev=False,
-        )
+        cfg = self.cfg(PYPROJECT_PROVIDES)
         assert cfg.provides == [("test_alias_pkg", "test_1")]
 
     @pytest.mark.parametrize(
@@ -82,6 +78,7 @@ class TestPyProjectToml:
         """PyProjectToml.provides normalizes package name values."""
         cfg = PyProjectToml(
             cfg={"tool": {"check-dependencies": {"provides": {raw: "some_import"}}}},
+            path=Path("dummy"),
             include_dev=False,
         )
         assert cfg.provides == [(expected, "some_import")]

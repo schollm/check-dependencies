@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from itertools import chain
-from os.path import commonpath
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -17,15 +15,10 @@ from typing import (
 )
 
 from check_dependencies.lib import Dependency, pkg
-from check_dependencies.pyproject_toml import PyProjectToml, get_pyproject_path
+from check_dependencies.pyproject_toml import PyProjectToml
 
 if TYPE_CHECKING:
     import ast
-
-try:
-    import tomllib
-except ImportError:
-    import toml as tomllib  # type: ignore[no-redef]
 
 
 @dataclass()
@@ -55,31 +48,20 @@ class AppConfig:
     ) -> Self:
         """Create an AppConfig instance from CLI arguments."""
         provides_list: list[tuple[str, str]] = []
-
-        for provides1 in chain(map(str.split, provides)):
-            package, _, module = provides1.partition("=")
-            if package and module:
+        for package, _, module in (
+            map1.partition("=") for maps in provides for map1 in maps.split(",")
+        ):
+            if package.strip() and module.strip():
                 provides_list.append((package.strip(), module.strip()))
 
         for file in file_names:
             if not Path(file).exists():
                 raise FileNotFoundError(file)
 
-        if file_names:
-            pyproject_candidate = Path(
-                commonpath(Path(p).expanduser().resolve() for p in file_names),
-            )
-            pyproject_file = get_pyproject_path(pyproject_candidate)
-            src_cfg = PyProjectToml(
-                cfg=tomllib.loads(pyproject_file.read_text("utf-8")),
-                include_dev=include_dev,
-            )
-        else:
-            pyproject_file = None
-            src_cfg = PyProjectToml(
-                cfg={},
-                include_dev=include_dev,
-            )
+        if not file_names:
+            file_names = ["."]
+
+        src_cfg = PyProjectToml.for_paths(file_names, include_dev=include_dev)
 
         def combine(*collections: Collection[str]) -> frozenset[str]:
             """Combine multiple collections into a single frozenset."""
@@ -95,7 +77,7 @@ class AppConfig:
             known_missing=combine(known_missing.split(","), src_cfg.known_missing),
             provides=Packages([*provides_list, *src_cfg.provides]),
             dependencies=src_cfg.dependencies,
-            pyproject_file=pyproject_file,
+            pyproject_file=src_cfg.path,
         )
 
     def __post_init__(self) -> None:
@@ -138,10 +120,8 @@ class Packages:
 
     _packages: list[tuple[str, str]]
 
-    def modules(self, pkg_name: str | None = None) -> set[str]:
+    def modules(self, pkg_name: str) -> set[str]:
         """Get the modules (import name) for a given package name."""
-        if pkg_name is None:
-            return {import_name for import_name, _ in self._packages}
         pkg_ = self._normalize(pkg_name)
         return {
             import_name
@@ -149,10 +129,8 @@ class Packages:
             if self._normalize(provided_pkg) == pkg_
         } or {pkg_}
 
-    def packages(self, module_name: str | None = None) -> set[str]:
+    def packages(self, module_name: str) -> set[str]:
         """Get the packages for a given module (import name)."""
-        if module_name is None:
-            return {provided_pkg for provided_pkg, _ in self._packages}
         module_ = self._main_module(module_name)
         return {
             self._normalize(provided_pkg)

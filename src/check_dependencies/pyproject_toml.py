@@ -5,10 +5,16 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from itertools import chain, takewhile
+from os.path import commonpath
 from pathlib import Path
-from typing import Any
+from typing import Any, Collection
 
 from check_dependencies.lib import nested_item, normalize_pkg, pkg
+
+try:
+    import tomllib
+except ImportError:  # pragma: no cover
+    import toml as tomllib  # type: ignore[no-redef]
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +27,24 @@ class PyProjectToml:
     """Project specific options (dependencies, config) from a pyproject.toml file."""
 
     cfg: dict[str, Any]
+    path: Path
     include_dev: bool = False
+
+    @classmethod
+    def for_paths(
+        cls, paths: Collection[str], *, include_dev: bool = False
+    ) -> PyProjectToml:
+        """Create a PyProjectToml instance from a pyproject.toml file."""
+        pyproject_candidate = Path(
+            commonpath(Path(p).expanduser().resolve() for p in paths),
+        )
+        path = get_pyproject_path(pyproject_candidate)
+
+        return cls(
+            cfg=tomllib.loads(path.read_text("utf-8")),
+            path=path,
+            include_dev=include_dev,
+        )
 
     @property
     def dependencies(self) -> frozenset[str]:

@@ -1,4 +1,5 @@
 """Test suite for the PyProjectToml class and get_pyproject_path function."""
+
 from __future__ import annotations
 
 from pathlib import Path

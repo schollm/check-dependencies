@@ -1,4 +1,5 @@
 """Parse project specific options (dependencies, config) from a pyproject.toml file."""
+
 from __future__ import annotations
 
 import logging

@@ -4,14 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import (
-    TYPE_CHECKING,
-    Callable,
-    Collection,
-    Iterable,
-    Iterator,
-    Sequence,
-)
+from typing import TYPE_CHECKING, Callable, Collection, Iterable, Iterator, Sequence
 
 from check_dependencies.lib import Dependency, pkg
 from check_dependencies.pyproject_toml import PyProjectToml

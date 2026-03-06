@@ -3,7 +3,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## Checklist for release
+- [ ] Create a new branch release/v<x.y.z> from main
+- [ ] Update the changelog with the new version and changes
+- [ ] Update the version in pyproject.toml
+- [ ] Run uv lock to update the lock file
+- [ ] Update the README.md if necessary
+- [ ] Merge the release branch into main
+- [ ] Create a new release on GitHub with the new version and changelog
+
 ## Upcoming
+### Bugfix
+- Handle Python source files that declare a non-UTF8 encoding (PEP 263 encoding cookie or BOM).
 ## [0.13.0] - 2025-05-01 - Support for package - module mapping in pyproject.toml
 ### Added
 - Support for package - module mapping in pyproject.toml, to allow for different package and module names.

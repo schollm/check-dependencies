@@ -16,6 +16,7 @@ try:
 except ImportError:  # pragma: no cover
     import toml as tomllib  # type: ignore[no-redef,import-not-found,unused-ignore]
 
+__all__ = ["PyProjectToml", "get_pyproject_path", "tomllib"]
 logger = logging.getLogger(__name__)
 _PYPROJECT_TOML = Path("pyproject.toml")
 _T = TypeVar("_T")
@@ -130,6 +131,11 @@ class PyProjectToml:
             "project.optional-dependencies", dict
         ).values():
             deps |= {canonical(raw_extra) for raw_extra in raw_extras}
+        if self.include_dev:
+            deps |= {
+                canonical(raw_dev_dep)
+                for raw_dev_dep in self.nested_item("dependency-groups.dev", list)
+            }
         return frozenset(deps)
 
     def nested_item(self, key: str, /, class_: type[_T]) -> _T:

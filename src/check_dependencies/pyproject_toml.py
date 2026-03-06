@@ -16,7 +16,7 @@ try:
 except ImportError:  # pragma: no cover
     import toml as tomllib  # type: ignore[no-redef,import-not-found,unused-ignore]
 
-__all__ = ["PyProjectToml", "get_pyproject_path", "tomllib"]
+__all__ = ["PyProjectToml", "tomllib"]
 logger = logging.getLogger(__name__)
 _PYPROJECT_TOML = Path("pyproject.toml")
 _T = TypeVar("_T")
@@ -38,7 +38,7 @@ class PyProjectToml:
         pyproject_candidate = Path(
             commonpath(Path(p).expanduser().resolve() for p in paths),
         )
-        path = get_pyproject_path(pyproject_candidate)
+        path = _get_pyproject_path(pyproject_candidate)
 
         return cls(
             cfg=tomllib.loads(path.read_text("utf-8")),
@@ -151,7 +151,7 @@ class PyProjectToml:
         return obj
 
 
-def get_pyproject_path(path: Path) -> Path:
+def _get_pyproject_path(path: Path) -> Path:
     """Get the pyproject.toml file by searching up the directory hierarchy."""
     for p in chain([path], path.resolve().parents):
         if (p / _PYPROJECT_TOML).exists():

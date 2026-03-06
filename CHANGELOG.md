@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Upcoming
 ### Bugfix
-- Work with non-UTF8 encoded files.
+- Handle Python source files that declare a non-UTF8 encoding (PEP 263 encoding cookie or BOM).
 ## [0.13.0] - 2025-05-01 - Support for package - module mapping in pyproject.toml
 ### Added
 - Support for package - module mapping in pyproject.toml, to allow for different package and module names.

@@ -330,6 +330,7 @@ def test_imports_iter(stmt: str, expected: list[str]) -> None:
 def test_missing_import_iter_silent_on_invalid_python_code() -> None:
     """Test that missing imports iterator is silent on invalid Python code and returns an empty iterator."""
     my_path = MagicMock()
+    my_path.as_posix.return_value = "dummy.py"
     my_path.read_bytes.return_value = b"()foo"
     assert list(_missing_imports_iter(my_path, set(), Packages([]))) == []
 

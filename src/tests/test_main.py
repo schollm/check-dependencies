@@ -334,6 +334,16 @@ def test_missing_import_iter_silent_on_invalid_python_code() -> None:
     assert list(_missing_imports_iter(my_path, set(), Packages([]))) == []
 
 
+def test_missing_imports_iter_non_utf8_encoding(tmp_path: Path) -> None:
+    """Test that _missing_imports_iter works with a non-UTF8-encoded file (PEP 263 encoding cookie)."""
+    py_file = tmp_path / "latin1_module.py"
+    # Write a latin-1 encoded file with an encoding cookie and an import
+    content = "# -*- coding: latin-1 -*-\nimport os\nx = 'caf\xe9'\n"
+    py_file.write_bytes(content.encode("latin-1"))
+    result = list(_missing_imports_iter(py_file, set(), Packages([])))
+    assert [m for _, m, _ in result] == ["os"]
+
+
 def test_missing_imports_iter() -> None:
     """Test the missing import iterator."""
     res = list(

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 from enum import Enum
-from typing import Any, TypeVar
 
 logger = logging.getLogger("check_dependencies.lib")
 
@@ -31,18 +30,3 @@ def normalize_pkg(name: str) -> str:
     to ``scikit_learn``.
     """
     return name.lower().replace("-", "_")
-
-
-T = TypeVar("T")
-
-
-def nested_item(obj: dict[str, Any], keys: str, class_: type[T]) -> T:
-    """Get items from a nested dictionary where the keys are dot-separated."""
-    for a in keys.split("."):
-        if a not in obj:
-            return class_()
-        obj = obj[a]
-    if not isinstance(obj, class_):
-        msg = f"Expected {class_} but got {type(obj)}"
-        raise TypeError(msg)
-    return obj

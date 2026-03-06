@@ -6,15 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from check_dependencies.pyproject_toml import PyProjectToml
+from check_dependencies.pyproject_toml import PyProjectToml, get_pyproject_path, tomllib
 from tests.conftest import PEP631, POETRY, PYPROJECT_EMPTY, PYPROJECT_PROVIDES
-
-try:
-    import tomllib  # type: ignore[no-redef,import-not-found,unused-ignore]
-except ImportError:
-    import toml as tomllib  # type: ignore[no-redef,import-not-found,unused-ignore]
-
-from check_dependencies.pyproject_toml import get_pyproject_path
 
 
 class TestPyProjectToml:
@@ -82,6 +75,25 @@ class TestPyProjectToml:
             include_dev=False,
         )
         assert cfg.provides == [(expected, "some_import")]
+
+
+class TestNestedItem:
+    """Test suite for nested item."""
+
+    @pytest.mark.parametrize(
+        "key, type_, expected",
+        [("a.b.c", int, 1), ("a.b.d", int, 2), ("a.b.x", int, 0)],
+    )
+    def test_nested_item(self, key: str, type_: type, expected: object) -> None:
+        """Test nested item."""
+        prj = PyProjectToml(cfg={"a": {"b": {"c": 1, "d": 2}}}, path=Path())
+        assert prj.nested_item(key, type_) == expected
+
+    def test_raise_wrong_type(self) -> None:
+        """Raise wrong type."""
+        prj = PyProjectToml(cfg={"a": 1}, path=Path())
+        with pytest.raises(TypeError):
+            prj.nested_item("a", str)
 
 
 class TestGetPyProjectPath:

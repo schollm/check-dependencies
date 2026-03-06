@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from check_dependencies.app_config import AppConfig
-from check_dependencies.lib import Dependency, nested_item, normalize_pkg
+from check_dependencies.lib import Dependency, normalize_pkg
 
 
 class TestNormalizePkg:
@@ -77,23 +77,3 @@ class TestMkSrcFormatter:
         fn = cfg.mk_src_formatter()
         assert list(fn("src.py", Dependency.NA, "foo", stmt))
         assert not list(fn("src.py", Dependency.NA, "foo", stmt))
-
-
-class TestNestedItem:
-    """Test suite for nested item."""
-
-    @pytest.mark.parametrize(
-        "key, type_, expected",
-        [
-            ("a.b.c", int, 1),
-            ("a.b.d", int, 2),
-        ],
-    )
-    def test_nested_item(self, key: str, type_: type, expected: object) -> None:
-        """Test nested item."""
-        assert nested_item({"a": {"b": {"c": 1, "d": 2}}}, key, type_) == expected
-
-    def test_raise_wrong_type(self) -> None:
-        """Raise wrong type."""
-        with pytest.raises(TypeError):
-            nested_item({"a": 1}, "a", str)

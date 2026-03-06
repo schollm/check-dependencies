@@ -7,19 +7,18 @@ from dataclasses import dataclass
 from itertools import chain, takewhile
 from os.path import commonpath
 from pathlib import Path
-from typing import Any, Collection
+from typing import Any, Collection, TypeVar
 
-from check_dependencies.lib import nested_item, normalize_pkg, pkg
+from check_dependencies.lib import normalize_pkg, pkg
 
 try:
-    import tomllib  # type: ignore[import-not-found]
+    import tomllib  # type: ignore[import-not-found,unused-ignore]
 except ImportError:  # pragma: no cover
     import toml as tomllib  # type: ignore[no-redef,import-not-found,unused-ignore]
 
 logger = logging.getLogger(__name__)
-
-
 _PYPROJECT_TOML = Path("pyproject.toml")
+_T = TypeVar("_T")
 
 
 @dataclass(frozen=True)
@@ -64,16 +63,15 @@ class PyProjectToml:
         This includes the project itself.
         """
         # Add project name
-        pep631_name = pkg(nested_item(self.cfg, "project.name", str) or "")
-        poetry_name = pkg(nested_item(self.cfg, "tool.poetry.name", str) or "")
+        pep631_name = pkg(self.nested_item("project.name", str) or "")
+        poetry_name = pkg(self.nested_item("tool.poetry.name", str) or "")
         return frozenset(
             filter(
                 None,
                 (
                     pep631_name,
                     poetry_name,
-                    *nested_item(
-                        self.cfg,
+                    *self.nested_item(
                         "tool.check-dependencies.known-missing",
                         list,
                     ),
@@ -85,7 +83,7 @@ class PyProjectToml:
     def known_extra(self) -> frozenset[str]:
         """Dependencies that are known to be unused in application."""
         return frozenset(
-            nested_item(self.cfg, "tool.check-dependencies.known-extra", list),
+            self.nested_item("tool.check-dependencies.known-extra", list),
         )
 
     @property
@@ -100,20 +98,20 @@ class PyProjectToml:
         """
         return [
             (normalize_pkg(package), module)
-            for package, modules in nested_item(
-                self.cfg, "tool.check-dependencies.provides", dict
+            for package, modules in self.nested_item(
+                "tool.check-dependencies.provides", dict
             ).items()
             for module in ([modules] if isinstance(modules, str) else modules)
         ]
 
     def _poetry_dependencies(self) -> frozenset[str]:
         """Get dependencies from a poetry-style pyproject.toml file."""
-        deps = set(nested_item(self.cfg, "tool.poetry.dependencies", dict))
+        deps = set(self.nested_item("tool.poetry.dependencies", dict))
         if self.include_dev:
             deps |= set(
-                nested_item(self.cfg, "tool.poetry.group.dev.dependencies", dict),
+                self.nested_item("tool.poetry.group.dev.dependencies", dict),
             )
-            deps |= set(nested_item(self.cfg, "tool.poetry.dev-dependencies", dict))
+            deps |= set(self.nested_item("tool.poetry.dev-dependencies", dict))
 
         return frozenset(x for x in deps) - {"python"}
 
@@ -126,15 +124,25 @@ class PyProjectToml:
                 "_",
             )
 
-        raw_deps = nested_item(self.cfg, "project.dependencies", list)
+        raw_deps = self.nested_item("project.dependencies", list)
         deps = {canonical(raw_dep) for raw_dep in raw_deps}
-        for raw_extras in nested_item(
-            self.cfg,
-            "project.optional-dependencies",
-            dict,
+        for raw_extras in self.nested_item(
+            "project.optional-dependencies", dict
         ).values():
             deps |= {canonical(raw_extra) for raw_extra in raw_extras}
         return frozenset(deps)
+
+    def nested_item(self, key: str, /, class_: type[_T]) -> _T:
+        """Get items from a nested dictionary where the keys are dot-separated."""
+        obj = self.cfg
+        for a in key.split("."):
+            if a not in obj:
+                return class_()
+            obj = obj[a]
+        if not isinstance(obj, class_):
+            msg = f"Expected {class_} but got {type(obj)}"
+            raise TypeError(msg)
+        return obj
 
 
 def get_pyproject_path(path: Path) -> Path:

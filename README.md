@@ -116,7 +116,7 @@ known-extra = [
 PIL = "Pillow"
 jwt = "PyJWT"
 shapefile = "pyshp"
-foxtrox = "fox,trox"  # This package provides both `import fox` and `import trox`, but the package name is `foxtrox`
+foxtrox = ["fox", "trox"]  # This package provides both `import fox` and `import trox`, but the package name is `foxtrox`
 ```
 
 #### Exit code

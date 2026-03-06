@@ -12,9 +12,9 @@ from typing import Any, Collection
 from check_dependencies.lib import nested_item, normalize_pkg, pkg
 
 try:
-    import tomllib
+    import tomllib  # type: ignore[import-not-found]
 except ImportError:  # pragma: no cover
-    import toml as tomllib  # type: ignore[no-redef]
+    import toml as tomllib  # type: ignore[no-redef,import-not-found,unused-ignore]
 
 logger = logging.getLogger(__name__)
 
@@ -101,7 +101,7 @@ class PyProjectToml:
         return [
             (normalize_pkg(package), module)
             for package, modules in nested_item(
-                self.cfg, "tool.check-dependencies.provides", dict[str, str]
+                self.cfg, "tool.check-dependencies.provides", dict
             ).items()
             for module in ([modules] if isinstance(modules, str) else modules)
         ]

@@ -10,9 +10,9 @@ from check_dependencies.pyproject_toml import PyProjectToml
 from tests.conftest import PEP631, POETRY, PYPROJECT_EMPTY, PYPROJECT_PROVIDES
 
 try:
-    import tomllib
+    import tomllib  # type: ignore[no-redef,import-not-found,unused-ignore]
 except ImportError:
-    import toml as tomllib  # type: ignore[no-redef]
+    import toml as tomllib  # type: ignore[no-redef,import-not-found,unused-ignore]
 
 from check_dependencies.pyproject_toml import get_pyproject_path
 

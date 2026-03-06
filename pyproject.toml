@@ -94,8 +94,3 @@ addopts = """
   --cov-report term-missing
   --cov-branch
 """
-
-[tool.uv.workspace]
-members = [
-    "src/tests/data/foo",
-]

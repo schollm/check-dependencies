@@ -69,7 +69,7 @@ def test__main__provides_parsing(
     """Test that --provides flags are parsed, merged, and normalized correctly."""
     captured: dict[str, Packages] = {}
 
-    def _mock_yield(_file_names: object, app_cfg: AppConfig) -> object:  # type: ignore[misc]
+    def _mock_yield(_file_names: object, app_cfg: AppConfig) -> object:
         captured["provides"] = app_cfg.provides
         return iter([])
 
@@ -96,7 +96,7 @@ class TestYieldWrongImports:
         show_all: bool = False,
         known_extra: Sequence[str] = (),
         known_missing: Sequence[str] = (),
-        provides: list[tuple[str, str]] | None = None,
+        provides: Sequence[str] = (),
     ) -> list[str]:
         """Call the yield wrong imports function with patched pyproject.toml."""
         with patch("check_dependencies.pyproject_toml._PYPROJECT_TOML", overwrite_cfg):
@@ -159,7 +159,7 @@ class TestYieldWrongImports:
         """AppConfig.provides (CLI --provides) resolves false positives like config."""
         # POETRY has test_alias_pkg NOT declared, but we pass provides via AppConfig
         # to map test_1 -> test_main (test_main IS declared in POETRY).
-        result = self.fn(overwrite_cfg=POETRY, provides={"test_1": "test_main"})
+        result = self.fn(overwrite_cfg=POETRY, provides="test_main=test_1")
         assert "! test_1" not in result
         assert "+ test_main" not in result
 
@@ -168,7 +168,7 @@ class TestYieldWrongImports:
         # Config maps test_1 -> test_alias_pkg.  CLI overrides to test_1 -> test_main.
         result = self.fn(
             overwrite_cfg=PYPROJECT_PROVIDES,
-            provides={"test_1": "test_main"},
+            provides="test_main=test_1",
         )
         assert "! test_1" not in result
         assert "+ test_main" not in result

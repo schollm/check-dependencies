@@ -328,14 +328,14 @@ def test_imports_iter(stmt: str, expected: list[str]) -> None:
 
 
 def test_missing_import_iter_silent_on_invalid_python_code() -> None:
-    """Test that missing imports iterator is silent on invalid Python code and returns an empty iterator."""
+    """Test that missing imports iterator is silent on invalid Python code."""
     my_path = MagicMock()
     my_path.read_bytes.return_value = b"()foo"
     assert list(_missing_imports_iter(my_path, set(), Packages([]))) == []
 
 
 def test_missing_imports_iter_non_utf8_encoding(tmp_path: Path) -> None:
-    """Test that _missing_imports_iter works with a non-UTF8-encoded file (PEP 263 encoding cookie)."""
+    """Test that _missing_imports_iter works with a non-UTF8-encoded file."""
     py_file = tmp_path / "latin1_module.py"
     # Write a latin-1 encoded file with an encoding cookie and an import
     content = "# -*- coding: latin-1 -*-\nimport os\nx = 'caf\xe9'\n"

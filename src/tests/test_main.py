@@ -327,10 +327,10 @@ def test_imports_iter(stmt: str, expected: list[str]) -> None:
     assert [x[0] for x in _imports_iter(parsed.body)] == expected
 
 
-def test_missing_import_iter_raises_on_invalid_python_code() -> None:
+def test_missing_import_iter_silent_on_invalid_python_code() -> None:
     """Test that missing imports iterator raises on invalid Python code."""
     my_path = MagicMock()
-    my_path.read_text.return_value = "()foo"
+    my_path.read_bytes.return_value = b"()foo"
     assert list(_missing_imports_iter(my_path, set(), Packages([]))) == []
 
 

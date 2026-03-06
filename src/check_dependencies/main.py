@@ -97,7 +97,7 @@ def _missing_imports_iter(
     :yields: Tuple of status, module name and optional import statement
     """
     try:
-        parsed = ast.parse(file.read_text(), filename=file.as_posix())
+        parsed = ast.parse(file.read_bytes(), filename=file.as_posix())
     except SyntaxError:
         logger.exception("Could not parse %s", file)
         return

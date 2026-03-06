@@ -4,8 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## Upcoming
+## [0.13.0] - 2025-05-01 - Support for package - module mapping in pyproject.toml
 ### Added
 - Support for package - module mapping in pyproject.toml, to allow for different package and module names.
+## [0.12.6] - Fix typos and pipelines
+### Changed
+- Fix typos in changelog and pipelines
+## [0.12.5] - Fix typos
+### Changed
+- Fix typos in changelog
 ## [0.12.4] - 2025-04-11 - Bugfix: github actions upload artifact overwrite
 ### Bugfix
 - Use --clobber when uploading signed artifact

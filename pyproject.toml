@@ -37,6 +37,8 @@ dev = [
     "ruff>=0.9.6",
     "types-toml>=0.10.8.20240310",
     "pytest-cov>=5.0.0",
+    "types-pygments>=2.19.0.20250107",
+    "types-pexpect>=4.9.0.20241208",
 ]
 [tool.check-dependencies]
 

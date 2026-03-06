@@ -79,10 +79,9 @@ def _project_files(file_names: Collection[str]) -> Iterator[Path]:
     visited = set()
     for p in map(Path, file_names):
         for p_sub in p.rglob("*.py") if p.is_dir() else [p]:
-            if (p_sub_resolved := p_sub.resolve()) in visited:
-                continue
-            visited.add(p_sub_resolved)
-            yield p_sub
+            if (p_sub_resolved := p_sub.resolve()) not in visited:
+                visited.add(p_sub_resolved)
+                yield p_sub
 
 
 def _missing_imports_iter(

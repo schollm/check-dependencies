@@ -99,11 +99,11 @@ class PyProjectToml:
         ``pyjwt``, and ``py-jwt`` all resolve to the same key.
         """
         return [
-            (normalize_pkg(k), v)
-            for k, v_lst in nested_item(
-                self.cfg, "tool.check-dependencies.provides", dict
+            (normalize_pkg(package), module)
+            for package, modules in nested_item(
+                self.cfg, "tool.check-dependencies.provides", dict[str, str]
             ).items()
-            for v in ([v_lst] if isinstance(v_lst, str) else v_lst)
+            for module in ([modules] if isinstance(modules, str) else modules)
         ]
 
     def _poetry_dependencies(self) -> frozenset[str]:

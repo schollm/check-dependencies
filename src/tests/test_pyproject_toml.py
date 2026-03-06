@@ -6,7 +6,11 @@ from pathlib import Path
 
 import pytest
 
-from check_dependencies.pyproject_toml import PyProjectToml, get_pyproject_path, tomllib
+from check_dependencies.pyproject_toml import (
+    PyProjectToml,
+    _get_pyproject_path,
+    tomllib,
+)
 from tests.conftest import PEP631, POETRY, PYPROJECT_EMPTY, PYPROJECT_PROVIDES
 
 
@@ -103,9 +107,9 @@ class TestGetPyProjectPath:
         """Test that get_pyproject_path finds the pyproject.toml file."""
         pyproject = tmp_path / "pyproject.toml"
         pyproject.write_text("[tool.check-dependencies]\n", "utf-8")
-        assert get_pyproject_path(tmp_path) == pyproject
+        assert _get_pyproject_path(tmp_path) == pyproject
 
     def test_no_pyproject(self) -> None:
         """Test that get_pyproject_path raises without pyproject.toml."""
         with pytest.raises(FileNotFoundError):
-            get_pyproject_path(Path("/"))
+            _get_pyproject_path(Path("/"))

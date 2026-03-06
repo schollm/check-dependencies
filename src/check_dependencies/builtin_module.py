@@ -9,7 +9,7 @@ if sys.version_info >= (3, 10):
     BUILTINS = frozenset(sys.stdlib_module_names)  # pylint: disable=no-member
 else:
     # Use the list of builtins from Python 3.9
-    BUILTINS = frozenset(
+    BUILTINS = frozenset(  # pragma: no cover
         [
             "__future__",
             "_abc",

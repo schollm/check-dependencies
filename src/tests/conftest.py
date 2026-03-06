@@ -16,6 +16,7 @@ POETRY = DATA / "pyproject_poetry.toml"
 POETRY_EXTRA = DATA / "pyproject_poetry_extra.toml"
 PYPROJECT_CFG = DATA / "pyproject_cfg.toml"
 PYPROJECT_EMPTY = DATA / "pyproject_empty.toml"
+PYPROJECT_PROVIDES = DATA / "pyproject_pep631_provides.toml"
 
 
 @pytest.fixture(params=[PEP631, POETRY])

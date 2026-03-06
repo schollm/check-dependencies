@@ -6,7 +6,7 @@ It can be used as a stand-alone or as part of a CI/CD to check if an application
 This is a pure-Python zero-dependency (Up until Python 3.11 one, toml) package.
 ## Usage
 ```text
-usage: check-dependencies [-h] [--include-extra] [--verbose] [--all] [--missing MISSING] [--extra EXTRA] file_name [file_name ...]
+usage: check-dependencies [-h] [--include-extra] [--verbose] [--all] [--missing MISSING] [--extra EXTRA] [--provides PROVIDES] file_name [file_name ...]
 
 Find undeclared and unused (or all) imports in Python files
 
@@ -22,6 +22,12 @@ optional arguments:
                      Assume they are part of the requirements.
   --extra EXTRA      Comma seperated list of requirements known to not be imported.
                      Assume they are not part of the requirements.
+  --provides IMPORT=PACKAGE
+                     Map an import name to its package name for packages whose
+                     import name differs from the package name. Can be specified
+                     multiple times. E.g. --provides PIL=Pillow --provides jwt=PyJWT.
+                     Package name is normalized (case-insensitive, hyphens and
+                     underscores equivalent), so PIL=Pillow and PIL=pillow are the same.
 ```
 
 ### Output
@@ -83,14 +89,20 @@ check-dependencies --verbose --all project/src/
 
 ### Configuration
 The configuration is read from `pyproject.toml` file. The configuration file
-supports two entries, `[tool.check_dependencies.extra-requirements]` that can be used to
-add extra dependencies to the list of requirements to be treated as existing
-requirements.
-The second entry, `[tool.check_dependencies.ignore-requirements]` does the opposite, it will
-ignore extra requirements that are not used in the application.
+supports the following entries:
+- `[tool.check-dependencies.extra-requirements]` to
+add extra packages to the list of dependencies.
 
+- `[tool.check-dependencies.ignore-requirements]` does the opposite, it will
+ignore existing dependencies even if they are not imported. This is useful for
+  packages, that provide functionality via plugins (e.g. sqlalchemy plugins)
+  and are not imported directly in the codebase.
+- `[tool.check-dependencies.provides]` to map import names to package names for
+  packages whose import name differs from the package name.
+  E.g. Pillow is imported as PIL, but the package name is Pillow.
+  The value can be either a single module or a list of modules.
 ```toml
-[tool.check_dependencies]
+[tool.check-dependencies]
 known-missing = [
   "undeclared_package",
   "another_package"
@@ -99,6 +111,12 @@ known-extra = [
   "package_as_extra_for_another_package",
   "yet_another_package"
 ]
+[tool.check-dependencies.provides]
+# Maps import name -> package name for packages whose import name differs
+PIL = "Pillow"
+jwt = "PyJWT"
+shapefile = "pyshp"
+foxtrox = "fox,trox"  # This package provides both `import fox` and `import trox`, but the package name is `foxtrox`
 ```
 
 #### Exit code

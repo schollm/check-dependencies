@@ -4,7 +4,7 @@ import argparse
 import logging
 import sys
 
-from check_dependencies.lib import AppConfig
+from check_dependencies.app_config import AppConfig
 from check_dependencies.main import yield_wrong_imports
 
 
@@ -64,14 +64,28 @@ def main() -> None:
         "that affect the package but are not imported explicitly.",
         default="",
     )
+    parser.add_argument(
+        "--provides",
+        type=str,
+        action="append",
+        default=[],
+        metavar="IMPORT=PACKAGE",
+        help="Map an import name to its package name for packages whose import name"
+        " differs from the package name. Can be specified multiple times."
+        " E.g. --provides PIL=Pillow --provides jwt=PyJWT."
+        " The package name is normalized (case-insensitive, hyphens and underscores"
+        " are equivalent), so PIL=Pillow, PIL=pillow and PIL=PIL-ow are all the same.",
+    )
     args = parser.parse_args()
 
-    cfg = AppConfig(
+    cfg = AppConfig.from_cli_args(
+        file_names=args.file_name,
+        known_extra=args.extra,
+        known_missing=args.missing,
+        provides=args.provides,
         include_dev=args.include_dev,
         verbose=args.verbose,
         show_all=args.all,
-        known_extra=set(args.extra.split(",")),
-        known_missing=set(args.missing.split(",")),
     )
 
     wrong_import_lines = yield_wrong_imports(args.file_name, cfg)
@@ -82,4 +96,5 @@ def main() -> None:
         sys.exit(ex.value)
 
 
-main()
+if __name__ == "__main__":
+    main()  # pragma: no cover

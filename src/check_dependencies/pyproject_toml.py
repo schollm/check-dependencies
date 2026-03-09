@@ -39,7 +39,7 @@ class PyProjectToml:
             pyproject_candidate = Path(
                 commonpath(Path(p).expanduser().resolve() for p in paths),
             )
-        except  ValueError as exc:
+        except ValueError as exc:
             msg = f"Error finding common path for {paths}: {exc}"
             raise ValueError(msg) from exc
         path = _get_pyproject_path(pyproject_candidate)
@@ -68,8 +68,8 @@ class PyProjectToml:
         This includes the project itself.
         """
         # Add project name
-        pep631_name = pkg(self._nested_item("project.name", str) or "")
-        poetry_name = pkg(self._nested_item("tool.poetry.name", str) or "")
+        pep631_name = normalize_pkg(self._nested_item("project.name", str) or "")
+        poetry_name = normalize_pkg(self._nested_item("tool.poetry.name", str) or "")
         return frozenset(
             filter(
                 None,
@@ -134,7 +134,9 @@ class PyProjectToml:
         ).values():
             deps.update(map(canonical, raw_extras))
         if self.include_dev:
-            deps.update(map(canonical, self._nested_item("tool.dev.dependencies", dict)))
+            deps.update(
+                map(canonical, self._nested_item("tool.dev.dependencies", dict))
+            )
         return frozenset(deps)
 
     def _nested_item(self, key: str, /, class_: type[_T]) -> _T:

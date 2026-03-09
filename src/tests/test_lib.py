@@ -12,6 +12,8 @@ from check_dependencies.lib import Dependency, normalize_pkg
 
 
 class TestPackages:
+    """Test suite for the Packages class, which manages package-module mappings."""
+
     def test_packages_multi_module_and_multi_package_mapping(self) -> None:
         """Packages supports many-to-many mappings.
 

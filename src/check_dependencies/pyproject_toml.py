@@ -9,7 +9,7 @@ from os.path import commonpath
 from pathlib import Path
 from typing import Any, Collection, TypeVar
 
-from check_dependencies.lib import normalize_pkg, pkg
+from check_dependencies.lib import normalize_pkg
 
 try:
     import tomllib  # type: ignore[import-not-found,unused-ignore]

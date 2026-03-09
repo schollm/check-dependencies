@@ -65,7 +65,8 @@ ignore = ["COM812", "D213", "D203"]
     "FBT001",  # Boolean-typed positional argument in function definition
     "FBT002",  # Boolean default positional argument in function definition
     "PLR0913",  # Too many arguments in function definition (7 > 5)
-    "D400"   # docstring should end with a period
+    "D400",   # docstring should end with a period
+    "SLF001",  # use private member of a module to be tested.
 ]
 
 [tool.ruff.lint.flake8-pytest-style]

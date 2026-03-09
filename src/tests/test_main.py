@@ -18,8 +18,15 @@ from check_dependencies.main import (
     _missing_imports_iter,
     yield_wrong_imports,
 )
-from tests.conftest import DATA, POETRY, PYPROJECT_CFG, PYPROJECT_PROVIDES, SRC
-from tests.conftest import SRC_UNICODE, SRC_MODULE
+from tests.conftest import (
+    DATA,
+    POETRY,
+    PYPROJECT_CFG,
+    PYPROJECT_PROVIDES,
+    SRC,
+    SRC_MODULE,
+    SRC_UNICODE,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -411,7 +418,7 @@ def test_mk_unused_formatter(verbose: bool, expected: str) -> None:
 @pytest.mark.parametrize(
     "stmt, expected",
     [
-        # Unicode in module names (technically valid Python, but unlikely to work in practice)
+        # Unicode in module names (valid syntax, but won't work at runtime)
         ("import ö", ["ö"]),
         ("import café", ["café"]),
         ("from ä import something", ["ä"]),

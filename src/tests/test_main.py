@@ -358,7 +358,11 @@ def test_missing_import_iter_silent_on_invalid_python_code() -> None:
     my_path = MagicMock()
     my_path.as_posix.return_value = "dummy.py"
     my_path.read_bytes.return_value = b"()foo"
-    assert list(_missing_imports_iter(my_path, set(), Packages([]))) == []
+    res = list(_missing_imports_iter(my_path, set(), Packages([])))
+    assert len(res) == 1
+    status, filename, _ = res[0]
+    assert status == Dependency.FILE_ERROR
+    assert filename == "dummy.py"
 
 
 def test_missing_imports_iter_non_utf8_encoding(tmp_path: Path) -> None:

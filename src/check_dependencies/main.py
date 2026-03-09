@@ -107,6 +107,7 @@ def _missing_imports_iter(
         status = Dependency.OK if pkg_.intersection(dependencies) else Dependency.NA
         yield status, module, stmt
 
+
 def _imports_iter(body: list[ast.stmt]) -> Iterator[tuple[str, ast.stmt]]:
     """Yield all import statements from a body of code."""
     try:

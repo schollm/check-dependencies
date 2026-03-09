@@ -19,6 +19,7 @@ from check_dependencies.main import (
     yield_wrong_imports,
 )
 from tests.conftest import DATA, POETRY, PYPROJECT_CFG, PYPROJECT_PROVIDES, SRC
+from tests.conftest import SRC_UNICODE, SRC_MODULE
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -264,7 +265,7 @@ class TestYieldWrongImports:
 
     def test_all_imports_all_files(self) -> None:
         """show_all=True should show all imports in all files."""
-        res = self.fn(file_names=[DATA.as_posix()], show_all=True)
+        res = self.fn(file_names=[SRC_MODULE.as_posix()], show_all=True)
         assert set(res) == {
             "  check_dependencies",
             "  test_1",
@@ -278,8 +279,8 @@ class TestYieldWrongImports:
 
     def test_doublette_entries(self) -> None:
         """Test that doublette entries are not printed twice."""
-        res = self.fn(file_names=[DATA.as_posix(), DATA.as_posix()], show_all=True)
-        assert set(res) == {
+        res = self.fn(file_names=[SRC_MODULE, SRC_MODULE], show_all=True)
+        assert sorted(res) == [
             "  check_dependencies",
             "  test_1",
             "  test_main",
@@ -288,7 +289,7 @@ class TestYieldWrongImports:
             "! missing_def",
             "! missing_src2",
             "! tests_main",
-        }
+        ]
 
     def test_fail_on_missing_pyproject(self) -> None:
         """Test that we fail if the pyproject.toml is missing."""
@@ -302,6 +303,31 @@ class TestYieldWrongImports:
                 verbose=False,
                 show_all=False,
             )
+
+    def test_unicode_imports(self) -> None:
+        """Test that Unicode module names are detected as missing.
+
+        Unicode module names are technically valid in Python syntax (PEP 3131),
+        but they won't work at runtime since module names must correspond to
+        file names. The tool should parse them correctly and flag them as missing.
+        """
+        result = self.fn(file_names=[SRC_UNICODE])
+
+        # All Unicode module names should be flagged as missing
+        assert "! ö" in result
+        assert "! ä" in result
+        assert "! café" in result
+        assert "! naïve" in result
+        assert "! 日本語".lower() in result
+        assert "! Москва".lower() in result
+
+    def test_unicode_imports_verbose(self) -> None:
+        """Test verbose output with Unicode module names."""
+        result = self.fn(file_names=[SRC_UNICODE], verbose=True)
+
+        # Should show file path and line numbers for Unicode imports
+        assert any("ö" in line and SRC_UNICODE in line for line in result)
+        assert any("café" in line and SRC_UNICODE in line for line in result)
 
 
 @pytest.mark.parametrize(
@@ -376,3 +402,60 @@ def test_mk_unused_formatter(verbose: bool, expected: str) -> None:
     """Test the unused formatter."""
     cfg = AppConfig.from_cli_args(file_names=[DATA.as_posix()], verbose=verbose)
     assert list(cfg.unused_fmt("foo")) == [expected]
+
+
+@pytest.mark.parametrize(
+    "stmt, expected",
+    [
+        # Unicode in module names (technically valid Python, but unlikely to work in practice)
+        ("import ö", ["ö"]),
+        ("import café", ["café"]),
+        ("from ä import something", ["ä"]),
+        ("import 日本語", ["日本語"]),
+        ("from Москва import test", ["Москва"]),
+        # Unicode in variable names is valid, but shouldn't be confused with imports
+        ("import os\nö = 1", ["os"]),
+        # Mixed ASCII and Unicode
+        ("import foo_ö", ["foo_ö"]),
+    ],
+)
+def test_imports_iter_unicode(stmt: str, expected: list[str]) -> None:
+    """Test that Unicode module names are handled correctly.
+
+    While Python 3 allows Unicode identifiers (PEP 3131), module names
+    must correspond to file names, which are typically ASCII. The tool
+    should still parse these correctly, even though they won't work at runtime.
+    """
+    parsed = ast.parse(dedent(stmt))
+    assert [x[0] for x in _imports_iter(parsed.body)] == expected
+
+
+def test_missing_imports_iter_unicode_file(tmp_path: Path) -> None:
+    """Test _missing_imports_iter with a file containing Unicode imports.
+
+    This verifies that the tool can parse files with Unicode module names
+    (even though such imports would fail at runtime).
+    """
+    py_file = tmp_path / "unicode_imports.py"
+    content = """# -*- coding: utf-8 -*-
+import ö
+from café import something
+import sys
+"""
+    py_file.write_text(content, encoding="utf-8")
+
+    result = list(_missing_imports_iter(py_file, {"sys"}, Packages([])))
+
+    # Extract module names
+    modules = [m for _, m, _ in result]
+
+    # Should have detected all three imports
+    assert "ö" in modules
+    assert "café" in modules
+    assert "sys" in modules
+
+    # sys should be OK, Unicode modules should be NA
+    statuses = {m: status for status, m, _ in result}
+    assert statuses["sys"] == Dependency.OK
+    assert statuses["ö"] == Dependency.NA
+    assert statuses["café"] == Dependency.NA

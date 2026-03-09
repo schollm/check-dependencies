@@ -80,6 +80,8 @@ def _project_files(file_names: Collection[str]) -> Iterator[Path]:
     visited = set()
     for p in map(Path, file_names):
         for p_sub in p.rglob("*.py") if p.is_dir() else [p]:
+            # resolve to avoid duplicates from symlinks or different relative paths.
+            # Symlink can be pointed outside the project directory.
             if (p_sub_resolved := p_sub.resolve()) not in visited:
                 visited.add(p_sub_resolved)
                 yield p_sub

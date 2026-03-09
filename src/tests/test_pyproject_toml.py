@@ -91,13 +91,13 @@ class TestNestedItem:
     def test_nested_item(self, key: str, type_: type, expected: object) -> None:
         """Test nested item."""
         prj = PyProjectToml(cfg={"a": {"b": {"c": 1, "d": 2}}}, path=Path())
-        assert prj.nested_item(key, type_) == expected
+        assert prj._nested_item(key, type_) == expected
 
     def test_raise_wrong_type(self) -> None:
         """Raise wrong type."""
         prj = PyProjectToml(cfg={"a": 1}, path=Path())
         with pytest.raises(TypeError):
-            prj.nested_item("a", str)
+            prj._nested_item("a", str)
 
 
 class TestGetPyProjectPath:

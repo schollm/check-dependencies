@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Collection, Iterable, Iterator, Sequence
 
-from check_dependencies.lib import Dependency, pkg
+from check_dependencies.lib import Dependency, normalize_pkg, pkg
 from check_dependencies.pyproject_toml import PyProjectToml
 
 if TYPE_CHECKING:
@@ -27,7 +27,7 @@ class AppConfig:
     show_all: bool = False
 
     @classmethod
-    def from_cli_args(  # noqa: PLR0913
+    def from_cli_args(  # noqa: PLR0913 (factory method)
         cls,
         *,
         file_names: Sequence[str],
@@ -56,9 +56,12 @@ class AppConfig:
         src_cfg = PyProjectToml.for_paths(file_names, include_dev=include_dev)
 
         def combine(*collections: Collection[str]) -> frozenset[str]:
-            """Combine multiple collections into a single frozenset."""
+            """Combine multiple collections, filtering empty strings."""
             return frozenset(
-                item for collection in collections for item in filter(None, collection)
+                item.strip()
+                for collection in collections
+                for item in collection
+                if item and item.strip()
             )
 
         return cls(
@@ -114,26 +117,18 @@ class Packages:
 
     def modules(self, pkg_name: str) -> set[str]:
         """Get the modules (import name) for a given package name."""
-        pkg_ = self._normalize(pkg_name)
+        pkg_ = normalize_pkg(pkg_name)
         return {
             import_name
             for provided_pkg, import_name in self._packages
-            if self._normalize(provided_pkg) == pkg_
+            if normalize_pkg(provided_pkg) == pkg_
         } or {pkg_}
 
     def packages(self, module_name: str) -> set[str]:
         """Get the packages for a given module (import name)."""
-        module_ = self._main_module(module_name)
+        module_ = pkg(module_name)
         return {
-            self._normalize(provided_pkg)
+            normalize_pkg(provided_pkg)
             for provided_pkg, import_name in self._packages
             if module_ == import_name
-        } or {self._normalize(module_)}
-
-    @staticmethod
-    def _normalize(name: str) -> str:
-        return name.lower().replace("-", "_").replace(".", "_")
-
-    @staticmethod
-    def _main_module(module_name: str) -> str:
-        return module_name.split(".", 1)[0]
+        } or {normalize_pkg(module_)}

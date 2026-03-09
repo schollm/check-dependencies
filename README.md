@@ -15,7 +15,7 @@ positional arguments:
 
 optional arguments:
   -h, --help         show this help message and exit
-  --include-extra    Include dev dependencies
+  --include-dev      Include dev dependencies
   --verbose          Show every import of a package
   --all              Show all imports (including correct ones)
   --missing MISSING  Comma seperated list of requirements known to be missing. 

@@ -35,9 +35,13 @@ class PyProjectToml:
         cls, paths: Collection[str], *, include_dev: bool = False
     ) -> PyProjectToml:
         """Create a PyProjectToml instance from a pyproject.toml file."""
-        pyproject_candidate = Path(
-            commonpath(Path(p).expanduser().resolve() for p in paths),
-        )
+        try:
+            pyproject_candidate = Path(
+                commonpath(Path(p).expanduser().resolve() for p in paths),
+            )
+        except  ValueError as exc:
+            msg = f"Error finding common path for {paths}: {exc}"
+            raise ValueError(msg) from exc
         path = _get_pyproject_path(pyproject_candidate)
 
         return cls(
@@ -54,7 +58,7 @@ class PyProjectToml:
         if "poetry" in self.cfg.get("tool", {}):
             return self._poetry_dependencies()
 
-        logger.warning("No dependencies found in %s", _PYPROJECT_TOML)
+        logger.warning("No dependencies found in %s", self.path)
         return frozenset()
 
     @property
@@ -64,15 +68,15 @@ class PyProjectToml:
         This includes the project itself.
         """
         # Add project name
-        pep631_name = pkg(self.nested_item("project.name", str) or "")
-        poetry_name = pkg(self.nested_item("tool.poetry.name", str) or "")
+        pep631_name = pkg(self._nested_item("project.name", str) or "")
+        poetry_name = pkg(self._nested_item("tool.poetry.name", str) or "")
         return frozenset(
             filter(
                 None,
                 (
                     pep631_name,
                     poetry_name,
-                    *self.nested_item(
+                    *self._nested_item(
                         "tool.check-dependencies.known-missing",
                         list,
                     ),
@@ -84,7 +88,7 @@ class PyProjectToml:
     def known_extra(self) -> frozenset[str]:
         """Dependencies that are known to be unused in application."""
         return frozenset(
-            self.nested_item("tool.check-dependencies.known-extra", list),
+            self._nested_item("tool.check-dependencies.known-extra", list),
         )
 
     @property
@@ -99,7 +103,7 @@ class PyProjectToml:
         """
         return [
             (normalize_pkg(package), module)
-            for package, modules in self.nested_item(
+            for package, modules in self._nested_item(
                 "tool.check-dependencies.provides", dict
             ).items()
             for module in ([modules] if isinstance(modules, str) else modules)
@@ -107,12 +111,12 @@ class PyProjectToml:
 
     def _poetry_dependencies(self) -> frozenset[str]:
         """Get dependencies from a poetry-style pyproject.toml file."""
-        deps = set(self.nested_item("tool.poetry.dependencies", dict))
+        deps = set(self._nested_item("tool.poetry.dependencies", dict))
         if self.include_dev:
             deps |= set(
-                self.nested_item("tool.poetry.group.dev.dependencies", dict),
+                self._nested_item("tool.poetry.group.dev.dependencies", dict),
             )
-            deps |= set(self.nested_item("tool.poetry.dev-dependencies", dict))
+            deps |= set(self._nested_item("tool.poetry.dev-dependencies", dict))
 
         return frozenset(x for x in deps) - {"python"}
 
@@ -120,25 +124,20 @@ class PyProjectToml:
         """Get dependencies from a PEP 631-style pyproject.toml file."""
 
         def canonical(name: str) -> str:
-            return "".join(takewhile(lambda x: x.isalnum() or x in "-_", name)).replace(
-                "-",
-                "_",
-            )
+            return "".join(
+                takewhile(lambda x: x.isalnum() or x in "-_", name.strip())
+            ).replace("-", "_")
 
-        raw_deps = self.nested_item("project.dependencies", list)
-        deps = {canonical(raw_dep) for raw_dep in raw_deps}
-        for raw_extras in self.nested_item(
+        deps = set(map(canonical, self._nested_item("project.dependencies", list)))
+        for raw_extras in self._nested_item(
             "project.optional-dependencies", dict
         ).values():
-            deps |= {canonical(raw_extra) for raw_extra in raw_extras}
+            deps.update(map(canonical, raw_extras))
         if self.include_dev:
-            deps |= {
-                canonical(raw_dev_dep)
-                for raw_dev_dep in self.nested_item("dependency-groups.dev", list)
-            }
+            deps.update(map(canonical, self._nested_item("tool.dev.dependencies", dict)))
         return frozenset(deps)
 
-    def nested_item(self, key: str, /, class_: type[_T]) -> _T:
+    def _nested_item(self, key: str, /, class_: type[_T]) -> _T:
         """Get items from a nested dictionary where the keys are dot-separated."""
         obj = self.cfg
         for a in key.split("."):

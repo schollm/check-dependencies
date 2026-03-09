@@ -50,9 +50,10 @@ def yield_wrong_imports(
             dependencies=allowed_dependencies,
             provides=provides,
         ):
-            if cause != Dependency.OK:
+            if cause not in (Dependency.OK, Dependency.FILE_ERROR):
                 exit_status |= ERR_MISSING_DEPENDENCY
-            used_deps |= provides.packages(module)
+            if cause != Dependency.FILE_ERROR:
+                used_deps |= provides.packages(module)
             yield from src_fmt(src_pth, cause, module, stmt)
 
     if superfluous_requirements := [
@@ -68,6 +69,7 @@ def yield_wrong_imports(
             yield "### Dependencies in config file not used in application:"
             yield f"# Config file: {app_cfg.pyproject_file}"
         yield from superfluous_requirements
+    print(_ALL_FIELDS)
     return exit_status
 
 
@@ -97,14 +99,16 @@ def _missing_imports_iter(
     """
     try:
         parsed = ast.parse(file.read_bytes(), filename=file.as_posix())
-    except SyntaxError:
+    except (SyntaxError, OSError, PermissionError):
         logger.exception("Could not parse %s", file)
+        yield Dependency.FILE_ERROR, file.as_posix(), ast.Raise(lineno=-1)
         return
     for module, stmt in _imports_iter(parsed.body):
         pkg_ = provides.packages(module)
         status = Dependency.OK if pkg_.intersection(dependencies) else Dependency.NA
         yield status, module, stmt
 
+_ALL_FIELDS = set()
 
 def _imports_iter(body: list[ast.stmt]) -> Iterator[tuple[str, ast.stmt]]:
     """Yield all import statements from a body of code."""
@@ -118,9 +122,10 @@ def _imports_iter(body: list[ast.stmt]) -> Iterator[tuple[str, ast.stmt]]:
         if isinstance(x, ast.Import):
             for alias in x.names:
                 yield alias.name, x  # yield x, not alias to get lineno
-        elif isinstance(x, ast.ImportFrom) and x.level == 0:
+        elif isinstance(x, ast.ImportFrom) and x.level == 0 and x.module:
             # level > 0 means relative import
-            yield x.module or "", x
+            yield x.module, x
         elif hasattr(x, "body"):
             for f in x._fields:
+                _ALL_FIELDS.add(f)
                 yield from _imports_iter(getattr(x, f))

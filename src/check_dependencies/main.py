@@ -69,7 +69,6 @@ def yield_wrong_imports(
             yield "### Dependencies in config file not used in application:"
             yield f"# Config file: {app_cfg.pyproject_file}"
         yield from superfluous_requirements
-    print(_ALL_FIELDS)
     return exit_status
 
 
@@ -108,8 +107,6 @@ def _missing_imports_iter(
         status = Dependency.OK if pkg_.intersection(dependencies) else Dependency.NA
         yield status, module, stmt
 
-_ALL_FIELDS = set()
-
 def _imports_iter(body: list[ast.stmt]) -> Iterator[tuple[str, ast.stmt]]:
     """Yield all import statements from a body of code."""
     try:
@@ -127,5 +124,4 @@ def _imports_iter(body: list[ast.stmt]) -> Iterator[tuple[str, ast.stmt]]:
             yield x.module, x
         elif hasattr(x, "body"):
             for f in x._fields:
-                _ALL_FIELDS.add(f)
                 yield from _imports_iter(getattr(x, f))

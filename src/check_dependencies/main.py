@@ -31,24 +31,20 @@ def yield_wrong_imports(
     """
     used_deps: set[str] = set()
     src_fmt = app_cfg.mk_src_formatter()
-    exit_status = 0
 
-    expected_dependencies = frozenset().union(
-        app_cfg.dependencies,  # dependencies from pyproject.toml
-        app_cfg.known_extra,
-        BUILTINS,  # builtins
-    )
+    allowed_dependencies = {
+        *app_cfg.dependencies,  # dependencies from pyproject.toml
+        *app_cfg.known_extra,
+        *BUILTINS,
+        *app_cfg.known_missing,
+    }
     provides = app_cfg.provides
-    allowed_dependencies: frozenset[str] = frozenset().union(
-        expected_dependencies,
-        app_cfg.known_missing,
-    )
+
+    exit_status = 0
 
     for src_pth in _project_files(file_names):
         for cause, module, stmt in _missing_imports_iter(
-            src_pth,
-            dependencies=allowed_dependencies,
-            provides=provides,
+            src_pth, dependencies=allowed_dependencies, provides=provides
         ):
             if cause not in (Dependency.OK, Dependency.FILE_ERROR):
                 exit_status |= ERR_MISSING_DEPENDENCY

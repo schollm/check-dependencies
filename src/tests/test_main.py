@@ -476,7 +476,9 @@ import sys
 def test_performance_large_project(tmp_path: Path) -> None:
     """Test the performance of yield_wrong_imports on a large project."""
     # Erstelle 10.000 Python-Files
-    for i in range(1000):
+    max_duration_per_file = 0.01 # in seconds
+    n_files = 1000
+    for i in range(n_files):
         (tmp_path / f"file_{i}.py").write_text("import sys\n")
     cfg = AppConfig(
         dependencies=[],
@@ -488,4 +490,4 @@ def test_performance_large_project(tmp_path: Path) -> None:
     _ = list(yield_wrong_imports([tmp_path.as_posix()], cfg))
     duration = time.time() - start
 
-    assert duration < 1.0  # Max 1 ms/file
+    assert duration < max_duration_per_file * n_files

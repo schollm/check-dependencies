@@ -136,8 +136,8 @@ class Packages:
     def __init__(self, packages: list[tuple[str, str]]) -> None:
         """Initialize the Packages dataclass.
 
-        :param packages: List of (package, module) tuples, where package is the package name
-            and module is the import name.
+        :param packages: List of (package, module) tuples, where package is the
+            package name and module is the import name.
         """
         packages = [(normalize_pkg(pkg_), module) for pkg_, module in packages]
 
@@ -159,7 +159,7 @@ class Packages:
         """Get the modules (import name) for a given package name.
 
         :param pkg_name: The package name to look up.
-         """
+        """
         pkg_ = normalize_pkg(pkg_name)
         return self._modules.get(pkg_, {pkg_})
 

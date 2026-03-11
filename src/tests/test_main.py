@@ -473,7 +473,7 @@ import sys
     assert statuses["café"] == Dependency.NA
 
 
-def test_performance_large_project(tmp_path):
+def test_performance_large_project(tmp_path: Path) -> None:
     """Test the performance of yield_wrong_imports on a large project."""
     # Erstelle 10.000 Python-Files
     for i in range(1000):

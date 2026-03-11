@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from itertools import groupby
+from operator import itemgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Collection, Iterable, Iterator, Sequence
 
@@ -109,26 +111,36 @@ class AppConfig:
         yield f"{Dependency.EXTRA.value}{info} {module}"
 
 
-@dataclass(frozen=True)
 class Packages:
     """Translation layer to map between packages to modules."""
 
-    _packages: list[tuple[str, str]]
+    _modules: dict[str, set[str]]
+    _packages: dict[str, set[str]]
+
+    def __init__(self, packages: list[tuple[str, str]]) -> None:
+        """Initialize the Packages dataclass."""
+        packages = [(normalize_pkg(pkg_), module) for pkg_, module in packages]
+
+        self._modules = {
+            key: {module for _, module in val}
+            for key, val in groupby(
+                sorted(packages, key=itemgetter(0)), key=itemgetter(0)
+            )
+        }
+
+        self._packages = {
+            key: {pkg_ for pkg_, _ in val}
+            for key, val in groupby(
+                sorted(packages, key=itemgetter(1)), key=itemgetter(1)
+            )
+        }
 
     def modules(self, pkg_name: str) -> set[str]:
         """Get the modules (import name) for a given package name."""
         pkg_ = normalize_pkg(pkg_name)
-        return {
-            import_name
-            for provided_pkg, import_name in self._packages
-            if normalize_pkg(provided_pkg) == pkg_
-        } or {pkg_}
+        return self._modules.get(pkg_, {pkg_})
 
     def packages(self, module_name: str) -> set[str]:
         """Get the packages for a given module (import name)."""
         module_ = pkg(module_name)
-        return {
-            normalize_pkg(provided_pkg)
-            for provided_pkg, import_name in self._packages
-            if module_ == import_name
-        } or {normalize_pkg(module_)}
+        return self._packages.get(module_, {normalize_pkg(module_)})

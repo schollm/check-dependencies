@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import pytest
@@ -79,6 +80,12 @@ class TestPyProjectToml:
             include_dev=False,
         )
         assert cfg.provides == [(expected, "some_import")]
+
+    @pytest.mark.skipif(sys.platform != "win32", reason="Windows-specific test")
+    def test_fails_on_different_paths(self) -> None:
+        """Test that PyProjectToml raises when initialized with different paths."""
+        with pytest.raises(ValueError, match="Error finding common path for.*C:.test.*D:.test"):
+            PyProjectToml.for_paths(["C:/test", "D:/test"])
 
 
 class TestNestedItem:

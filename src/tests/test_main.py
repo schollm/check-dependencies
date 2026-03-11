@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import time
 from pathlib import Path
 from textwrap import dedent
 from typing import TYPE_CHECKING
@@ -470,3 +471,21 @@ import sys
     assert statuses["sys"] == Dependency.OK
     assert statuses["ö"] == Dependency.NA
     assert statuses["café"] == Dependency.NA
+
+
+def test_performance_large_project(tmp_path):
+    """Test the performance of yield_wrong_imports on a large project."""
+    # Erstelle 10.000 Python-Files
+    for i in range(1000):
+        (tmp_path / f"file_{i}.py").write_text("import sys\n")
+    cfg = AppConfig(
+        dependencies=[],
+        known_extra=[],
+        known_missing=[],
+        provides=Packages([]),
+    )
+    start = time.time()
+    _ = list(yield_wrong_imports([tmp_path.as_posix()], cfg))
+    duration = time.time() - start
+
+    assert duration < 1.0  # Max 1 ms/file

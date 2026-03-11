@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import ast
-from pathlib import Path
 
 import pytest
 
@@ -76,7 +75,7 @@ class TestMkSrcFormatter:
             file_names=(), verbose=verbose, show_all=False, known_extra="foo"
         )
         fn = cfg.mk_src_formatter()
-        assert not list(fn(Path("src.py"), Dependency.OK, "foo", stmt))
+        assert not list(fn("src.py", Dependency.OK, "foo", stmt))
 
     @pytest.mark.parametrize(
         "verbose, show_all, cause, expected",
@@ -100,7 +99,7 @@ class TestMkSrcFormatter:
         """MkSrcFormatter generic tests."""
         cfg = AppConfig.from_cli_args(file_names=(), verbose=verbose, show_all=show_all)
         fn = cfg.mk_src_formatter()
-        assert next(fn(Path("src.py"), Dependency(cause), "foo", stmt)) == expected
+        assert next(fn("src.py", Dependency(cause), "foo", stmt)) == expected
 
     def test_cache(self, stmt: ast.stmt) -> None:
         """Test the cache mechanism for the formatter."""

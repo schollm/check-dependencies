@@ -58,10 +58,6 @@ class AppConfig:
             if package.strip() and module.strip():
                 provides_list.append((package.strip(), module.strip()))
 
-        for file in file_names:
-            if not Path(file).exists():
-                raise FileNotFoundError(file)
-
         if not file_names:
             file_names = ["."]
 
@@ -97,20 +93,22 @@ class AppConfig:
 
     def mk_src_formatter(
         self,
-    ) -> Callable[[Path | str, Dependency, str, ast.stmt | None], Iterator[str]]:
+    ) -> Callable[[str, Dependency, str, ast.stmt | None], Iterator[str]]:
         """Formatter for missing or used dependencies."""
         cache: set[str] = set()
 
         def src_cause_formatter(
-            src_pth: Path | str,
+            src_pth: str,
             cause: Dependency,
             module: str,
             stmt: ast.stmt | None,
         ) -> Iterator[str]:
             if self.verbose:
                 location = f"{Path(src_pth).as_posix()}:{getattr(stmt, 'lineno', -1)}"
-                if cause == Dependency.NA or self.show_all:
+                if cause in (Dependency.NA, Dependency.FILE_ERROR) or self.show_all:
                     yield f"{cause.value}{cause.name} {location} {module}"
+            elif cause == Dependency.FILE_ERROR:
+                yield f"{cause.value} {src_pth}"
             elif (pkg_ := pkg(module)) not in cache:
                 cache.add(pkg_)
                 if cause == Dependency.NA or self.show_all:

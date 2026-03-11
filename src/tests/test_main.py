@@ -287,7 +287,7 @@ class TestYieldWrongImports:
 
     def test_doublette_entries(self) -> None:
         """Test that doublette entries are not printed twice."""
-        res = self.fn(file_names=[SRC_MODULE, SRC_MODULE], show_all=True)
+        res = self.fn(file_names=[SRC_MODULE.as_posix()] * 2, show_all=True)
         assert sorted(res) == [
             "  check_dependencies",
             "  test_1",
@@ -299,18 +299,18 @@ class TestYieldWrongImports:
             "! tests_main",
         ]
 
-    def test_fail_on_missing_pyproject(self) -> None:
+    def test_no_fail_on_missing_pyproject(self) -> None:
         """Test that we fail if the pyproject.toml is missing."""
-        with pytest.raises(FileNotFoundError):
-            AppConfig.from_cli_args(
-                file_names=["nonexistent.py"],
-                known_extra="",
-                known_missing="",
-                provides=[],
-                include_dev=False,
-                verbose=False,
-                show_all=False,
-            )
+        res = AppConfig.from_cli_args(
+            file_names=["nonexistent.py"],
+            known_extra="",
+            known_missing="",
+            provides=[],
+            include_dev=False,
+            verbose=False,
+            show_all=False,
+        )
+        assert res
 
     def test_unicode_imports(self) -> None:
         """Test that Unicode module names are detected as missing.
@@ -336,6 +336,12 @@ class TestYieldWrongImports:
         # Should show file path and line numbers for Unicode imports
         assert any("ö" in line and SRC_UNICODE in line for line in result)
         assert any("café" in line and SRC_UNICODE in line for line in result)
+
+    def test_fail_msg_on_nonexisting_file(self) -> None:
+        """Test non-existing files."""
+        missing_file = (SRC_MODULE / "non-existing.pyy").as_posix()
+        res = self.fn(file_names=[missing_file])
+        assert res[0] == f"!! {missing_file}"
 
 
 @pytest.mark.parametrize(
@@ -476,7 +482,7 @@ import sys
 def test_performance_large_project(tmp_path: Path) -> None:
     """Test the performance of yield_wrong_imports on a large project."""
     # Erstelle 10.000 Python-Files
-    max_duration_per_file = 0.01 # in seconds
+    max_duration_per_file = 0.01  # in seconds
     n_files = 1000
     for i in range(n_files):
         (tmp_path / f"file_{i}.py").write_text("import sys\n")

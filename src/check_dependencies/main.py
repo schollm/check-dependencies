@@ -19,6 +19,7 @@ logger = logging.getLogger("check_dependencies")
 ERR_MISSING_DEPENDENCY = 2
 ERR_EXTRA_DEPENDENCY = 4
 ERR_NO_PYPROJECT = 8
+ERR_FILE = 16
 
 
 def yield_wrong_imports(
@@ -52,7 +53,7 @@ def yield_wrong_imports(
                 exit_status |= ERR_MISSING_DEPENDENCY
             if cause != Dependency.FILE_ERROR:
                 used_deps |= provides.packages(module)
-            yield from src_fmt(src_pth, cause, module, stmt)
+            yield from src_fmt(src_pth.as_posix(), cause, module, stmt)
 
     if superfluous_requirements := [
         msg
@@ -100,7 +101,7 @@ def _missing_imports_iter(
     """
     try:
         parsed = ast.parse(file.read_bytes(), filename=file.as_posix())
-    except (SyntaxError, OSError, PermissionError):
+    except (SyntaxError, OSError, PermissionError, FileNotFoundError):
         logger.exception("Could not parse %s", file)
         yield Dependency.FILE_ERROR, file.as_posix(), ast.Raise(lineno=-1)
         return

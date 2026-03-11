@@ -6,8 +6,8 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/ruff-action@v3
+      - uses: actions/checkout@v6.0.2
+      - uses: astral-sh/ruff-action@v3.6.1
         with:
           src: "./src"
           args: "check"
@@ -27,13 +27,13 @@ jobs:
             coverage: true
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6.0.2
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6.2.0
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install uv
-      uses: astral-sh/setup-uv@v5
+      uses: astral-sh/setup-uv@v7.4.0
       with:
         enable-cache: true
     - name: Install dependencies
@@ -54,7 +54,7 @@ jobs:
       if: matrix.coverage==true
       run: cat code-coverage-results.md >> $GITHUB_STEP_SUMMARY
 #    - name: Add Coverage PR Comment
-#      uses: marocchino/sticky-pull-request-comment@v2
+#      uses: marocchino/sticky-pull-request-comment@v2.9.4
 #      if: matrix.coverage==true # && (github.event_name == 'pull_request')
 #      with:
 #        recreate: true
@@ -63,19 +63,19 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6.0.2
       - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6.2.0
         with:
           python-version: 3.12
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v7.4.0
         with:
           enable-cache: true
       - name: Build package
         run: uv build
       - name: Upload dist-build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.0
         with:
           name: python-package-distributions
           path: dist/
@@ -97,7 +97,7 @@ jobs:
 
     steps:
       - name: Download all the dists
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8.0.1
         with:
           name: python-package-distributions
           path: dist/
@@ -120,12 +120,12 @@ jobs:
 
     steps:
       - name: Download all the dists
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8.0.1
         with:
           name: python-package-distributions
           path: dist/
       - name: Sign the dists with Sigstore
-        uses: sigstore/gh-action-sigstore-python@v3.0.0
+        uses: sigstore/gh-action-sigstore-python@v3.2.0
         with:
           inputs: >-
             ./dist/*.tar.gz

@@ -34,7 +34,14 @@ class PyProjectToml:
     def for_paths(
         cls, paths: Collection[str], *, include_dev: bool = False
     ) -> PyProjectToml:
-        """Create a PyProjectToml instance from a pyproject.toml file."""
+        """Create a PyProjectToml instance from a pyproject.toml file.
+
+        :param paths: List of file paths to analyze. The common parent directory
+            will be searched for a pyproject.toml file.
+        :param include_dev: Whether to include development dependencies
+            from pyproject.toml.
+        :returns: A PyProjectToml instance with the parsed configuration.
+        """
         try:
             pyproject_candidate = Path(
                 commonpath(Path(p).expanduser().resolve() for p in paths),
@@ -140,7 +147,14 @@ class PyProjectToml:
         return frozenset(deps)
 
     def _nested_item(self, key: str, /, class_: type[_T]) -> _T:
-        """Get items from a nested dictionary where the keys are dot-separated."""
+        """Get items from a nested dictionary where the keys are dot-separated.
+
+        :param key: The dot-separated key to look up in the nested dictionary.
+        :param class_: The expected type of the value.
+        :returns: The value corresponding to the key if found
+            otherwise the default instance of the expected type.
+        :raises TypeError: If the value found is not of the expected type.
+        """
         obj = self.cfg
         for a in key.split("."):
             if a not in obj:
@@ -153,7 +167,10 @@ class PyProjectToml:
 
 
 def _get_pyproject_path(path: Path) -> Path:
-    """Get the pyproject.toml file by searching up the directory hierarchy."""
+    """Get the pyproject.toml file by searching up the directory hierarchy.
+
+    :param path: The starting path to search from.
+    """
     for p in chain([path], path.resolve().parents):
         if (p / _PYPROJECT_TOML).exists():
             return p / _PYPROJECT_TOML

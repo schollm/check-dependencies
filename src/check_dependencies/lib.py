@@ -28,7 +28,7 @@ def pkg(module: str) -> str:
     >>> pkg("PIL.Image")
     "pil"
 
-    :arg module: Full module path (e.g., "package.submodule.module")
+    :param module: Full module path (e.g., "package.submodule.module")
     :returns: Normalized top-level package name
     """
     return module.split(".", 1)[0].strip().lower()
@@ -41,5 +41,8 @@ def normalize_pkg(name: str) -> str:
     underscores as equivalent, consistent with PEP 503 / PyPI conventions.
     E.g. ``scikit-learn``, ``scikit_learn``, and ``SciKit-Learn`` all normalize
     to ``scikit_learn``.
+
+    :param name: The package name to normalize.
+    :returns: Normalized package name.
     """
     return name.lower().strip().replace("-", "_").replace(".", "_")

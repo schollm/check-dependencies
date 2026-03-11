@@ -40,7 +40,17 @@ class AppConfig:
         verbose: bool = False,
         show_all: bool = False,
     ) -> AppConfig:
-        """Create an AppConfig instance from CLI arguments."""
+        """Create an AppConfig instance from CLI arguments.
+
+        :file_names: List of file paths to analyze.
+        :known_extra: Comma-separated list of known extra dependencies.
+        :known_missing: Comma-separated list of known missing dependencies.
+        :provides: Iterable of strings in the format "package=module" to specify
+            provided modules.
+        :include_dev: Whether to include development dependencies from pyproject.toml.
+        :verbose: Whether to include detailed information in the output.
+        :show_all: Whether to show all dependencies, including those that are OK.
+        """
         provides_list: list[tuple[str, str]] = []
         for package, _, module in (
             map1.partition("=") for maps in provides for map1 in maps.split(",")
@@ -58,7 +68,10 @@ class AppConfig:
         src_cfg = PyProjectToml.for_paths(file_names, include_dev=include_dev)
 
         def combine(*collections: Collection[str]) -> frozenset[str]:
-            """Combine multiple collections, filtering empty strings."""
+            """Combine multiple collections, filtering empty strings.
+
+            :params: Collections of strings to combine.
+            """
             return frozenset(
                 item.strip()
                 for collection in collections
@@ -106,9 +119,12 @@ class AppConfig:
         return src_cause_formatter
 
     def unused_fmt(self, module: str) -> Iterator[str]:
-        """Formatter for unused but declared dependencies."""
-        info = Dependency.EXTRA.name if self.verbose else ""
-        yield f"{Dependency.EXTRA.value}{info} {module}"
+        """Formatter for unused but declared dependencies.
+
+        :param module: The module name of the dependency.
+        """
+        name = Dependency.EXTRA.name if self.verbose else ""
+        yield f"{Dependency.EXTRA.value}{name} {module}"
 
 
 class Packages:
@@ -118,7 +134,11 @@ class Packages:
     _packages: dict[str, set[str]]
 
     def __init__(self, packages: list[tuple[str, str]]) -> None:
-        """Initialize the Packages dataclass."""
+        """Initialize the Packages dataclass.
+
+        :param packages: List of (package, module) tuples, where package is the package name
+            and module is the import name.
+        """
         packages = [(normalize_pkg(pkg_), module) for pkg_, module in packages]
 
         self._modules = {
@@ -136,11 +156,17 @@ class Packages:
         }
 
     def modules(self, pkg_name: str) -> set[str]:
-        """Get the modules (import name) for a given package name."""
+        """Get the modules (import name) for a given package name.
+
+        :param pkg_name: The package name to look up.
+         """
         pkg_ = normalize_pkg(pkg_name)
         return self._modules.get(pkg_, {pkg_})
 
     def packages(self, module_name: str) -> set[str]:
-        """Get the packages for a given module (import name)."""
+        """Get the packages for a given module (import name).
+
+        :param module_name: The module name (import name) to look up.
+        """
         module_ = pkg(module_name)
         return self._packages.get(module_, {normalize_pkg(module_)})

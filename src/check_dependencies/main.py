@@ -27,7 +27,9 @@ def yield_wrong_imports(
 ) -> Generator[str, None, int]:
     """Yield output lines of missing/unused imports.
 
-    If cfg.show_all is True, all imports are shown.
+    :param file_names: List of file paths to analyze.
+    :param app_cfg: Application configuration containing dependencies and settings.
+        If app_cfg.show_all is True, all imports are shown.
     """
     used_deps: set[str] = set()
     src_fmt = app_cfg.mk_src_formatter()
@@ -72,6 +74,8 @@ def _project_files(file_names: Collection[str]) -> Iterator[Path]:
     """Collect all Python files in a list of files or directories.
 
     Ensure no file is visited more than once.
+
+    :param file_names: List of file paths or directories to analyze.
     """
     visited = set()
     for p in map(Path, file_names):
@@ -107,7 +111,10 @@ def _missing_imports_iter(
 
 
 def _imports_iter(body: list[ast.stmt]) -> Iterator[tuple[str, ast.stmt]]:
-    """Yield all import statements from a body of code."""
+    """Yield all import statements from a body of code.
+
+    :param body: List of AST statements to analyze.
+    """
     try:
         iter(body)
     except TypeError:

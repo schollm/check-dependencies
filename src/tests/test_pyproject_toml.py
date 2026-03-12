@@ -10,9 +10,17 @@ import pytest
 from check_dependencies.pyproject_toml import (
     PyProjectToml,
     _get_pyproject_path,
+    _nested_item,
     tomllib,
 )
-from tests.conftest import PEP631, POETRY, PYPROJECT_EMPTY, PYPROJECT_PROVIDES
+from tests.conftest import (
+    HATCH,
+    PEP631,
+    POETRY,
+    PYPROJECT_EMPTY,
+    PYPROJECT_PROVIDES,
+    UV_LEGACY,
+)
 
 
 class TestPyProjectToml:
@@ -33,6 +41,10 @@ class TestPyProjectToml:
             (PEP631, False, []),
             (POETRY, False, []),
             (POETRY, True, ["test_dev_1", "test_dev_2"]),
+            (HATCH, False, []),
+            (HATCH, True, ["test_dev_1", "test_dev_2"]),
+            (UV_LEGACY, False, []),
+            (UV_LEGACY, True, ["test_dev_1", "test_dev_2"]),
         ],
     )
     def test_dependencies(
@@ -45,11 +57,11 @@ class TestPyProjectToml:
         cfg = self.cfg(pyproject, include_dev=included_dev)
         assert set(cfg.dependencies) == {"test_main", "test_1"}.union(add_expect or {})
 
-    def test_unsupported_dependencies(self, caplog: pytest.LogCaptureFixture) -> None:
+    def test_unsupported_dependencies(self) -> None:
         """Test unsupported dependencies in pyproject.toml."""
         cfg = self.cfg(PYPROJECT_EMPTY)
-        assert set(cfg.dependencies) == set()
-        assert "No dependencies found in" in caplog.text
+        with pytest.raises(ValueError, match="No dependency management found"):
+            _ = cfg.dependencies
 
     def test_provides_empty(self) -> None:
         """Test that provides returns an empty dict when not configured."""
@@ -100,13 +112,13 @@ class TestNestedItem:
     def test_nested_item(self, key: str, type_: type, expected: object) -> None:
         """Test nested item."""
         prj = PyProjectToml(cfg={"a": {"b": {"c": 1, "d": 2}}}, path=Path())
-        assert prj._nested_item(key, type_) == expected
+        assert _nested_item(prj.cfg, key, type_) == expected
 
     def test_raise_wrong_type(self) -> None:
         """Raise wrong type."""
         prj = PyProjectToml(cfg={"a": 1}, path=Path())
         with pytest.raises(TypeError):
-            prj._nested_item("a", str)
+            _nested_item(prj.cfg, "a", str)
 
 
 class TestGetPyProjectPath:

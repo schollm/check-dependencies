@@ -22,12 +22,12 @@ optional arguments:
                      Assume they are part of the requirements.
   --extra EXTRA      Comma seperated list of requirements known to not be imported.
                      Assume they are not part of the requirements.
-  --provides IMPORT=PACKAGE
-                     Map an import name to its package name for packages whose
+  --provides PACKAGE=IMPORT
+                     Map a package name to its import name for packages whose
                      import name differs from the package name. Can be specified
-                     multiple times. E.g. --provides PIL=Pillow --provides jwt=PyJWT.
+                     multiple times. E.g. --provides Pillow=PIL --provides PyJWT=jwt.
                      Package name is normalized (case-insensitive, hyphens and
-                     underscores equivalent), so PIL=Pillow and PIL=pillow are the same.
+                     underscores equivalent), so Pillow=PIL and pillow=PIL are the same.
 ```
 
 ### Output
@@ -97,7 +97,7 @@ add extra packages to the list of dependencies.
 ignore existing dependencies even if they are not imported. This is useful for
   packages, that provide functionality via plugins (e.g. sqlalchemy plugins)
   and are not imported directly in the codebase.
-- `[tool.check-dependencies.provides]` to map import names to package names for
+- `[tool.check-dependencies.provides]` to map package names to import names for
   packages whose import name differs from the package name.
   E.g. Pillow is imported as PIL, but the package name is Pillow.
   The value can be either a single module or a list of modules.
@@ -112,10 +112,10 @@ known-extra = [
   "yet_another_package"
 ]
 [tool.check-dependencies.provides]
-# Maps import name -> package name for packages whose import name differs
-PIL = "Pillow"
-jwt = "PyJWT"
-shapefile = "pyshp"
+# Maps package name (as declared in dependencies) -> import/module name
+Pillow = "PIL"
+PyJWT = "jwt"
+pyshp = "shapefile"
 foxtrox = ["fox", "trox"]  # This package provides both `import fox` and `import trox`, but the package name is `foxtrox`
 ```
 

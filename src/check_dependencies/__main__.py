@@ -69,12 +69,12 @@ def main() -> None:
         type=str,
         action="append",
         default=[],
-        metavar="IMPORT=PACKAGE",
-        help="Map an import name to its package name for packages whose import name"
+        metavar="PACKAGE=IMPORT",
+        help="Map a package name to its import name for packages whose import name"
         " differs from the package name. Can be specified multiple times."
-        " E.g. --provides PIL=Pillow --provides jwt=PyJWT."
+        " E.g. --provides Pillow=PIL --provides PyJWT=jwt."
         " The package name is normalized (case-insensitive, hyphens and underscores"
-        " are equivalent), so PIL=Pillow, PIL=pillow and PIL=PIL-ow are all the same.",
+        " are equivalent), so Pillow=PIL, pillow=PIL and PIL-ow=PIL are all the same.",
     )
     args = parser.parse_args()
 

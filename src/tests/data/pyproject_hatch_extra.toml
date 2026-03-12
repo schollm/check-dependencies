@@ -1,0 +1,20 @@
+[project]
+name = "check-dependencies"
+
+[tool.hatch.envs.default]
+dependencies = [
+    "test_main",
+    "test_1",
+    "test_extra",
+]
+
+[tool.hatch.envs.dev]
+dependencies = [
+    "test_dev_1",
+]
+
+[tool.hatch.envs.test]
+dependencies = [
+    "test_dev_2",
+]
+

@@ -134,9 +134,10 @@ class TestYieldWrongImports:
         ]
 
     def test_dev(self) -> None:
+        """Test default with dev."""
         assert self.fn(overwrite_cfg=PYPROJECT_CFG, include_dev=True) == [
             "+ test_devtest",
-            "+ test_doctest"
+            "+ test_doctest",
         ]
 
     def test_extra_requirements(self, pyproject_extra: Path) -> None:

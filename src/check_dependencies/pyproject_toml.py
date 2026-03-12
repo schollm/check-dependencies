@@ -212,18 +212,6 @@ class Pep621Dependencies(BaseDependency):
         groups = _nested_item(self.cfg, "dependency-groups", dict)
         return _canonicals(set().union(*groups.values()))
 
-
-def _canonicals(names: Collection[str]) -> set[str]:
-    """Canonicalize package names."""
-    return set(map(_canonical, names))
-
-
-def _canonical(name: str) -> str:
-    return "".join(takewhile(lambda x: x.isalnum() or x in "-_", name.strip())).replace(
-        "-", "_"
-    )
-
-
 class PoetryDependencies(BaseDependency):
     def is_used(self) -> bool:
         """Check if the pyproject.toml file contains Poetry style dependencies."""
@@ -280,3 +268,14 @@ class HatchDependencies(BaseDependency):
                 if name != "default"
             )
         )
+
+
+def _canonicals(names: Collection[str]) -> set[str]:
+    """Canonicalize package names."""
+    return set(map(_canonical, names))
+
+
+def _canonical(name: str) -> str:
+    return "".join(takewhile(lambda x: x.isalnum() or x in "-_", name.strip())).replace(
+        "-", "_"
+    )

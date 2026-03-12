@@ -212,6 +212,7 @@ class Pep621Dependencies(BaseDependency):
         groups = _nested_item(self.cfg, "dependency-groups", dict)
         return _canonicals(set().union(*groups.values()))
 
+
 class PoetryDependencies(BaseDependency):
     def is_used(self) -> bool:
         """Check if the pyproject.toml file contains Poetry style dependencies."""

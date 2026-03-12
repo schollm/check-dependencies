@@ -31,7 +31,7 @@ def pkg(module: str) -> str:
     :param module: Full module path (e.g., "package.submodule.module")
     :returns: Normalized top-level package name
     """
-    return module.split(".", 1)[0].strip().lower()
+    return module.split(".", 1)[0].strip()
 
 
 def normalize_pkg(name: str) -> str:

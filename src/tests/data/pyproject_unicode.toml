@@ -1,0 +1,14 @@
+[project]
+name = "check-dependencies"
+dependencies = [ "pkg1" ]
+
+[tool.check-dependencies.provides]
+pkg1 = [
+    "ö",
+    "ä",
+    "café",
+    "naïve",
+    "日本語",
+    "Москва",
+    "москва2",
+]

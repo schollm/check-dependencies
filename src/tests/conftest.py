@@ -11,6 +11,7 @@ with contextlib.suppress(ValueError):
 SRC_MODULE = DATA / "src"
 SRC = (SRC_MODULE / "src.py").as_posix()
 SRC_UNICODE = (DATA / "src_unicode.py").as_posix()
+PYPROJECT_UNICODE = DATA / "pyproject_unicode.toml"
 PEP631 = DATA / "pyproject_pep631.toml"
 PEP631_EXTRA = DATA / "pyproject_pep631_extra.toml"
 POETRY = DATA / "pyproject_poetry.toml"

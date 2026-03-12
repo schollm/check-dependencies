@@ -7,4 +7,5 @@ import café
 from naïve import something_else
 import 日本語
 from Москва import test
+from москва2 import test2
 

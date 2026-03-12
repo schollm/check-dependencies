@@ -24,6 +24,7 @@ from tests.conftest import (
     POETRY,
     PYPROJECT_CFG,
     PYPROJECT_PROVIDES,
+    PYPROJECT_UNICODE,
     SRC,
     SRC_MODULE,
     SRC_UNICODE,
@@ -313,21 +314,11 @@ class TestYieldWrongImports:
         assert res
 
     def test_unicode_imports(self) -> None:
-        """Test that Unicode module names are detected as missing.
-
-        Unicode module names are technically valid in Python syntax (PEP 3131),
-        but they won't work at runtime since module names must correspond to
-        file names. The tool should parse them correctly and flag them as missing.
-        """
-        result = self.fn(file_names=[SRC_UNICODE])
+        """Test for Unicode module names."""
+        result = self.fn(overwrite_cfg=PYPROJECT_UNICODE, file_names=[SRC_UNICODE])
 
         # All Unicode module names should be flagged as missing
-        assert "! ö" in result
-        assert "! ä" in result
-        assert "! café" in result
-        assert "! naïve" in result
-        assert "! 日本語".lower() in result
-        assert "! Москва".lower() in result
+        assert result == []
 
     def test_unicode_imports_verbose(self) -> None:
         """Test verbose output with Unicode module names."""

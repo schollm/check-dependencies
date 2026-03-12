@@ -1,0 +1,14 @@
+[project]
+name = "check-dependencies"
+dependencies = [
+    "test_main",
+    "test_1",
+    "test_extra",
+]
+
+[tool.uv]
+
+[tool.uv.dev-dependencies]
+test_dev_1 = "*"
+test_dev_2 = "*"
+

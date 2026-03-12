@@ -11,7 +11,6 @@ from typing import (
     Iterable,
     Iterator,
     Sequence,
-    TypeVar,
 )
 
 from check_dependencies.lib import Dependency, Package, Packages, pkg
@@ -68,25 +67,21 @@ class AppConfig:
             file_names = ["."]
 
         src_cfg = PyProjectToml.for_paths(file_names, include_dev=include_dev)
-        _T = TypeVar("_T")
-
-        def combine(*collections: Iterable[_T]) -> frozenset[_T]:
-            """Combine multiple collections, filtering empty strings.
-
-            :params: Collections of strings to combine.
-            """
-            return frozenset(
-                item for collection in collections for item in collection if item
-            )
 
         return cls(
             include_dev=include_dev,
             verbose=verbose,
             show_all=show_all,
-            known_extra=combine(
-                Package.set(known_extra.split(",")), src_cfg.known_extra
+            known_extra=frozenset(
+                pkg
+                for pkg in (*Package.set(known_extra.split(",")), *src_cfg.known_extra)
+                if pkg.canonical
             ),
-            known_missing=combine(known_missing.split(","), src_cfg.known_missing),
+            known_missing=frozenset(
+                module.strip()
+                for module in (*known_missing.split(","), *src_cfg.known_missing)
+                if module.strip()
+            ),
             provides=Packages([*provides_list, *src_cfg.provides]),
             dependencies=src_cfg.dependencies,
             pyproject_file=src_cfg.path,

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from enum import Enum
 from functools import total_ordering
 from itertools import groupby, takewhile
@@ -38,6 +39,7 @@ def pkg(module: str) -> str:
     return module.split(".", 1)[0].strip()
 
 
+@dataclass(frozen=True)
 @total_ordering
 class Package:
     """A single package with its original and canonical name for comparison.
@@ -56,8 +58,8 @@ class Package:
 
     def __init__(self, package: str) -> None:
         """Initialize the Package dataclass."""
-        self._original = package
-        self.canonical = _canonical(package)
+        object.__setattr__(self, "_original", package.strip())
+        object.__setattr__(self, "canonical", _canonical(package))
 
     def __hash__(self) -> int:
         """Use only canonical name for hashing."""
@@ -79,7 +81,7 @@ class Package:
         """Check if there is a package (i.e. empty package name is Falsy)."""
         return bool(self.canonical)
 
-    def __gt__(self, other: Package) -> bool:
+    def __gt__(self, other: object) -> bool:
         """Compare with another package or a package name."""
         if isinstance(other, Package):
             return self.canonical > other.canonical
@@ -126,7 +128,7 @@ class Packages:
         """
         if isinstance(pkg_, str):
             pkg_ = Package(pkg_)
-        return self._modules.get(pkg_, {str(pkg_)})
+        return self._modules.get(pkg_, {str(pkg_.canonical)})
 
     def packages(self, module_name: str) -> set[Package]:
         """Get the packages for a given module (import name).
@@ -148,6 +150,6 @@ def _canonical(name: str) -> str:
     :param name: The package name to normalize.
     :returns: Normalized package name.
     """
-    pkg_name_iter = takewhile(lambda x: x.isalnum() or x in "-_", name.strip())
+    pkg_name_iter = takewhile(lambda x: x.isalnum() or x in "-_.", name.strip())
     package_name = "".join(pkg_name_iter)
     return package_name.lower().strip().replace("-", "_").replace(".", "_")

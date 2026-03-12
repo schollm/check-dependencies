@@ -93,6 +93,9 @@ addopts = """
   --cov-branch
   -m "not performance"
 """
+markers = [
+    "performance: marks tests as performance tests (deselect with '-m not performance')",
+]
 
 [tool.mypy]
 exclude= '^src/tests/data'

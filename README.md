@@ -1,5 +1,5 @@
 # Check Dependencies
-Check all imports from python files and compares them against the declared imports of a pyproject dependency list of expected imports. 
+Check all imports from python files and compares them against the declared imports of a pyproject dependency list of expected imports.
 
 It can be used as a stand-alone or as part of a CI/CD to check if an application has all the necessary, but no superfluous imports.
 
@@ -13,12 +13,12 @@ Find undeclared and unused (or all) imports in Python files
 positional arguments:
   file_name          Python Source file to analyse
 
-optional arguments:
+options:
   -h, --help         show this help message and exit
   --include-dev      Include dev dependencies
   --verbose          Show every import of a package
   --all              Show all imports (including correct ones)
-  --missing MISSING  Comma separated list of requirements known to be missing. 
+  --missing MISSING  Comma separated list of requirements known to be missing.
                      Assume they are part of the requirements.
   --extra EXTRA      Comma separated list of requirements known to not be imported.
                      Assume they are not part of the requirements.

@@ -47,6 +47,7 @@ class PyProjectToml:
                 commonpath(Path(p).expanduser().resolve() for p in paths),
             )
         except ValueError as exc:
+            # Can only be reached in Windows when two different drives are provided.
             msg = f"Error finding common path for {paths}: {exc}"
             raise ValueError(msg) from exc
         path = _get_pyproject_path(pyproject_candidate)
@@ -193,8 +194,6 @@ class BaseDependency:
 
 @dataclass(frozen=True)
 class Pep621Dependencies(BaseDependency):
-    cfg: dict[str, Any]
-
     def is_used(self) -> bool:
         """Check if the pyproject.toml file contains PEP 621-style dependencies."""
         return "dependencies" in self.cfg.get("project", {})
@@ -215,34 +214,40 @@ class Pep621Dependencies(BaseDependency):
         return set().union(*map(Package.set, groups.values()))
 
 
+@dataclass(frozen=True)
 class PoetryDependencies(BaseDependency):
     def is_used(self) -> bool:
         """Check if the pyproject.toml file contains Poetry style dependencies."""
         return bool(_nested_item(self.cfg, "tool.poetry", dict))
 
     def _dependencies(self) -> set[Package]:
-        poetry_deps = _nested_item(self.cfg, "tool.poetry.dependencies", dict)
-        return Package.set(
-            f"{name} {spec}" for name, spec in poetry_deps.items() if name != "python"
-        )
+        poetry_deps = dict(_nested_item(self.cfg, "tool.poetry.dependencies", dict))
+        poetry_deps.pop("python")
+        return Package.set(self._names_from_items(poetry_deps))
 
     def _dev_dependencies(self) -> set[Package]:
         # Get tool.poetry.group.*.dependencies
         # e.g. groups is "dev": {"dependencies": {"pytest": "^6.2.5"}}
-        deps = Package.set(_nested_item(self.cfg, "tool.poetry.dev-dependencies", dict))
+        deps = Package.set(
+            self._names_from_items(
+                _nested_item(self.cfg, "tool.poetry.dev-dependencies", dict)
+            )
+        )
         groups: dict[str, dict[str, dict[str, str]]] = _nested_item(
             self.cfg, "tool.poetry.group", dict
         )
         for group in groups.values():
-            deps |= Package.set(
-                group.get("dependencies", []),
-            )
+            deps |= Package.set(self._names_from_items(group.get("dependencies", {})))
         return deps
 
+    @staticmethod
+    def _names_from_items(items: dict[str, Any]) -> list[str]:
+        """Get the package name from a Poetry dependency item."""
+        return [f"{k} = {v!r}" for k, v in items.items()]
 
+
+@dataclass(frozen=True)
 class UvLegacyDependencies(BaseDependency):
-    cfg: dict[str, Any]
-
     def is_used(self) -> bool:
         return bool(_nested_item(self.cfg, "tool.uv", dict))
 
@@ -253,6 +258,7 @@ class UvLegacyDependencies(BaseDependency):
         return Package.set(_nested_item(self.cfg, "tool.uv.dev-dependencies", dict))
 
 
+@dataclass(frozen=True)
 class HatchDependencies(BaseDependency):
     def is_used(self) -> bool:
         return bool(_nested_item(self.cfg, "tool.hatch", dict))

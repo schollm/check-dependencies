@@ -59,7 +59,7 @@ class TestPackage:
         "raw,expected_str,expected_bool",
         [
             ("PyJWT", "PyJWT", True),
-            ("  ", "  ", False),
+            ("  ", "", False),
             ("", "", False),
         ],
     )
@@ -82,6 +82,21 @@ class TestPackage:
     def test_cmp_str(self) -> None:
         """Test comparison against a string."""
         assert Package("a==1.0.0") < "b"
+
+    @pytest.mark.parametrize(
+        "requirement, expected_module",
+        [
+            ("foo > 0", "foo"),
+            ("scikit-learn", "scikit_learn"),
+            ("SciKit-Learn >= 1.0", "scikit_learn"),
+        ],
+    )
+    def test_modules_fallback_uses_canonical_name(
+        self, requirement: str, expected_module: str
+    ) -> None:
+        """Fallback for unmapped packages should be a canonical module name."""
+        packages = Packages([])  # no explicit mapping -> fallback path
+        assert packages.modules(Package(requirement)) == {expected_module}
 
 
 class TestPackages:
@@ -131,7 +146,7 @@ class TestNormalizePkg:
         ],
     )
     def test__canonical(self, name: str, expected: str) -> None:
-        """normalize_pkg lowercases and replaces hyphens with underscores."""
+        """_canonical lowercases and replaces hyphens with underscores."""
         assert _canonical(name) == expected
 
 

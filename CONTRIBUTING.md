@@ -25,6 +25,18 @@ make test-typing  # Run mypy type checks
 make test-lint  # Run lint and format checks
 ```
 
+### Performance tests
+
+Performance tests are marked with `@pytest.mark.performance`.
+
+By default, they are excluded via `pyproject.toml`.
+
+Run performance tests explicitly when needed:
+
+```bash
+uv run pytest -m performance
+```
+
 Format and auto-fix lint issues:
 
 ```bash

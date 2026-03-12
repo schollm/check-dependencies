@@ -91,6 +91,7 @@ addopts = """
   --cov-report=html:.out/coverage-html
   --cov-report term-missing
   --cov-branch
+  -m "not performance"
 """
 
 [tool.mypy]

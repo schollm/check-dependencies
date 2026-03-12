@@ -470,6 +470,7 @@ import sys
     assert statuses["café"] == Dependency.NA
 
 
+@pytest.mark.performance
 def test_performance_large_project(tmp_path: Path) -> None:
     """Test the performance of yield_wrong_imports on a large project."""
     max_duration_per_file = 0.01  # in seconds

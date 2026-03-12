@@ -52,7 +52,7 @@ class Package:
     (presented as a string) and a package.
     """
 
-    __slots__ = ["_original", "canonical"]
+    __slots__ = ("_original", "canonical")
     _original: str
     canonical: str
 

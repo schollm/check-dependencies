@@ -312,7 +312,7 @@ class TestYieldWrongImports:
         ]
 
     def test_no_fail_on_missing_source(self) -> None:
-        """Test that we do not fail if the pyproject.toml is missing."""
+        """Test that we do not fail if the source file is missing."""
         res = AppConfig.from_cli_args(
             file_names=["nonexistent.py"],
             known_extra="",

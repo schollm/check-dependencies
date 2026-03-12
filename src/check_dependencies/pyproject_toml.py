@@ -222,7 +222,7 @@ class PoetryDependencies(BaseDependency):
 
     def _dependencies(self) -> set[Package]:
         poetry_deps = dict(_nested_item(self.cfg, "tool.poetry.dependencies", dict))
-        poetry_deps.pop("python")
+        poetry_deps.pop("python", None)
         return Package.set(self._names_from_items(poetry_deps))
 
     def _dev_dependencies(self) -> set[Package]:

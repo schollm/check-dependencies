@@ -35,7 +35,7 @@ def pkg(module: str) -> str:
 
 
 def normalize_pkg(name: str) -> str:
-    """Normalize a package name: lowercase and replace hyphens with underscores.
+    """Normalize a package name: lowercase and replace dots and hyphens with underscores.
 
     This makes package name comparison case-insensitive and treats hyphens and
     underscores as equivalent, consistent with PEP 503 / PyPI conventions.

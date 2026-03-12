@@ -90,10 +90,10 @@ check-dependencies --verbose --all project/src/
 ### Configuration
 The configuration is read from `pyproject.toml` file. The configuration file
 supports the following entries:
-- `[tool.check-dependencies.extra-requirements]` to
+- `[tool.check-dependencies.known-extra]` to
 add extra packages to the list of dependencies.
 
-- `[tool.check-dependencies.ignore-requirements]` does the opposite, it will
+- `[tool.check-dependencies.known-missing]` does the opposite, it will
 ignore existing dependencies even if they are not imported. This is useful for
   packages, that provide functionality via plugins (e.g. sqlalchemy plugins)
   and are not imported directly in the codebase.
@@ -125,22 +125,8 @@ foxtrox = ["fox", "trox"]  # This package provides both `import fox` and `import
 - 4: Extra (declared in pyproject.toml, but unused) dependencies found
 - 6: Both missing and superfluous dependencies found
 - 8: Could not find associated pyproject.toml file
+- 16: Could not parse source file(s)
 - 1: Another error occurred
 
 ## Development
-Feature requests and merge requests are welcome. For major changes, please open an 
-issue first to discuss what you would like to change.
-
-Please make sure to update tests as appropriate. Also with this project, I want
-to keep the dependencies to a minimum, so please keep that in mind when proposing
-a change. Currently, the only dependencies is `toml` to support Python 3.10 and below.
-
-### Coding Standards
-
-| **Type**       | Package  | Comment                      |
-|----------------|----------|------------------------------|
-| **Logging**    | `logger` | Minimize additional packages |
-| **Packaging**  | `uv`     |                              |
-| **Tests**      | `pytest` |                              |
-| **Typing**     | `mypy`   | Type all methods             |
-| **Linting**    | `ruff`   | Also used for formatting     |
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.

@@ -101,7 +101,7 @@ class TestYieldWrongImports:
         self,
         overwrite_cfg: Path = POETRY,
         file_names: Sequence[str] = (SRC,),
-        include_extra: bool = False,
+        include_dev: bool = False,
         verbose: bool = False,
         show_all: bool = False,
         known_extra: Sequence[str] = (),
@@ -115,7 +115,7 @@ class TestYieldWrongImports:
                     file_names,
                     AppConfig.from_cli_args(
                         file_names=file_names,
-                        include_dev=include_extra,
+                        include_dev=include_dev,
                         verbose=verbose,
                         show_all=show_all,
                         known_extra=",".join(known_extra),
@@ -131,6 +131,12 @@ class TestYieldWrongImports:
             "! missing",
             "! missing_class",
             "! missing_def",
+        ]
+
+    def test_dev(self) -> None:
+        assert self.fn(overwrite_cfg=PYPROJECT_CFG, include_dev=True) == [
+            "+ test_devtest",
+            "+ test_doctest"
         ]
 
     def test_extra_requirements(self, pyproject_extra: Path) -> None:
@@ -213,7 +219,7 @@ class TestYieldWrongImports:
 
     def test_include_extra(self) -> None:
         """Include development dependencies in the check."""
-        assert self.fn(include_extra=True) == [
+        assert self.fn(include_dev=True) == [
             "! missing",
             "! missing_class",
             "! missing_def",
@@ -263,7 +269,7 @@ class TestYieldWrongImports:
         missing import.
         """
         res = self.fn(
-            file_names=[DATA.as_posix()], show_all=show_all, include_extra=include_extra
+            file_names=[DATA.as_posix()], show_all=show_all, include_dev=include_extra
         )
         assert len(res) == len(set(res))
 

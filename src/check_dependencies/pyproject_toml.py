@@ -77,9 +77,6 @@ class PyProjectToml:
             raise ValueError(msg)
         return frozenset(deps)
 
-        logger.warning("No dependencies found in %s", self.path)
-        return frozenset()
-
     @property
     def known_missing(self) -> frozenset[str]:
         """Known to be used in application but not declared in requirements.
@@ -164,43 +161,6 @@ def _nested_item(obj: Mapping[str, Any], key: str, /, class_: type[_T]) -> _T:
 
 
 @dataclass(frozen=True)
-class Pep621Dependencies:
-    cfg: dict[str, Any]
-
-    def is_used(self) -> bool:
-        """Check if the pyproject.toml file contains PEP 621-style dependencies."""
-        return "dependencies" in self.cfg.get("project", {})
-
-    def dependencies(self, *, include_dev: bool) -> set[str]:
-        """Get dependencies from a PEP 621-style pyproject.toml file."""
-        deps = _canonicals(_nested_item(self.cfg, "project.dependencies", list))
-
-        for raw_extras in _nested_item(
-            self.cfg, "project.optional-dependencies", dict
-        ).values():
-            deps.update(_canonicals(raw_extras))
-
-        if include_dev:
-            deps |= self._dev_dependencies()
-        return deps
-
-    def _dev_dependencies(self) -> set[str]:
-        """Get the dev dependencies from a PEP 621-style pyproject.toml file."""
-        return _canonicals(_nested_item(self.cfg, "project.dependency-groups", list))
-
-
-def _canonicals(names: Collection[str]) -> set[str]:
-    """Canonicalize package names."""
-    return set(map(_canonical, names))
-
-
-def _canonical(name: str) -> str:
-    return "".join(takewhile(lambda x: x.isalnum() or x in "-_", name.strip())).replace(
-        "-", "_"
-    )
-
-
-@dataclass(frozen=True)
 class BaseDependency:
     """Base class for different dependency providers."""
 
@@ -229,9 +189,44 @@ class BaseDependency:
         raise NotImplementedError  # pragma: no cover
 
 
-class PoetryDependencies(BaseDependency):
+@dataclass(frozen=True)
+class Pep621Dependencies(BaseDependency):
+    cfg: dict[str, Any]
+
     def is_used(self) -> bool:
         """Check if the pyproject.toml file contains PEP 621-style dependencies."""
+        return "dependencies" in self.cfg.get("project", {})
+
+    def _dependencies(self) -> set[str]:
+        """Get dependencies from a PEP 621-style pyproject.toml file."""
+        deps = _canonicals(_nested_item(self.cfg, "project.dependencies", list))
+
+        for raw_extras in _nested_item(
+            self.cfg, "project.optional-dependencies", dict
+        ).values():
+            deps.update(_canonicals(raw_extras))
+        return deps
+
+    def _dev_dependencies(self) -> set[str]:
+        """Get the dev dependencies from a PEP 621-style pyproject.toml file."""
+        groups = _nested_item(self.cfg, "dependency-groups", dict)
+        return _canonicals(set().union(*groups.values()))
+
+
+def _canonicals(names: Collection[str]) -> set[str]:
+    """Canonicalize package names."""
+    return set(map(_canonical, names))
+
+
+def _canonical(name: str) -> str:
+    return "".join(takewhile(lambda x: x.isalnum() or x in "-_", name.strip())).replace(
+        "-", "_"
+    )
+
+
+class PoetryDependencies(BaseDependency):
+    def is_used(self) -> bool:
+        """Check if the pyproject.toml file contains Poetry style dependencies."""
         return bool(_nested_item(self.cfg, "tool.poetry", dict))
 
     def _dependencies(self) -> set[str]:
@@ -276,7 +271,7 @@ class HatchDependencies(BaseDependency):
         )
 
     def _dev_dependencies(self) -> set[str]:
-        return set.union(
+        return set().union(
             *(
                 _canonicals(env_cfg.get("dependencies", []))
                 for name, env_cfg in _nested_item(

@@ -1,10 +1,15 @@
 [project]
 name = "check-dependencies"
 dependencies = [
-    "test_main > 0",
     # "test_1 < 2",
     "test_extra > 99"  # to be ignored
 ]
+[project.optional-dependencies]
+extra = ["test_main > 0"]
+
+[dependency-groups]
+dev = ["test_devtest > 0"]
+doc = ["test_doctest > 0"]
 
 [tool.check-dependencies]
 known-extra = [

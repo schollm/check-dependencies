@@ -5,7 +5,7 @@ name = "check-dependencies"
 dependencies = [
     "test_main",
     "test_1",
-    "test_extra",
+    "test_extra > 0",
 ]
 
 [tool.hatch.envs.dev]

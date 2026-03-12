@@ -18,9 +18,9 @@ optional arguments:
   --include-dev      Include dev dependencies
   --verbose          Show every import of a package
   --all              Show all imports (including correct ones)
-  --missing MISSING  Comma seperated list of requirements known to be missing. 
+  --missing MISSING  Comma separated list of requirements known to be missing. 
                      Assume they are part of the requirements.
-  --extra EXTRA      Comma seperated list of requirements known to not be imported.
+  --extra EXTRA      Comma separated list of requirements known to not be imported.
                      Assume they are not part of the requirements.
   --provides PACKAGE=IMPORT
                      Map a package name to its import name for packages whose

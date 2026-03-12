@@ -13,7 +13,7 @@ doc = ["test_doctest > 0"]
 
 [tool.check-dependencies]
 known-extra = [
-    "test_extra"
+    "test_extra > 0"
 ]
 known-missing = [
     "test_1", "missing", "missing_class", "missing_def"

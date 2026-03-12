@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from itertools import chain, takewhile
+from itertools import chain
 from os.path import commonpath
 from pathlib import Path
 from typing import Any, Collection, Mapping, TypeVar
 
-from check_dependencies.lib import normalize_pkg
+from check_dependencies.lib import Package
 
 try:
     import tomllib  # type: ignore[import-not-found,unused-ignore]
@@ -58,9 +58,9 @@ class PyProjectToml:
         )
 
     @property
-    def dependencies(self) -> frozenset[str]:
+    def dependencies(self) -> frozenset[Package]:
         """Get dependencies from pyproject.toml file."""
-        deps = set()
+        deps: set[Package] = set()
         is_used = False
         for dep_class in (
             Pep621Dependencies,
@@ -84,16 +84,14 @@ class PyProjectToml:
         This includes the project itself.
         """
         # Add project name
-        pep631_name = normalize_pkg(_nested_item(self.cfg, "project.name", str) or "")
-        poetry_name = normalize_pkg(
-            _nested_item(self.cfg, "tool.poetry.name", str) or ""
-        )
+        pep631_name = Package(_nested_item(self.cfg, "project.name", str) or "")
+        poetry_name = Package(_nested_item(self.cfg, "tool.poetry.name", str) or "")
         return frozenset(
             filter(
                 None,
                 (
-                    pep631_name,
-                    poetry_name,
+                    pep631_name.canonical,
+                    poetry_name.canonical,
                     *_nested_item(
                         self.cfg,
                         "tool.check-dependencies.known-missing",
@@ -104,24 +102,28 @@ class PyProjectToml:
         )
 
     @property
-    def known_extra(self) -> frozenset[str]:
+    def known_extra(self) -> frozenset[Package]:
         """Dependencies that are known to be unused in application."""
         return frozenset(
-            _nested_item(self.cfg, "tool.check-dependencies.known-extra", list),
+            map(
+                Package,
+                _nested_item(self.cfg, "tool.check-dependencies.known-extra", list),
+            )
         )
 
     @property
-    def provides(self) -> list[tuple[str, str]]:
+    def provides(self) -> list[tuple[Package, str]]:
         """Mapping from import name to package name.
 
         E.g. ``{"jwt": "pyjwt", "shapefile": "pyshp"}`` means that the package
         ``pyjwt`` is imported as ``jwt`` and ``pyshp`` as ``shapefile``.
 
-        Values are normalized via :func:`normalize_pkg` so that e.g. ``PyJWT``,
-        ``pyjwt``, and ``py-jwt`` all resolve to the same key.
+        Package keys are canonicalized via :class:`Package` (case-insensitive,
+        hyphen/underscore equivalent), so e.g. ``PyJWT``, ``pyjwt``, and
+        ``py-jwt`` resolve to the same package identity.
         """
         return [
-            (normalize_pkg(package), module)
+            (Package(package), module)
             for package, modules in _nested_item(
                 self.cfg, "tool.check-dependencies.provides", dict
             ).items()
@@ -170,7 +172,7 @@ class BaseDependency:
         """Check if the pyproject.toml file contains this style of dependencies."""
         raise NotImplementedError  # pragma: no cover
 
-    def dependencies(self, *, include_dev: bool) -> set[str]:
+    def dependencies(self, *, include_dev: bool) -> set[Package]:
         """Get all dependencies.
 
         :arg include_dev: Whether to include dev dependencies.
@@ -180,11 +182,11 @@ class BaseDependency:
             deps.update(self._dev_dependencies())
         return deps
 
-    def _dev_dependencies(self) -> set[str]:
+    def _dev_dependencies(self) -> set[Package]:
         """Get development dependencies."""
         raise NotImplementedError  # pragma: no cover
 
-    def _dependencies(self) -> set[str]:
+    def _dependencies(self) -> set[Package]:
         """Get production dependencies, with extras, but no development dependencies."""
         raise NotImplementedError  # pragma: no cover
 
@@ -197,20 +199,20 @@ class Pep621Dependencies(BaseDependency):
         """Check if the pyproject.toml file contains PEP 621-style dependencies."""
         return "dependencies" in self.cfg.get("project", {})
 
-    def _dependencies(self) -> set[str]:
+    def _dependencies(self) -> set[Package]:
         """Get dependencies from a PEP 621-style pyproject.toml file."""
-        deps = _canonicals(_nested_item(self.cfg, "project.dependencies", list))
+        deps = Package.set(_nested_item(self.cfg, "project.dependencies", list))
 
         for raw_extras in _nested_item(
             self.cfg, "project.optional-dependencies", dict
         ).values():
-            deps.update(_canonicals(raw_extras))
+            deps.update(Package.set(raw_extras))
         return deps
 
-    def _dev_dependencies(self) -> set[str]:
+    def _dev_dependencies(self) -> set[Package]:
         """Get the dev dependencies from a PEP 621-style pyproject.toml file."""
         groups = _nested_item(self.cfg, "dependency-groups", dict)
-        return _canonicals(set().union(*groups.values()))
+        return set().union(*map(Package.set, groups.values()))
 
 
 class PoetryDependencies(BaseDependency):
@@ -218,20 +220,21 @@ class PoetryDependencies(BaseDependency):
         """Check if the pyproject.toml file contains Poetry style dependencies."""
         return bool(_nested_item(self.cfg, "tool.poetry", dict))
 
-    def _dependencies(self) -> set[str]:
-        return set(_nested_item(self.cfg, "tool.poetry.dependencies", dict)) - {
-            "python"
-        }
+    def _dependencies(self) -> set[Package]:
+        poetry_deps = _nested_item(self.cfg, "tool.poetry.dependencies", dict)
+        return Package.set(
+            f"{name} {spec}" for name, spec in poetry_deps.items() if name != "python"
+        )
 
-    def _dev_dependencies(self) -> set[str]:
+    def _dev_dependencies(self) -> set[Package]:
         # Get tool.poetry.group.*.dependencies
         # e.g. groups is "dev": {"dependencies": {"pytest": "^6.2.5"}}
-        deps = set(_nested_item(self.cfg, "tool.poetry.dev-dependencies", dict))
+        deps = Package.set(_nested_item(self.cfg, "tool.poetry.dev-dependencies", dict))
         groups: dict[str, dict[str, dict[str, str]]] = _nested_item(
             self.cfg, "tool.poetry.group", dict
         )
         for group in groups.values():
-            deps |= set(
+            deps |= Package.set(
                 group.get("dependencies", []),
             )
         return deps
@@ -243,40 +246,29 @@ class UvLegacyDependencies(BaseDependency):
     def is_used(self) -> bool:
         return bool(_nested_item(self.cfg, "tool.uv", dict))
 
-    def _dependencies(self) -> set[str]:
+    def _dependencies(self) -> set[Package]:
         return Pep621Dependencies(self.cfg).dependencies(include_dev=False)
 
-    def _dev_dependencies(self) -> set[str]:
-        return _canonicals(_nested_item(self.cfg, "tool.uv.dev-dependencies", dict))
+    def _dev_dependencies(self) -> set[Package]:
+        return Package.set(_nested_item(self.cfg, "tool.uv.dev-dependencies", dict))
 
 
 class HatchDependencies(BaseDependency):
     def is_used(self) -> bool:
         return bool(_nested_item(self.cfg, "tool.hatch", dict))
 
-    def _dependencies(self) -> set[str]:
-        return _canonicals(
+    def _dependencies(self) -> set[Package]:
+        return Package.set(
             _nested_item(self.cfg, "tool.hatch.envs.default.dependencies", list)
         )
 
-    def _dev_dependencies(self) -> set[str]:
+    def _dev_dependencies(self) -> set[Package]:
         return set().union(
             *(
-                _canonicals(env_cfg.get("dependencies", []))
+                Package.set(env_cfg.get("dependencies", []))
                 for name, env_cfg in _nested_item(
                     self.cfg, "tool.hatch.envs", dict
                 ).items()
                 if name != "default"
             )
         )
-
-
-def _canonicals(names: Collection[str]) -> set[str]:
-    """Canonicalize package names."""
-    return set(map(_canonical, names))
-
-
-def _canonical(name: str) -> str:
-    return "".join(takewhile(lambda x: x.isalnum() or x in "-_", name.strip())).replace(
-        "-", "_"
-    )

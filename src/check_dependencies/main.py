@@ -8,12 +8,12 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from check_dependencies.builtin_module import BUILTINS
-from check_dependencies.lib import Dependency
+from check_dependencies.lib import Dependency, Package, Packages
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Generator, Iterator
 
-    from check_dependencies.app_config import AppConfig, Packages
+    from check_dependencies.app_config import AppConfig
 
 logger = logging.getLogger("check_dependencies")
 ERR_MISSING_DEPENDENCY = 2
@@ -32,14 +32,14 @@ def yield_wrong_imports(
     :param app_cfg: Application configuration containing dependencies and settings.
         If app_cfg.show_all is True, all imports are shown.
     """
-    used_deps: set[str] = set()
+    used_deps: set[Package] = set()
     src_fmt = app_cfg.mk_src_formatter()
 
     allowed_dependencies = {
         *app_cfg.dependencies,  # dependencies from pyproject.toml
         *app_cfg.known_extra,
-        *BUILTINS,
-        *app_cfg.known_missing,
+        *Package.set(BUILTINS),
+        *Package.set(app_cfg.known_missing),
     }
     provides = app_cfg.provides
 
@@ -60,7 +60,7 @@ def yield_wrong_imports(
         for dep in sorted(
             set(app_cfg.dependencies).difference(used_deps, app_cfg.known_extra),
         )
-        for msg in app_cfg.unused_fmt(dep)
+        for msg in app_cfg.unused_fmt(str(dep))
     ]:
         exit_status |= ERR_EXTRA_DEPENDENCY
         if app_cfg.verbose:
@@ -90,7 +90,7 @@ def _project_files(file_names: Collection[str]) -> Iterator[Path]:
 
 def _missing_imports_iter(
     file: Path,
-    dependencies: Collection[str],
+    dependencies: Collection[Package],
     provides: Packages,
 ) -> Iterator[tuple[Dependency, str, ast.stmt]]:
     """Find missing imports in a Python file.

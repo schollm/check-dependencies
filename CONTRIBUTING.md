@@ -2,6 +2,7 @@
 
 Thanks for contributing to `check-dependencies`!
 
+
 ## Development setup
 
 ### Requirements
@@ -45,10 +46,24 @@ make format  # Format code and apply ruff fixes
 
 ## Code guidelines
 
+Please make sure to update tests as appropriate. Also with this project, I want
+to keep the dependencies to a minimum, so please keep that in mind when proposing
+a change. Currently, the only dependencies is `toml` to support Python 3.10 and below.
+
 - Keep changes focused and minimal.
 - Add or adjust tests for behavioral changes.
 - Preserve strict typing (`mypy --strict` should stay clean).
 - Follow existing style and naming conventions.
+
+### Coding Standards
+
+| **Type**       | Package  | Comment                      |
+|----------------|----------|------------------------------|
+| **Logging**    | `logger` | Minimize additional packages |
+| **Packaging**  | `uv`     |                              |
+| **Tests**      | `pytest` |                              |
+| **Typing**     | `mypy`   | Type all methods             |
+| **Linting**    | `ruff`   | Also used for formatting     |
 
 ## Commit and PR guidelines
 

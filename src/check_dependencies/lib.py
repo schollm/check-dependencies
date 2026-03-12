@@ -14,7 +14,7 @@ class Dependency(Enum):
     NA = "!"  # Not Available
     EXTRA = "+"  # Extra dependency in config file
     OK = " "  # Correct import (declared in config file)
-    FILE_ERROR = "!!"  # Error in import statement (e.g. syntax error)
+    FILE_ERROR = "!!"  # Error getting import statement (e.g. io error, syntax error)
 
 
 def pkg(module: str) -> str:

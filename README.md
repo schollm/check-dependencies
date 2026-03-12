@@ -6,7 +6,7 @@ It can be used as a stand-alone or as part of a CI/CD to check if an application
 This is a pure-Python zero-dependency (Up until Python 3.11 one, toml) package.
 ## Usage
 ```text
-usage: check-dependencies [-h] [--include-extra] [--verbose] [--all] [--missing MISSING] [--extra EXTRA] [--provides PROVIDES] file_name [file_name ...]
+usage: check-dependencies [-h] [--include-dev] [--verbose] [--all] [--missing MISSING] [--extra EXTRA] [--provides PROVIDES] file_name [file_name ...]
 
 Find undeclared and unused (or all) imports in Python files
 
@@ -15,7 +15,7 @@ positional arguments:
 
 optional arguments:
   -h, --help         show this help message and exit
-  --include-extra    Include dev dependencies
+  --include-dev      Include dev dependencies
   --verbose          Show every import of a package
   --all              Show all imports (including correct ones)
   --missing MISSING  Comma seperated list of requirements known to be missing. 

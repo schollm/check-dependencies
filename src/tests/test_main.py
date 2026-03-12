@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import time
 from pathlib import Path
 from textwrap import dedent
 from typing import TYPE_CHECKING
@@ -18,7 +19,16 @@ from check_dependencies.main import (
     _missing_imports_iter,
     yield_wrong_imports,
 )
-from tests.conftest import DATA, POETRY, PYPROJECT_CFG, PYPROJECT_PROVIDES, SRC
+from tests.conftest import (
+    DATA,
+    POETRY,
+    PYPROJECT_CFG,
+    PYPROJECT_PROVIDES,
+    PYPROJECT_UNICODE,
+    SRC,
+    SRC_MODULE,
+    SRC_UNICODE,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -264,7 +274,7 @@ class TestYieldWrongImports:
 
     def test_all_imports_all_files(self) -> None:
         """show_all=True should show all imports in all files."""
-        res = self.fn(file_names=[DATA.as_posix()], show_all=True)
+        res = self.fn(file_names=[SRC_MODULE.as_posix()], show_all=True)
         assert set(res) == {
             "  check_dependencies",
             "  test_1",
@@ -278,8 +288,8 @@ class TestYieldWrongImports:
 
     def test_doublette_entries(self) -> None:
         """Test that doublette entries are not printed twice."""
-        res = self.fn(file_names=[DATA.as_posix(), DATA.as_posix()], show_all=True)
-        assert set(res) == {
+        res = self.fn(file_names=[SRC_MODULE.as_posix()] * 2, show_all=True)
+        assert sorted(res) == [
             "  check_dependencies",
             "  test_1",
             "  test_main",
@@ -288,20 +298,41 @@ class TestYieldWrongImports:
             "! missing_def",
             "! missing_src2",
             "! tests_main",
-        }
+        ]
 
-    def test_fail_on_missing_pyproject(self) -> None:
-        """Test that we fail if the pyproject.toml is missing."""
-        with pytest.raises(FileNotFoundError):
-            AppConfig.from_cli_args(
-                file_names=["nonexistent.py"],
-                known_extra="",
-                known_missing="",
-                provides=[],
-                include_dev=False,
-                verbose=False,
-                show_all=False,
-            )
+    def test_no_fail_on_missing_pyproject(self) -> None:
+        """Test that we do not fail if the pyproject.toml is missing."""
+        res = AppConfig.from_cli_args(
+            file_names=["nonexistent.py"],
+            known_extra="",
+            known_missing="",
+            provides=[],
+            include_dev=False,
+            verbose=False,
+            show_all=False,
+        )
+        assert res
+
+    def test_unicode_imports(self) -> None:
+        """Test for Unicode module names."""
+        result = self.fn(overwrite_cfg=PYPROJECT_UNICODE, file_names=[SRC_UNICODE])
+
+        # All Unicode module names should be flagged as missing
+        assert result == []
+
+    def test_unicode_imports_verbose(self) -> None:
+        """Test verbose output with Unicode module names."""
+        result = self.fn(file_names=[SRC_UNICODE], verbose=True)
+
+        # Should show file path and line numbers for Unicode imports
+        assert any("ö" in line and SRC_UNICODE in line for line in result)
+        assert any("café" in line and SRC_UNICODE in line for line in result)
+
+    def test_fail_msg_on_nonexisting_file(self) -> None:
+        """Test non-existing files."""
+        missing_file = (SRC_MODULE / "non-existing.pyy").as_posix()
+        res = self.fn(file_names=[missing_file])
+        assert res[0] == f"!! {missing_file}"
 
 
 @pytest.mark.parametrize(
@@ -328,11 +359,15 @@ def test_imports_iter(stmt: str, expected: list[str]) -> None:
 
 
 def test_missing_import_iter_silent_on_invalid_python_code() -> None:
-    """Test that missing imports iterator is silent on invalid Python code."""
+    """Test that missing imports iterator catches invalid Python code."""
     my_path = MagicMock()
     my_path.as_posix.return_value = "dummy.py"
     my_path.read_bytes.return_value = b"()foo"
-    assert list(_missing_imports_iter(my_path, set(), Packages([]))) == []
+    res = list(_missing_imports_iter(my_path, set(), Packages([])))
+    assert len(res) == 1
+    status, filename, _ = res[0]
+    assert status == Dependency.FILE_ERROR
+    assert filename == "dummy.py"
 
 
 def test_missing_imports_iter_non_utf8_encoding(tmp_path: Path) -> None:
@@ -376,3 +411,80 @@ def test_mk_unused_formatter(verbose: bool, expected: str) -> None:
     """Test the unused formatter."""
     cfg = AppConfig.from_cli_args(file_names=[DATA.as_posix()], verbose=verbose)
     assert list(cfg.unused_fmt("foo")) == [expected]
+
+
+@pytest.mark.parametrize(
+    "stmt, expected",
+    [
+        # Unicode in module names (valid syntax, but won't work at runtime)
+        ("import ö", ["ö"]),
+        ("import café", ["café"]),
+        ("from ä import something", ["ä"]),
+        ("import 日本語", ["日本語"]),
+        ("from Москва import test", ["Москва"]),
+        # Unicode in variable names is valid, but shouldn't be confused with imports
+        ("import os\nö = 1", ["os"]),
+        # Mixed ASCII and Unicode
+        ("import foo_ö", ["foo_ö"]),
+    ],
+)
+def test_imports_iter_unicode(stmt: str, expected: list[str]) -> None:
+    """Test that Unicode module names are handled correctly.
+
+    While Python 3 allows Unicode identifiers (PEP 3131), module names
+    must correspond to file names, which are typically ASCII. The tool
+    should still parse these correctly, even though they won't work at runtime.
+    """
+    parsed = ast.parse(dedent(stmt))
+    assert [x[0] for x in _imports_iter(parsed.body)] == expected
+
+
+def test_missing_imports_iter_unicode_file(tmp_path: Path) -> None:
+    """Test _missing_imports_iter with a file containing Unicode imports.
+
+    This verifies that the tool can parse files with Unicode module names
+    (even though such imports would fail at runtime).
+    """
+    py_file = tmp_path / "unicode_imports.py"
+    content = """# -*- coding: utf-8 -*-
+import ö
+from café import something
+import sys
+"""
+    py_file.write_text(content, encoding="utf-8")
+
+    result = list(_missing_imports_iter(py_file, {"sys"}, Packages([])))
+
+    # Extract module names
+    modules = [m for _, m, _ in result]
+
+    # Should have detected all three imports
+    assert "ö" in modules
+    assert "café" in modules
+    assert "sys" in modules
+
+    # sys should be OK, Unicode modules should be NA
+    statuses = {m: status for status, m, _ in result}
+    assert statuses["sys"] == Dependency.OK
+    assert statuses["ö"] == Dependency.NA
+    assert statuses["café"] == Dependency.NA
+
+
+@pytest.mark.performance
+def test_performance_large_project(tmp_path: Path) -> None:
+    """Test the performance of yield_wrong_imports on a large project."""
+    max_duration_per_file = 0.01  # in seconds
+    n_files = 1000
+    for i in range(n_files):
+        (tmp_path / f"file_{i}.py").write_text("import sys\n")
+    cfg = AppConfig(
+        dependencies=[],
+        known_extra=[],
+        known_missing=[],
+        provides=Packages([]),
+    )
+    start = time.time()
+    _ = list(yield_wrong_imports([tmp_path.as_posix()], cfg))
+    duration = time.time() - start
+
+    assert duration < max_duration_per_file * n_files

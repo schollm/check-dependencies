@@ -3,12 +3,42 @@
 from __future__ import annotations
 
 import ast
-from pathlib import Path
 
 import pytest
 
-from check_dependencies.app_config import AppConfig
+from check_dependencies.app_config import AppConfig, Packages
 from check_dependencies.lib import Dependency, normalize_pkg
+
+
+class TestPackages:
+    """Test suite for the Packages class, which manages package-module mappings."""
+
+    def test_packages_multi_module_and_multi_package_mapping(self) -> None:
+        """Packages supports many-to-many mappings.
+
+        - one package can provide multiple modules
+        - one module can be provided by multiple packages
+        """
+        packages = Packages(
+            [
+                ("pkg_a", "mod_common"),
+                ("pkg_a", "mod_a_only"),
+                ("pkg_b", "mod_common"),
+                ("pkg_b", "mod_b_only"),
+                ("pkg_c", "mod_c_only"),
+            ]
+        )
+
+        # package -> modules (one package provides multiple modules)
+        assert packages.modules("pkg_a") == {"mod_common", "mod_a_only"}
+        assert packages.modules("pkg_b") == {"mod_common", "mod_b_only"}
+        assert packages.modules("pkg_c") == {"mod_c_only"}
+
+        # module -> packages (one module provided by multiple packages)
+        assert packages.packages("mod_common") == {"pkg_a", "pkg_b"}
+        assert packages.packages("mod_a_only") == {"pkg_a"}
+        assert packages.packages("mod_b_only") == {"pkg_b"}
+        assert packages.packages("mod_c_only") == {"pkg_c"}
 
 
 class TestNormalizePkg:
@@ -45,7 +75,7 @@ class TestMkSrcFormatter:
             file_names=(), verbose=verbose, show_all=False, known_extra="foo"
         )
         fn = cfg.mk_src_formatter()
-        assert not list(fn(Path("src.py"), Dependency.OK, "foo", stmt))
+        assert not list(fn("src.py", Dependency.OK, "foo", stmt))
 
     @pytest.mark.parametrize(
         "verbose, show_all, cause, expected",
@@ -69,7 +99,7 @@ class TestMkSrcFormatter:
         """MkSrcFormatter generic tests."""
         cfg = AppConfig.from_cli_args(file_names=(), verbose=verbose, show_all=show_all)
         fn = cfg.mk_src_formatter()
-        assert next(fn(Path("src.py"), Dependency(cause), "foo", stmt)) == expected
+        assert next(fn("src.py", Dependency(cause), "foo", stmt)) == expected
 
     def test_cache(self, stmt: ast.stmt) -> None:
         """Test the cache mechanism for the formatter."""

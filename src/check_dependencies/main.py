@@ -19,6 +19,7 @@ logger = logging.getLogger("check_dependencies")
 ERR_MISSING_DEPENDENCY = 2
 ERR_EXTRA_DEPENDENCY = 4
 ERR_NO_PYPROJECT = 8
+ERR_FILE = 16
 
 
 def yield_wrong_imports(
@@ -27,33 +28,32 @@ def yield_wrong_imports(
 ) -> Generator[str, None, int]:
     """Yield output lines of missing/unused imports.
 
-    If cfg.show_all is True, all imports are shown.
+    :param file_names: List of file paths to analyze.
+    :param app_cfg: Application configuration containing dependencies and settings.
+        If app_cfg.show_all is True, all imports are shown.
     """
     used_deps: set[str] = set()
     src_fmt = app_cfg.mk_src_formatter()
-    exit_status = 0
 
-    expected_dependencies = frozenset().union(
-        app_cfg.dependencies,  # dependencies from pyproject.toml
-        app_cfg.known_extra,
-        BUILTINS,  # builtins
-    )
+    allowed_dependencies = {
+        *app_cfg.dependencies,  # dependencies from pyproject.toml
+        *app_cfg.known_extra,
+        *BUILTINS,
+        *app_cfg.known_missing,
+    }
     provides = app_cfg.provides
-    allowed_dependencies: frozenset[str] = frozenset().union(
-        expected_dependencies,
-        app_cfg.known_missing,
-    )
+
+    exit_status = 0
 
     for src_pth in _project_files(file_names):
         for cause, module, stmt in _missing_imports_iter(
-            src_pth,
-            dependencies=allowed_dependencies,
-            provides=provides,
+            src_pth, dependencies=allowed_dependencies, provides=provides
         ):
-            if cause != Dependency.OK:
+            if cause not in (Dependency.OK, Dependency.FILE_ERROR):
                 exit_status |= ERR_MISSING_DEPENDENCY
-            used_deps |= provides.packages(module)
-            yield from src_fmt(src_pth, cause, module, stmt)
+            if cause != Dependency.FILE_ERROR:
+                used_deps |= provides.packages(module)
+            yield from src_fmt(src_pth.as_posix(), cause, module, stmt)
 
     if superfluous_requirements := [
         msg
@@ -75,10 +75,14 @@ def _project_files(file_names: Collection[str]) -> Iterator[Path]:
     """Collect all Python files in a list of files or directories.
 
     Ensure no file is visited more than once.
+
+    :param file_names: List of file paths or directories to analyze.
     """
     visited = set()
     for p in map(Path, file_names):
         for p_sub in p.rglob("*.py") if p.is_dir() else [p]:
+            # resolve to avoid duplicates from symlinks or different relative paths.
+            # Symlink can be pointed outside the project directory.
             if (p_sub_resolved := p_sub.resolve()) not in visited:
                 visited.add(p_sub_resolved)
                 yield p_sub
@@ -97,8 +101,9 @@ def _missing_imports_iter(
     """
     try:
         parsed = ast.parse(file.read_bytes(), filename=file.as_posix())
-    except SyntaxError:
-        logger.exception("Could not parse %s", file)
+    except (SyntaxError, OSError, PermissionError, FileNotFoundError):
+        logger.warning("Could not parse %s", file, exc_info=False)
+        yield Dependency.FILE_ERROR, file.as_posix(), ast.Raise(lineno=-1)
         return
     for module, stmt in _imports_iter(parsed.body):
         pkg_ = provides.packages(module)
@@ -107,7 +112,10 @@ def _missing_imports_iter(
 
 
 def _imports_iter(body: list[ast.stmt]) -> Iterator[tuple[str, ast.stmt]]:
-    """Yield all import statements from a body of code."""
+    """Yield all import statements from a body of code.
+
+    :param body: List of AST statements to analyze.
+    """
     try:
         iter(body)
     except TypeError:
@@ -118,9 +126,9 @@ def _imports_iter(body: list[ast.stmt]) -> Iterator[tuple[str, ast.stmt]]:
         if isinstance(x, ast.Import):
             for alias in x.names:
                 yield alias.name, x  # yield x, not alias to get lineno
-        elif isinstance(x, ast.ImportFrom) and x.level == 0:
+        elif isinstance(x, ast.ImportFrom) and x.level == 0 and x.module:
             # level > 0 means relative import
-            yield x.module or "", x
+            yield x.module, x
         elif hasattr(x, "body"):
             for f in x._fields:
                 yield from _imports_iter(getattr(x, f))

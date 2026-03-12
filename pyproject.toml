@@ -20,6 +20,9 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
     "Topic :: Software Development :: Quality Assurance",
@@ -40,8 +43,10 @@ dev = [
     "types-pygments>=2.19.0.20250107",
     "types-pexpect>=4.9.0.20241208",
 ]
-[tool.check-dependencies]
+[project.scripts]
+check-dependencies = "check_dependencies.__main__:main"
 
+[tool.check-dependencies]
 known-missing = [
     "tomllib",  # Missing until Python 3.11
     "toml",  # Missing after Python 3.11
@@ -65,27 +70,18 @@ ignore = ["COM812", "D213", "D203"]
     "FBT001",  # Boolean-typed positional argument in function definition
     "FBT002",  # Boolean default positional argument in function definition
     "PLR0913",  # Too many arguments in function definition (7 > 5)
-    "D400"   # docstring should end with a period
+    "D400",   # docstring should end with a period
+    "SLF001",  # use private member of a module to be tested.
 ]
 
 [tool.ruff.lint.flake8-pytest-style]
 parametrize-names-type = "csv"
-
-[tool.pdm.build]
-includes = []
-
-[build-system]
-requires = ["pdm-backend"]
-build-backend = "pdm.backend"
 
 [project.urls]
 "Bug Tracker" = "https://github.com/schollm/check-dependencies/issues"
 homepage = "https://github.com/schollm/check-dependencies"
 repository = "https://github.com/schollm/check-dependencies"
 documentation = "https://github.com/schollm/check-dependencies/blob/main/README.md"
-
-[project.scripts]
-check-dependencies = "check_dependencies.__main__:main"
 
 [tool.pytest.ini_options]
 addopts = """
@@ -95,4 +91,19 @@ addopts = """
   --cov-report=html:.out/coverage-html
   --cov-report term-missing
   --cov-branch
+  -m "not performance"
 """
+
+[tool.mypy]
+exclude= '^src/tests/data'
+show_error_codes = true
+strict = true
+install_types = true
+junit_xml = ".out/junit-mypy-strict.xml"
+
+[tool.pdm.build]
+includes = []
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"

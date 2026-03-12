@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import pytest
@@ -80,6 +81,14 @@ class TestPyProjectToml:
         )
         assert cfg.provides == [(expected, "some_import")]
 
+    @pytest.mark.skipif(sys.platform != "win32", reason="Windows-specific test")
+    def test_fails_on_different_paths(self) -> None:
+        """Test that PyProjectToml raises when initialized with different paths."""
+        with pytest.raises(
+            ValueError, match=r"Error finding common path for.*C:.test.*D:.test"
+        ):
+            PyProjectToml.for_paths(["C:/test", "D:/test"])
+
 
 class TestNestedItem:
     """Test suite for nested item."""
@@ -91,13 +100,13 @@ class TestNestedItem:
     def test_nested_item(self, key: str, type_: type, expected: object) -> None:
         """Test nested item."""
         prj = PyProjectToml(cfg={"a": {"b": {"c": 1, "d": 2}}}, path=Path())
-        assert prj.nested_item(key, type_) == expected
+        assert prj._nested_item(key, type_) == expected
 
     def test_raise_wrong_type(self) -> None:
         """Raise wrong type."""
         prj = PyProjectToml(cfg={"a": 1}, path=Path())
         with pytest.raises(TypeError):
-            prj.nested_item("a", str)
+            prj._nested_item("a", str)
 
 
 class TestGetPyProjectPath:

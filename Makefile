@@ -10,8 +10,7 @@ test-pytest: .ALWAYS  ## Run pytest
 	uv run pytest src/tests/
 
 test-typing: .ALWAYS  ## Run mypy
-	uv run mypy --non-interactive --install-types --show-error-codes --strict --junit-xml=.out/junit-mypy-strict.xml \
-	--exclude=src/tests/data  src/
+	uv run mypy --non-interactive src/
 
 test-lint: .ALWAYS
 	uv run ruff format --check src/

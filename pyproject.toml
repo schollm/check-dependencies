@@ -43,8 +43,10 @@ dev = [
     "types-pygments>=2.19.0.20250107",
     "types-pexpect>=4.9.0.20241208",
 ]
-[tool.check-dependencies]
+[project.scripts]
+check-dependencies = "check_dependencies.__main__:main"
 
+[tool.check-dependencies]
 known-missing = [
     "tomllib",  # Missing until Python 3.11
     "toml",  # Missing after Python 3.11
@@ -75,21 +77,11 @@ ignore = ["COM812", "D213", "D203"]
 [tool.ruff.lint.flake8-pytest-style]
 parametrize-names-type = "csv"
 
-[tool.pdm.build]
-includes = []
-
-[build-system]
-requires = ["pdm-backend"]
-build-backend = "pdm.backend"
-
 [project.urls]
 "Bug Tracker" = "https://github.com/schollm/check-dependencies/issues"
 homepage = "https://github.com/schollm/check-dependencies"
 repository = "https://github.com/schollm/check-dependencies"
 documentation = "https://github.com/schollm/check-dependencies/blob/main/README.md"
-
-[project.scripts]
-check-dependencies = "check_dependencies.__main__:main"
 
 [tool.pytest.ini_options]
 addopts = """
@@ -100,3 +92,17 @@ addopts = """
   --cov-report term-missing
   --cov-branch
 """
+
+[tool.mypy]
+exclude= '^src/tests/data'
+show_error_codes = true
+strict = true
+install_types = true
+junit_xml = ".out/junit-mypy-strict.xml"
+
+[tool.pdm.build]
+includes = []
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"

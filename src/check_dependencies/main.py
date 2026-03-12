@@ -102,7 +102,7 @@ def _missing_imports_iter(
     try:
         parsed = ast.parse(file.read_bytes(), filename=file.as_posix())
     except (SyntaxError, OSError, PermissionError, FileNotFoundError):
-        logger.exception("Could not parse %s", file)
+        logger.warning("Could not parse %s", file, exc_info=False)
         yield Dependency.FILE_ERROR, file.as_posix(), ast.Raise(lineno=-1)
         return
     for module, stmt in _imports_iter(parsed.body):

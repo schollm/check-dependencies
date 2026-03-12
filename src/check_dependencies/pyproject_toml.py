@@ -16,7 +16,6 @@ try:
 except ImportError:  # pragma: no cover
     import toml as tomllib  # type: ignore[no-redef,import-not-found,unused-ignore]
 
-__all__ = ["PyProjectToml", "tomllib"]
 logger = logging.getLogger(__name__)
 _PYPROJECT_TOML = Path("pyproject.toml")
 _T = TypeVar("_T")
@@ -194,6 +193,8 @@ class BaseDependency:
 
 @dataclass(frozen=True)
 class Pep621Dependencies(BaseDependency):
+    """PEP-621 dependency provider."""
+
     def is_used(self) -> bool:
         """Check if the pyproject.toml file contains PEP 621-style dependencies."""
         return "dependencies" in self.cfg.get("project", {})
@@ -216,6 +217,8 @@ class Pep621Dependencies(BaseDependency):
 
 @dataclass(frozen=True)
 class PoetryDependencies(BaseDependency):
+    """Poetry Dependencies."""
+
     def is_used(self) -> bool:
         """Check if the pyproject.toml file contains Poetry style dependencies."""
         return bool(_nested_item(self.cfg, "tool.poetry", dict))
@@ -248,7 +251,10 @@ class PoetryDependencies(BaseDependency):
 
 @dataclass(frozen=True)
 class UvLegacyDependencies(BaseDependency):
+    """uv (legacy) dependency manager."""
+
     def is_used(self) -> bool:
+        """Check if uv is used."""
         return bool(_nested_item(self.cfg, "tool.uv", dict))
 
     def _dependencies(self) -> set[Package]:
@@ -260,7 +266,10 @@ class UvLegacyDependencies(BaseDependency):
 
 @dataclass(frozen=True)
 class HatchDependencies(BaseDependency):
+    """Hatch Dependencies."""
+
     def is_used(self) -> bool:
+        """Check if hatch is used in this project."""
         return bool(_nested_item(self.cfg, "tool.hatch", dict))
 
     def _dependencies(self) -> set[Package]:

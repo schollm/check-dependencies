@@ -12,7 +12,6 @@ from check_dependencies.pyproject_toml import (
     PyProjectToml,
     _get_pyproject_path,
     _nested_item,
-    tomllib,
 )
 from tests.conftest import (
     HATCH,
@@ -22,6 +21,11 @@ from tests.conftest import (
     PYPROJECT_PROVIDES,
     UV_LEGACY,
 )
+
+try:
+    import tomllib  # type: ignore[import-not-found,unused-ignore]
+except ImportError:  # pragma: no cover
+    import toml as tomllib  # type: ignore[no-redef,import-not-found,unused-ignore]
 
 
 class TestPyProjectToml:

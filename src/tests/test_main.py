@@ -301,7 +301,7 @@ class TestYieldWrongImports:
         ]
 
     def test_no_fail_on_missing_pyproject(self) -> None:
-        """Test that we fail if the pyproject.toml is missing."""
+        """Test that we do not fail if the pyproject.toml is missing."""
         res = AppConfig.from_cli_args(
             file_names=["nonexistent.py"],
             known_extra="",

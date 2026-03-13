@@ -1,6 +1,6 @@
 name: Python Application
 
-on: [push]
+on: [ push ]
 
 jobs:
   lint:
@@ -16,8 +16,8 @@ jobs:
   test:
     strategy:
       matrix:
-        os: ['ubuntu-latest']
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12', '3.13']
+        os: [ 'ubuntu-latest' ]
+        python-version: [ '3.8', '3.9', '3.10', '3.11', '3.12', '3.13' ]
         # Add all systems os versions for 3.14 - and test-coverage as well.
         include:
           - { os: 'macos-latest', python-version: "3.14" }
@@ -27,39 +27,43 @@ jobs:
             coverage: true
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v6.0.2
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v6.2.0
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install uv
-      uses: astral-sh/setup-uv@v7.4.0
-      with:
-        enable-cache: true
-    - name: Install dependencies
-      run: uv sync
-    - name: Run pytest
-      run: |
-        make test-pytest
-    - name: Code Coverage Summary Report
-      if: matrix.coverage==true
-      uses: irongut/CodeCoverageSummary@v1.3.0
-      with:
-        filename: '.out/coverage*.xml'
-        badge: true
-        format: 'markdown'
-        output: 'both'
-        thresholds: '75 98'
-    - name: Write to Job Summary
-      if: matrix.coverage==true
-      run: cat code-coverage-results.md >> $GITHUB_STEP_SUMMARY
-#    - name: Add Coverage PR Comment
-#      uses: marocchino/sticky-pull-request-comment@v2.9.4
-#      if: matrix.coverage==true # && (github.event_name == 'pull_request')
-#      with:
-#        recreate: true
-#        path: code-coverage-results.md
-#        number: <PR_NUMBER>
+      - uses: actions/checkout@v6.0.2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v6.2.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7.4.0
+        with:
+          enable-cache: true
+      - name: Install dependencies
+        run: uv sync
+      - name: Run typing checks
+        if: matrix.coverage==true
+        run: |
+          make test-typing
+      - name: Run pytest
+        run: |
+          make test-pytest
+      - name: Code Coverage Summary Report
+        if: matrix.coverage==true
+        uses: irongut/CodeCoverageSummary@v1.3.0
+        with:
+          filename: '.out/coverage*.xml'
+          badge: true
+          format: 'markdown'
+          output: 'both'
+          thresholds: '75 98'
+      - name: Write to Job Summary
+        if: matrix.coverage==true
+        run: cat code-coverage-results.md >> $GITHUB_STEP_SUMMARY
+  #    - name: Add Coverage PR Comment
+  #      uses: marocchino/sticky-pull-request-comment@v2.9.4
+  #      if: matrix.coverage==true # && (github.event_name == 'pull_request')
+  #      with:
+  #        recreate: true
+  #        path: code-coverage-results.md
+  #        number: <PR_NUMBER>
   build:
     runs-on: ubuntu-latest
     steps:

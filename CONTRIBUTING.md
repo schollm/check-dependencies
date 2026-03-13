@@ -22,7 +22,7 @@ Run tests:
 make test  # Run all tests
 make test-static  # Run static tests
 make test-pytest  # Run pytest tests
-make test-typing  # Run mypy type checks
+make test-typing  # Run ty type checks
 make test-lint  # Run lint and format checks
 ```
 
@@ -52,7 +52,7 @@ a change. Currently, the only dependencies is `toml` to support Python 3.10 and 
 
 - Keep changes focused and minimal.
 - Add or adjust tests for behavioral changes.
-- Preserve strict typing (`mypy --strict` should stay clean).
+- Preserve strict typing (`ty check` should stay clean).
 - Follow existing style and naming conventions.
 
 ### Coding Standards
@@ -62,7 +62,7 @@ a change. Currently, the only dependencies is `toml` to support Python 3.10 and 
 | **Logging**    | `logger` | Minimize additional packages |
 | **Packaging**  | `uv`     |                              |
 | **Tests**      | `pytest` |                              |
-| **Typing**     | `mypy`   | Type all methods             |
+| **Typing**     | `ty`     | Type all methods             |
 | **Linting**    | `ruff`   | Also used for formatting     |
 
 ## Commit and PR guidelines

@@ -12,9 +12,9 @@ from typing import Any, Collection, Mapping, TypeVar
 from check_dependencies.lib import Package
 
 try:
-    import tomllib  # type: ignore[import-not-found,unused-ignore]
+    import tomllib  # type: ignore[unresolved-import]
 except ImportError:  # pragma: no cover
-    import toml as tomllib  # type: ignore[no-redef,import-not-found,unused-ignore]
+    import toml as tomllib
 
 logger = logging.getLogger(__name__)
 _PYPROJECT_TOML = Path("pyproject.toml")
@@ -63,10 +63,10 @@ class PyProjectToml:
         deps: set[Package] = set()
         is_used = False
         for dep_class in (
-            Pep621Dependencies,
-            PoetryDependencies,
-            UvLegacyDependencies,
-            HatchDependencies,
+            _Pep621Dependencies,
+            _PoetryDependencies,
+            _UvLegacyDependencies,
+            _HatchDependencies,
         ):
             dep_cfg = dep_class(self.cfg)
             if dep_cfg.is_used():
@@ -131,39 +131,8 @@ class PyProjectToml:
         ]
 
 
-def _get_pyproject_path(path: Path) -> Path:
-    """Get the pyproject.toml file by searching up the directory hierarchy.
-
-    :param path: The starting path to search from.
-    """
-    for p in chain([path], path.resolve().parents):
-        if (p / _PYPROJECT_TOML).exists():
-            return p / _PYPROJECT_TOML
-    msg = f"Could not find {_PYPROJECT_TOML} file within path hierarchy"
-    raise FileNotFoundError(msg)
-
-
-def _nested_item(obj: Mapping[str, Any], key: str, /, class_: type[_T]) -> _T:
-    """Get items from a nested dictionary where the keys are dot-separated.
-
-    :param key: The dot-separated key to look up in the nested dictionary.
-    :param class_: The expected type of the value.
-    :returns: The value corresponding to the key if found
-        otherwise the default instance of the expected type.
-    :raises TypeError: If the value found is not of the expected type.
-    """
-    for a in key.split("."):
-        if a not in obj:
-            return class_()
-        obj = obj[a]
-    if not isinstance(obj, class_):
-        msg = f"Expected {class_} but got {type(obj)}"
-        raise TypeError(msg)
-    return obj
-
-
 @dataclass(frozen=True)
-class BaseDependency:
+class _BaseDependency:
     """Base class for different dependency providers."""
 
     cfg: Mapping[str, Any]
@@ -192,7 +161,7 @@ class BaseDependency:
 
 
 @dataclass(frozen=True)
-class Pep621Dependencies(BaseDependency):
+class _Pep621Dependencies(_BaseDependency):
     """PEP-621 dependency provider."""
 
     def is_used(self) -> bool:
@@ -216,7 +185,7 @@ class Pep621Dependencies(BaseDependency):
 
 
 @dataclass(frozen=True)
-class PoetryDependencies(BaseDependency):
+class _PoetryDependencies(_BaseDependency):
     """Poetry Dependencies."""
 
     def is_used(self) -> bool:
@@ -250,7 +219,7 @@ class PoetryDependencies(BaseDependency):
 
 
 @dataclass(frozen=True)
-class UvLegacyDependencies(BaseDependency):
+class _UvLegacyDependencies(_BaseDependency):
     """uv (legacy) dependency manager."""
 
     def is_used(self) -> bool:
@@ -258,14 +227,14 @@ class UvLegacyDependencies(BaseDependency):
         return bool(_nested_item(self.cfg, "tool.uv", dict))
 
     def _dependencies(self) -> set[Package]:
-        return Pep621Dependencies(self.cfg).dependencies(include_dev=False)
+        return _Pep621Dependencies(self.cfg).dependencies(include_dev=False)
 
     def _dev_dependencies(self) -> set[Package]:
         return Package.set(_nested_item(self.cfg, "tool.uv.dev-dependencies", dict))
 
 
 @dataclass(frozen=True)
-class HatchDependencies(BaseDependency):
+class _HatchDependencies(_BaseDependency):
     """Hatch Dependencies."""
 
     def is_used(self) -> bool:
@@ -287,3 +256,35 @@ class HatchDependencies(BaseDependency):
                 if name != "default"
             )
         )
+
+
+def _nested_item(obj: Mapping[str, Any], key: str, /, class_: type[_T]) -> _T:
+    """Get items from a nested dictionary where the keys are dot-separated.
+
+    :param key: The dot-separated key to look up in the nested dictionary.
+    :param class_: The expected type of the value.
+    :returns: The value corresponding to the key if found
+        otherwise the default instance of the expected type.
+    :raises TypeError: If the value found is not of the expected type or if any part of
+        key is not a mapping.
+    """
+    for a in key.split("."):
+        if a not in obj:
+            return class_()
+        obj = obj[a]
+    if not isinstance(obj, class_):
+        msg = f"Expected {class_} but got {type(obj)}"
+        raise TypeError(msg)
+    return obj
+
+
+def _get_pyproject_path(path: Path) -> Path:
+    """Get the pyproject.toml file by searching up the directory hierarchy.
+
+    :param path: The starting path to search from.
+    """
+    for p in chain([path], path.resolve().parents):
+        if (p / _PYPROJECT_TOML).exists():
+            return p / _PYPROJECT_TOML
+    msg = f"Could not find {_PYPROJECT_TOML} file within path hierarchy"
+    raise FileNotFoundError(msg)

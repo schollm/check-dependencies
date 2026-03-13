@@ -9,8 +9,8 @@ test-static: test-lint test-typing .ALWAYS  ## Run static tests
 test-pytest: .ALWAYS  ## Run pytest
 	uv run pytest src/tests/
 
-test-typing: .ALWAYS  ## Run mypy
-	uv run mypy --non-interactive src/
+test-typing: .ALWAYS  ## Run ty
+	uv run ty check src/
 
 test-lint: .ALWAYS
 	uv run ruff format --check src/

@@ -28,10 +28,10 @@ PYPROJECT_PROVIDES = DATA / "pyproject_pep631_provides.toml"
 @pytest.fixture(params=[PEP631, POETRY, HATCH, UV_LEGACY])
 def pyproject(request: pytest.FixtureRequest) -> Path:
     """Fixture for testing pyproject.toml files."""
-    return request.param  # type: ignore[no-any-return]
+    return request.param
 
 
 @pytest.fixture(params=[PEP631_EXTRA, POETRY_EXTRA, HATCH_EXTRA, UV_LEGACY_EXTRA])
 def pyproject_extra(request: pytest.FixtureRequest) -> Path:
     """Fixture for testing extra requirements."""
-    return request.param  # type: ignore[no-any-return]
+    return request.param

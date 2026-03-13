@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from typing import TypeVar
 
 import pytest
 
@@ -23,9 +24,9 @@ from tests.conftest import (
 )
 
 try:
-    import tomllib  # type: ignore[import-not-found,unused-ignore]
+    import tomllib  # type: ignore[unresolved-import]
 except ImportError:  # pragma: no cover
-    import toml as tomllib  # type: ignore[no-redef,import-not-found,unused-ignore]
+    import toml as tomllib
 
 
 class TestPyProjectToml:
@@ -110,11 +111,13 @@ class TestPyProjectToml:
 class TestNestedItem:
     """Test suite for nested item."""
 
+    _T = TypeVar("_T")
+
     @pytest.mark.parametrize(
         "key, type_, expected",
         [("a.b.c", int, 1), ("a.b.d", int, 2), ("a.b.x", int, 0)],
     )
-    def test_nested_item(self, key: str, type_: type, expected: object) -> None:
+    def test_nested_item(self, key: str, type_: type[_T], expected: _T) -> None:
         """Test nested item."""
         prj = PyProjectToml(cfg={"a": {"b": {"c": 1, "d": 2}}}, path=Path())
         assert _nested_item(prj.cfg, key, type_) == expected

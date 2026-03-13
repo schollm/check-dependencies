@@ -90,7 +90,7 @@ class Package:
         return NotImplemented
 
     @classmethod
-    def set(cls, package_names: Iterable[str]) -> set[Package]:
+    def set(cls, package_names: Iterable[str]) -> __builtins__.set[Package]:
         """Get a set of packages from a package names."""
         return {cls(package_name) for package_name in package_names}
 

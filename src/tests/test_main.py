@@ -12,8 +12,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from check_dependencies.__main__ import main as cli_main
-from check_dependencies.app_config import AppConfig, Packages
-from check_dependencies.lib import Dependency
+from check_dependencies.app_config import AppConfig
+from check_dependencies.lib import Dependency, Package, Packages
 from check_dependencies.main import (
     _imports_iter,
     _missing_imports_iter,
@@ -22,6 +22,7 @@ from check_dependencies.main import (
 from tests.conftest import (
     DATA,
     POETRY,
+    POETRY_EXTRA,
     PYPROJECT_CFG,
     PYPROJECT_PROVIDES,
     PYPROJECT_UNICODE,
@@ -91,7 +92,7 @@ def test__main__provides_parsing(
         cli_main()
     packages = captured["provides"]
     for expected_pkg, expected_import in expected_provides:
-        assert packages.modules(expected_pkg) == expected_import
+        assert packages.modules(Package(expected_pkg)) == expected_import
 
 
 class TestYieldWrongImports:
@@ -136,17 +137,19 @@ class TestYieldWrongImports:
     def test_dev(self) -> None:
         """Test default with dev."""
         assert self.fn(overwrite_cfg=PYPROJECT_CFG, include_dev=True) == [
-            "+ test_devtest",
-            "+ test_doctest",
+            "+ test_devtest > 0",
+            "+ test_doctest > 0",
         ]
 
     def test_extra_requirements(self, pyproject_extra: Path) -> None:
         """Ensure extra requirements are printed by default."""
-        assert self.fn(overwrite_cfg=pyproject_extra) == [
+        res = self.fn(overwrite_cfg=pyproject_extra)
+        spec = "= '> 0'" if pyproject_extra == POETRY_EXTRA else "> 0"
+        assert res == [
             "! missing",
             "! missing_class",
             "! missing_def",
-            "+ test_extra",
+            f"+ test_extra {spec}",
         ]
 
     def test_extra_requirements_verbose(self, pyproject_extra: Path) -> None:
@@ -220,7 +223,8 @@ class TestYieldWrongImports:
 
     def test_include_extra(self) -> None:
         """Include development dependencies in the check."""
-        assert self.fn(include_dev=True) == [
+        res = self.fn(include_dev=True)
+        assert [part.split("=", 1)[0].strip() for part in res] == [
             "! missing",
             "! missing_class",
             "! missing_def",
@@ -307,8 +311,8 @@ class TestYieldWrongImports:
             "! tests_main",
         ]
 
-    def test_no_fail_on_missing_pyproject(self) -> None:
-        """Test that we do not fail if the pyproject.toml is missing."""
+    def test_no_fail_on_missing_source(self) -> None:
+        """Test that we do not fail if the source file is missing."""
         res = AppConfig.from_cli_args(
             file_names=["nonexistent.py"],
             known_extra="",
@@ -390,7 +394,9 @@ def test_missing_imports_iter_non_utf8_encoding(tmp_path: Path) -> None:
 def test_missing_imports_iter() -> None:
     """Test the missing import iterator."""
     res = list(
-        _missing_imports_iter(Path(SRC), {"test_0", "test_1", "extra"}, Packages([]))
+        _missing_imports_iter(
+            Path(SRC), Package.set({"test_0", "test_1", "extra"}), Packages([])
+        )
     )
     assert {c for c, _, _ in res} == {Dependency.NA, Dependency.OK}
     assert [m for _, m, _ in res] == [
@@ -460,7 +466,7 @@ import sys
 """
     py_file.write_text(content, encoding="utf-8")
 
-    result = list(_missing_imports_iter(py_file, {"sys"}, Packages([])))
+    result = list(_missing_imports_iter(py_file, Package.set({"sys"}), Packages([])))
 
     # Extract module names
     modules = [m for _, m, _ in result]

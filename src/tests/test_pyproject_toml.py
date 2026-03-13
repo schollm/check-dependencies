@@ -7,11 +7,11 @@ from pathlib import Path
 
 import pytest
 
+from check_dependencies.lib import Package
 from check_dependencies.pyproject_toml import (
     PyProjectToml,
     _get_pyproject_path,
     _nested_item,
-    tomllib,
 )
 from tests.conftest import (
     HATCH,
@@ -21,6 +21,11 @@ from tests.conftest import (
     PYPROJECT_PROVIDES,
     UV_LEGACY,
 )
+
+try:
+    import tomllib  # type: ignore[import-not-found,unused-ignore]
+except ImportError:  # pragma: no cover
+    import toml as tomllib  # type: ignore[no-redef,import-not-found,unused-ignore]
 
 
 class TestPyProjectToml:
@@ -71,7 +76,7 @@ class TestPyProjectToml:
     def test_provides(self) -> None:
         """Test that provides returns the correct mapping."""
         cfg = self.cfg(PYPROJECT_PROVIDES)
-        assert cfg.provides == [("test_alias_pkg", "test_1")]
+        assert cfg.provides == [(Package("test_alias_pkg"), "test_1")]
 
     @pytest.mark.parametrize(
         "raw, expected",
@@ -91,7 +96,7 @@ class TestPyProjectToml:
             path=Path("dummy"),
             include_dev=False,
         )
-        assert cfg.provides == [(expected, "some_import")]
+        assert cfg.provides == [(Package(expected), "some_import")]
 
     @pytest.mark.skipif(sys.platform != "win32", reason="Windows-specific test")
     def test_fails_on_different_paths(self) -> None:

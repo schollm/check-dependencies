@@ -6,8 +6,97 @@ import ast
 
 import pytest
 
-from check_dependencies.app_config import AppConfig, Packages
-from check_dependencies.lib import Dependency, normalize_pkg
+from check_dependencies.app_config import AppConfig
+from check_dependencies.lib import Dependency, Package, Packages, _canonical
+
+
+class TestPackage:
+    """Test suite for the Package value object."""
+
+    @pytest.mark.parametrize(
+        "left,right",
+        [
+            ("PyJWT", "pyjwt"),
+            ("scikit-learn", "scikit_learn"),
+            ("SciKit-Learn>=1.0", "scikit_learn"),
+            ("Scikit-Learn>=1", "scikit-Learn==*"),
+        ],
+    )
+    def test_equal_packages_share_canonical_and_hash(
+        self, left: str, right: str
+    ) -> None:
+        """Equivalent package spellings compare and hash equally."""
+        a = Package(left)
+        b = Package(right)
+
+        assert a == b
+        assert a.canonical == b.canonical
+        assert hash(a) == hash(b)
+
+    @pytest.mark.parametrize(
+        "left,right",
+        [
+            ("pytest", "pyyaml"),
+            ("requests", "requestx"),
+        ],
+    )
+    def test_different_packages_are_not_equal(self, left: str, right: str) -> None:
+        """Different package names should not compare as equal."""
+        assert Package(left) != Package(right)
+
+    @pytest.mark.parametrize(
+        "value,other",
+        [
+            ("PyJWT", "pyjwt"),
+            ("scikit-learn", "scikit_learn"),
+        ],
+    )
+    def test_package_equals_matching_string(self, value: str, other: str) -> None:
+        """Package equality also works against canonical-equivalent strings."""
+        assert Package(value) == other
+
+    @pytest.mark.parametrize(
+        "raw,expected_str,expected_bool",
+        [
+            ("PyJWT", "PyJWT", True),
+            ("  ", "", False),
+            ("", "", False),
+        ],
+    )
+    def test_string_and_bool_behavior(
+        self, raw: str, expected_str: str, expected_bool: bool
+    ) -> None:
+        """Original name is kept for display while truthiness uses canonical name."""
+        package = Package(raw)
+        assert str(package) == expected_str
+        assert bool(package) is expected_bool
+
+    def test_eq_not_implemented(self) -> None:
+        """Test that we return NotImplemented for unknown comparison."""
+        assert Package("foo").__eq__(0) is NotImplemented
+
+    def test_gt_not_implemented(self) -> None:
+        """Test that we return NotImplemented for unknown comparison."""
+        assert Package("foo").__gt__(0) is NotImplemented
+
+    def test_cmp_str(self) -> None:
+        """Test comparison against a string."""
+        assert Package("a==1.0.0") < "b"
+
+    @pytest.mark.parametrize(
+        "requirement, expected_module",
+        [
+            ("foo > 0", "foo"),
+            ("scikit-learn", "scikit_learn"),
+            ("SciKit-Learn >= 1.0", "scikit_learn"),
+        ],
+    )
+    def test_modules_fallback_uses_canonical_name(
+        self, requirement: str, expected_module: str
+    ) -> None:
+        """Fallback for unmapped packages should be a canonical module name."""
+        packages = Packages([])  # no explicit mapping -> fallback path
+        assert packages.modules(Package(requirement)) == {expected_module}
 
 
 class TestPackages:
@@ -21,11 +110,11 @@ class TestPackages:
         """
         packages = Packages(
             [
-                ("pkg_a", "mod_common"),
-                ("pkg_a", "mod_a_only"),
-                ("pkg_b", "mod_common"),
-                ("pkg_b", "mod_b_only"),
-                ("pkg_c", "mod_c_only"),
+                (Package("pkg_a"), "mod_common"),
+                (Package("pkg_a"), "mod_a_only"),
+                (Package("pkg_b"), "mod_common"),
+                (Package("pkg_b"), "mod_b_only"),
+                (Package("pkg_c"), "mod_c_only"),
             ]
         )
 
@@ -53,11 +142,12 @@ class TestNormalizePkg:
             ("scikit_learn", "scikit_learn"),
             ("SciKit-Learn", "scikit_learn"),
             ("Pillow", "pillow"),
+            ("SciKit-Learn>=10.0", "scikit_learn"),
         ],
     )
-    def test_normalize_pkg(self, name: str, expected: str) -> None:
-        """normalize_pkg lowercases and replaces hyphens with underscores."""
-        assert normalize_pkg(name) == expected
+    def test__canonical(self, name: str, expected: str) -> None:
+        """_canonical lowercases and replaces hyphens with underscores."""
+        assert _canonical(name) == expected
 
 
 class TestMkSrcFormatter:

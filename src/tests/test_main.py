@@ -49,20 +49,20 @@ TEST_IMPORTS = [
     ("try:\n    import foo\nexcept ImportError:\n    import bar", ["foo", "bar"]),
     ("__import__('foo', {}, {})", ["foo"]),
     ("__import__('foo')", ["foo"]),
-    ("__import__(foo)", ["!t.py:1:0 __import__(...)"]),
-    ("\nab;__import__(foo)", ["!t.py:2:3 __import__(...)"]),
-    ("__import__('foo')\n__import__(foo)", ["foo", "!t.py:2:0 __import__(...)"]),
+    ("__import__(foo)", ["t.py:1:0 __import__(...)"]),
+    ("\nab;__import__(foo)", ["t.py:2:3 __import__(...)"]),
+    ("__import__('foo')\n__import__(foo)", ["foo", "t.py:2:0 __import__(...)"]),
     ("__import__(name='foo')", ["foo"]),
-    ("__import__(name=foo)", ["!t.py:1:0 __import__(...)"]),
-    ("__import__(f())", ["!t.py:1:0 __import__(...)"]),
-    ("__import__(fox + bar)", ["!t.py:1:0 __import__(...)"]),
-    ("__import__(0)", ["!t.py:1:0 __import__(...)"]),
+    ("__import__(name=foo)", ["t.py:1:0 __import__(...)"]),
+    ("__import__(f())", ["t.py:1:0 __import__(...)"]),
+    ("__import__(fox + bar)", ["t.py:1:0 __import__(...)"]),
+    ("__import__(0)", ["t.py:1:0 __import__(...)"]),
     ("bar = __import__('foo')", ["foo"]),
     ("(bar := __import__('foo'))", ["foo"]),
     ("x = (bar := __import__('foo'))", ["foo"]),
     ("lambda: __import__('foo')", ["foo"]),
     ("__builtins__.__import__('foo')", ["foo"]),
-    ("__builtins__.__import__(foo)", ["!t.py:1:0 __builtins__.__import__(...)"]),
+    ("__builtins__.__import__(foo)", ["t.py:1:0 __builtins__.__import__(...)"]),
 ]
 
 
@@ -180,7 +180,7 @@ class TestYieldWrongImports:
         py_file.write_text(stmt)
         assert self.fn(
             overwrite_cfg=PYPROJECT_EMPTY, file_names=[py_file.as_posix()]
-        ) == [f"! {exp.replace('!t.py', py_file.as_posix())}" for exp in expected]
+        ) == [f"! {exp.replace('t.py', py_file.as_posix())}" for exp in expected]
 
     def test_dev(self) -> None:
         """Test default with dev."""
@@ -404,7 +404,7 @@ class TestYieldWrongImports:
 def test_imports_iter(stmt: str, expected: list[str]) -> None:
     """Test the imports iterator for statement junks."""
     parsed = ast.parse(dedent(stmt))
-    assert [x[0] for x in _imports_iter(parsed.body, file="t.py")] == expected
+    assert [x.name for x, _ in _imports_iter(parsed.body, file="t.py")] == expected
 
 
 def test_missing_import_iter_silent_on_invalid_python_code() -> None:
@@ -414,9 +414,9 @@ def test_missing_import_iter_silent_on_invalid_python_code() -> None:
     my_path.read_bytes.return_value = b"()foo"
     res = list(_missing_imports_iter(my_path, set(), Packages([])))
     assert len(res) == 1
-    status, filename, _ = res[0]
+    status, module, _ = res[0]
     assert status == Dependency.FILE_ERROR
-    assert filename == "dummy.py"
+    assert module.name == "dummy.py"
 
 
 def test_missing_imports_iter_non_utf8_encoding(tmp_path: Path) -> None:
@@ -426,7 +426,7 @@ def test_missing_imports_iter_non_utf8_encoding(tmp_path: Path) -> None:
     content = "# -*- coding: latin-1 -*-\nimport os\nx = 'caf\xe9'\n"
     py_file.write_bytes(content.encode("latin-1"))
     result = list(_missing_imports_iter(py_file, set(), Packages([])))
-    assert [m for _, m, _ in result] == ["os"]
+    assert [m.name for _, m, _ in result] == ["os"]
 
 
 def test_missing_imports_iter() -> None:
@@ -437,7 +437,7 @@ def test_missing_imports_iter() -> None:
         )
     )
     assert {c for c, _, _ in res} == {Dependency.NA, Dependency.OK}
-    assert [m for _, m, _ in res] == [
+    assert [m.name for _, m, _ in res] == [
         "missing.bar",
         "missing.foo",
         "test_1",
@@ -487,7 +487,7 @@ def test_imports_iter_unicode(stmt: str, expected: list[str]) -> None:
     should still parse these correctly, even though they won't work at runtime.
     """
     parsed = ast.parse(dedent(stmt))
-    assert [x[0] for x in _imports_iter(parsed.body)] == expected
+    assert [x.name for x, _ in _imports_iter(parsed.body)] == expected
 
 
 def test_missing_imports_iter_unicode_file(tmp_path: Path) -> None:
@@ -507,7 +507,7 @@ import sys
     result = list(_missing_imports_iter(py_file, Package.set({"sys"}), Packages([])))
 
     # Extract module names
-    modules = [m for _, m, _ in result]
+    modules = [m.name for _, m, _ in result]
 
     # Should have detected all three imports
     assert "ö" in modules
@@ -515,7 +515,7 @@ import sys
     assert "sys" in modules
 
     # sys should be OK, Unicode modules should be NA
-    statuses = {m: status for status, m, _ in result}
+    statuses = {m.name: status for status, m, _ in result}
     assert statuses["sys"] == Dependency.OK
     assert statuses["ö"] == Dependency.NA
     assert statuses["café"] == Dependency.NA

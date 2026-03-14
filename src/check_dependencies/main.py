@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Iterable
 
 from check_dependencies.builtin_module import BUILTINS
-from check_dependencies.lib import Dependency, Package, Packages
+from check_dependencies.lib import Dependency, Module, Package, Packages
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Generator, Iterator
@@ -51,8 +51,8 @@ def yield_wrong_imports(
         ):
             if cause not in (Dependency.OK, Dependency.FILE_ERROR):
                 exit_status |= ERR_MISSING_DEPENDENCY
-            if cause != Dependency.FILE_ERROR:
-                used_deps |= provides.packages(module)
+            if not module.raw:
+                used_deps |= provides.packages(module.name)
             yield from src_fmt(src_pth.as_posix(), cause, module, stmt)
 
     if superfluous_requirements := [
@@ -92,7 +92,7 @@ def _missing_imports_iter(
     file: Path,
     dependencies: Collection[Package],
     provides: Packages,
-) -> Iterator[tuple[Dependency, str, ast.AST]]:
+) -> Iterator[tuple[Dependency, Module, ast.AST]]:
     """Find missing imports in a Python file.
 
     :param file: Pyton file to analyze
@@ -103,17 +103,24 @@ def _missing_imports_iter(
         parsed = ast.parse(file.read_bytes(), filename=file.as_posix())
     except (SyntaxError, OSError, PermissionError, FileNotFoundError):
         logger.warning("Could not parse %s", file, exc_info=False)
-        yield Dependency.FILE_ERROR, file.as_posix(), ast.Raise(lineno=-1)
+        yield (
+            Dependency.FILE_ERROR,
+            Module(file.as_posix(), raw=True),
+            ast.Raise(lineno=-1),
+        )
         return
     for module, stmt in _imports_iter(parsed.body, file):
-        pkg_ = provides.packages(module)
-        status = Dependency.OK if pkg_.intersection(dependencies) else Dependency.NA
-        yield status, module, stmt
+        if module.raw:
+            yield Dependency.NA, module, stmt
+        else:
+            pkg_ = provides.packages(module.name)
+            status = Dependency.OK if pkg_.intersection(dependencies) else Dependency.NA
+            yield status, module, stmt
 
 
 def _imports_iter(
     body: list[ast.stmt], file: Path | str = "-"
-) -> Iterator[tuple[str, ast.AST]]:
+) -> Iterator[tuple[Module, ast.AST]]:
     """Yield all import statements from a body of code.
 
     :param body: List of AST statements to analyze.
@@ -123,17 +130,19 @@ def _imports_iter(
         yield from _import_builtin(node, file=file)
 
 
-def _imports(stmt: ast.AST) -> Iterable[tuple[str, ast.AST]]:
+def _imports(stmt: ast.AST) -> Iterable[tuple[Module, ast.AST]]:
     """Yield all module names from an import statement."""
     if isinstance(stmt, ast.Import):
         for alias in stmt.names:
-            yield alias.name, stmt
+            yield Module(alias.name), stmt
     elif isinstance(stmt, ast.ImportFrom) and stmt.level == 0 and stmt.module:
         # level > 0 means relative import
-        yield stmt.module, stmt
+        yield Module(stmt.module), stmt
 
 
-def _import_builtin(stmt: ast.AST, file: Path | str) -> Iterable[tuple[str, ast.AST]]:
+def _import_builtin(
+    stmt: ast.AST, file: Path | str
+) -> Iterable[tuple[Module, ast.AST]]:
     if not isinstance(stmt, ast.Call):
         return
 
@@ -149,10 +158,13 @@ def _import_builtin(stmt: ast.AST, file: Path | str) -> Iterable[tuple[str, ast.
             return
 
         if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
-            yield arg.value, stmt
+            yield Module(arg.value), stmt
         else:
             yield (
-                f"!{Path(file).as_posix()}:{stmt.lineno}:{stmt.col_offset} {id_}(...)",
+                Module(
+                    f"{Path(file).as_posix()}:{stmt.lineno}:{stmt.col_offset} {id_}(...)",
+                    raw=True,
+                ),
                 stmt,
             )
 

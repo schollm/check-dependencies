@@ -7,7 +7,7 @@ import ast
 import pytest
 
 from check_dependencies.app_config import AppConfig
-from check_dependencies.lib import Dependency, Package, Packages, _canonical
+from check_dependencies.lib import Dependency, Module, Package, Packages, _canonical
 
 
 class TestPackage:
@@ -165,7 +165,7 @@ class TestMkSrcFormatter:
             file_names=(), verbose=verbose, show_all=False, known_extra="foo"
         )
         fn = cfg.mk_src_formatter()
-        assert not list(fn("src.py", Dependency.OK, "foo", stmt))
+        assert not list(fn("src.py", Dependency.OK, Module("foo"), stmt))
 
     @pytest.mark.parametrize(
         "verbose, show_all, cause, expected",
@@ -189,11 +189,11 @@ class TestMkSrcFormatter:
         """MkSrcFormatter generic tests."""
         cfg = AppConfig.from_cli_args(file_names=(), verbose=verbose, show_all=show_all)
         fn = cfg.mk_src_formatter()
-        assert next(fn("src.py", Dependency(cause), "foo", stmt)) == expected
+        assert next(fn("src.py", Dependency(cause), Module("foo"), stmt)) == expected
 
     def test_cache(self, stmt: ast.stmt) -> None:
         """Test the cache mechanism for the formatter."""
         cfg = AppConfig.from_cli_args(file_names=(), verbose=False)
         fn = cfg.mk_src_formatter()
-        assert list(fn("src.py", Dependency.NA, "foo", stmt))
-        assert not list(fn("src.py", Dependency.NA, "foo", stmt))
+        assert list(fn("src.py", Dependency.NA, Module("foo"), stmt))
+        assert not list(fn("src.py", Dependency.NA, Module("foo"), stmt))

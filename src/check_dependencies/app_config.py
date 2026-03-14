@@ -13,7 +13,7 @@ from typing import (
     Sequence,
 )
 
-from check_dependencies.lib import Dependency, Package, Packages, main_module
+from check_dependencies.lib import Dependency, Module, Package, Packages, main_module
 from check_dependencies.pyproject_toml import PyProjectToml
 
 if TYPE_CHECKING:
@@ -94,23 +94,26 @@ class AppConfig:
 
     def mk_src_formatter(
         self,
-    ) -> Callable[[str, Dependency, str, ast.AST | None], Iterator[str]]:
+    ) -> Callable[[str, Dependency, Module, ast.AST | None], Iterator[str]]:
         """Formatter for missing or used dependencies."""
         cache: set[str] = set()
 
         def src_cause_formatter(
             src_pth: str,
             cause: Dependency,
-            module: str,
+            module: Module,
             stmt: ast.AST | None,
         ) -> Iterator[str]:
             if self.verbose:
                 location = f"{Path(src_pth).as_posix()}:{getattr(stmt, 'lineno', -1)}"
                 if cause in (Dependency.NA, Dependency.FILE_ERROR) or self.show_all:
-                    yield f"{cause.value}{cause.name} {location} {module}"
+                    yield f"{cause.value}{cause.name} {location} {module.name}"
             elif cause == Dependency.FILE_ERROR:
                 yield f"{cause.value} {src_pth}"
-            elif (pkg_ := main_module(module)) not in cache:
+            elif module.raw:
+                if cause == Dependency.NA or self.show_all:
+                    yield f"{cause.value} {module.name}"
+            elif (pkg_ := main_module(module.name)) not in cache:
                 cache.add(pkg_)
                 if cause == Dependency.NA or self.show_all:
                     yield f"{cause.value} {pkg_}"

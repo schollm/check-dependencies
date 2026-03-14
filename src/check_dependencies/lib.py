@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import logging
 from dataclasses import dataclass
 from enum import Enum
@@ -34,14 +35,32 @@ def main_module(module: str) -> str:
     "PIL"
 
     :param module: Full module path (e.g., "package.submodule.module"). A leading
-        ``!`` indicates a dynamically imported module and is stripped before
-        processing.
-    :returns: The top-level module name (or the module name after a leading
-        ``!``), preserving case.
+        ``!`` indicates a dynamically imported module of unknown origin and
+         is stripped before processing.
+    :returns: The top-level module name (or the module import location and command after
+         a leading `!``), preserving case.
     """
     if module.startswith("!"):
         return module[1:].strip()
     return module.split(".", 1)[0].strip()
+
+
+@dataclass(frozen=True)
+class Module:
+    """Describe an imported Module."""
+
+    name: str
+    raw: bool = False
+
+    def __hash__(self) -> int:
+        """Hash based on the module name."""
+        return hash((self.name, self.raw))
+
+    def __eq__(self, other: object) -> bool:
+        """Compare with another module."""
+        if not isinstance(other, Module):
+            return NotImplemented
+        return (self.name, self.raw) == (other.name, other.raw)
 
 
 @dataclass(frozen=True)
@@ -54,7 +73,7 @@ class Package:
     same package are treated as equal.
 
     Added advantage is that we now have a clear distinction between a module
-    (presented as a string) and a package.
+    and a package - they used to be both strings.
     """
 
     __slots__ = ("_original", "canonical")

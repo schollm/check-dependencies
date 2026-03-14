@@ -136,26 +136,32 @@ def _imports(stmt: ast.AST) -> Iterable[tuple[str, ast.AST]]:
 def _import_builtin(stmt: ast.AST, file: Path | str) -> Iterable[tuple[str, ast.AST]]:
     if not isinstance(stmt, ast.Call):
         return
-    func = stmt.func
 
-    if (isinstance(func, ast.Name) and (func.id == "__import__")) or (
-        isinstance(func, ast.Attribute)
-        and func.value.id == "__builtins__"
-        and func.attr == "__import__"
-    ):
-        args = stmt.args
-        if args:
-            arg = args[0]
-        elif name := [kw.value for kw in stmt.keywords if kw.arg == "name"]:
-            arg = name[0]
+    if (id_ := _fq_call_name(stmt)) in ("__import__", "__builtins__.__import__"):
+        if stmt.args:
+            # __import__ is called with at least one argument, which is the module name
+            arg = stmt.args[0]
+        elif kw_name_arg := [kw.value for kw in stmt.keywords if kw.arg == "name"]:
+            # __import__ is called with keyword __import(name=...)
+            arg = kw_name_arg[0]
         else:
+            # __import__ is called without arguments, which is invalid, so we ignore it.
             return
 
         if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
             yield arg.value, stmt
         else:
             yield (
-                f"!{Path(file).as_posix()}:{stmt.lineno}:{stmt.col_offset} "
-                "{func.id}(...)",
+                f"!{Path(file).as_posix()}:{stmt.lineno}:{stmt.col_offset} {id_}(...)",
                 stmt,
             )
+
+
+def _fq_call_name(stmt: ast.Call) -> str | None:
+    """Get the fully qualified name of a function call, if possible."""
+    func = stmt.func
+    if isinstance(func, ast.Name):
+        return func.id
+    if isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name):
+        return f"{func.value.id}.{func.attr}"
+    return None

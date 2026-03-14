@@ -35,6 +35,36 @@ from tests.conftest import (
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
+TEST_IMPORTS = [
+    ("import foo", ["foo"]),
+    ("import foo as bar", ["foo"]),
+    ("from foo import bar", ["foo"]),
+    ("from foo import bar as baz", ["foo"]),
+    ("from foo import bar, baz", ["foo"]),
+    ("from . import bar", []),
+    ("from .internal import bar", []),
+    ("import foo\nimport bar", ["foo", "bar"]),
+    ("class X:\n    import foo", ["foo"]),
+    ("def x():\n    import foo", ["foo"]),
+    ("try:\n    import foo\nexcept ImportError:\n    import bar", ["foo", "bar"]),
+    ("__import__('foo', {}, {})", ["foo"]),
+    ("__import__('foo')", ["foo"]),
+    ("__import__(foo)", ["!t.py:1:0 __import__(...)"]),
+    ("\nab;__import__(foo)", ["!t.py:2:3 __import__(...)"]),
+    ("__import__('foo')\n__import__(foo)", ["foo", "!t.py:2:0 __import__(...)"]),
+    ("__import__(name='foo')", ["foo"]),
+    ("__import__(name=foo)", ["!t.py:1:0 __import__(...)"]),
+    ("__import__(f())", ["!t.py:1:0 __import__(...)"]),
+    ("__import__(fox + bar)", ["!t.py:1:0 __import__(...)"]),
+    ("__import__(0)", ["!t.py:1:0 __import__(...)"]),
+    ("bar = __import__('foo')", ["foo"]),
+    ("(bar := __import__('foo'))", ["foo"]),
+    ("x = (bar := __import__('foo'))", ["foo"]),
+    ("lambda: __import__('foo')", ["foo"]),
+    ("__builtins__.__import__('foo')", ["foo"]),
+    ("__builtins__.__import__(foo)", ["!t.py:1:0 __builtins__.__import__(...)"]),
+]
+
 
 def test__main__(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test the main module.
@@ -138,39 +168,8 @@ class TestYieldWrongImports:
     @pytest.mark.parametrize(
         "stmt, expected",
         [
-            ("import foo", ["foo"]),
-            ("import foo as bar", ["foo"]),
-            ("from foo import bar", ["foo"]),
-            ("from foo import bar as baz", ["foo"]),
-            ("from foo import bar, baz", ["foo"]),
-            ("from . import bar", []),
-            ("from .internal import bar", []),
-            ("import foo\nimport bar", ["foo", "bar"]),
+            *TEST_IMPORTS,
             ("import foo.bar", ["foo"]),
-            ("class X:\n    import foo", ["foo"]),
-            ("def x():\n    import foo", ["foo"]),
-            (
-                "try:\n    import foo\nexcept ImportError:\n    import bar",
-                ["foo", "bar"],
-            ),
-            ("__import__('foo', {}, {})", ["foo"]),
-            ("__import__('foo')", ["foo"]),
-            ("__import__(foo)", ["!t.py:1:0 __import__(...)"]),
-            ("\nab;__import__(foo)", ["!t.py:2:3 __import__(...)"]),
-            (
-                "__import__('foo')\n__import__(foo)",
-                ["foo", "!t.py:2:0 __import__(...)"],
-            ),
-            ("__import__(name='foo')", ["foo"]),
-            ("__import__(name=foo)", ["!t.py:1:0 __import__(...)"]),
-            ("__import__(f())", ["!t.py:1:0 __import__(...)"]),
-            ("__import__(fox + bar)", ["!t.py:1:0 __import__(...)"]),
-            ("__import__(0)", ["!t.py:1:0 __import__(...)"]),
-            ("bar = __import__('foo')", ["foo"]),
-            ("(bar := __import__('foo'))", ["foo"]),
-            ("x = (bar := __import__('foo'))", ["foo"]),
-            ("lambda: __import__('foo')", ["foo"]),
-            ("__builtins__.__import__('foo')", ["foo"]),
         ],
     )
     def test_import_statement(
@@ -398,33 +397,8 @@ class TestYieldWrongImports:
 @pytest.mark.parametrize(
     "stmt, expected",
     [
-        ("import foo", ["foo"]),
-        ("import foo as bar", ["foo"]),
-        ("from foo import bar", ["foo"]),
-        ("from foo import bar as baz", ["foo"]),
-        ("from foo import bar, baz", ["foo"]),
-        ("from . import bar", []),
-        ("from .internal import bar", []),
-        ("import foo\nimport bar", ["foo", "bar"]),
+        *TEST_IMPORTS,
         ("import foo.bar", ["foo.bar"]),
-        ("class X:\n    import foo", ["foo"]),
-        ("def x():\n    import foo", ["foo"]),
-        ("try:\n    import foo\nexcept ImportError:\n    import bar", ["foo", "bar"]),
-        ("__import__('foo', {}, {})", ["foo"]),
-        ("__import__('foo')", ["foo"]),
-        ("__import__(foo)", ["!t.py:1:0 __import__(...)"]),
-        ("\nab;__import__(foo)", ["!t.py:2:3 __import__(...)"]),
-        ("__import__('foo')\n__import__(foo)", ["foo", "!t.py:2:0 __import__(...)"]),
-        ("__import__(name='foo')", ["foo"]),
-        ("__import__(name=foo)", ["!t.py:1:0 __import__(...)"]),
-        ("__import__(f())", ["!t.py:1:0 __import__(...)"]),
-        ("__import__(fox + bar)", ["!t.py:1:0 __import__(...)"]),
-        ("__import__(0)", ["!t.py:1:0 __import__(...)"]),
-        ("bar = __import__('foo')", ["foo"]),
-        ("(bar := __import__('foo'))", ["foo"]),
-        ("x = (bar := __import__('foo'))", ["foo"]),
-        ("lambda: __import__('foo')", ["foo"]),
-        ("__builtins__.__import__('foo')", ["foo"]),
     ],
 )
 def test_imports_iter(stmt: str, expected: list[str]) -> None:

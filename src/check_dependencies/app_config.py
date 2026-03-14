@@ -13,7 +13,7 @@ from typing import (
     Sequence,
 )
 
-from check_dependencies.lib import Dependency, Package, Packages, pkg
+from check_dependencies.lib import Dependency, Package, Packages, main_module
 from check_dependencies.pyproject_toml import PyProjectToml
 
 if TYPE_CHECKING:
@@ -110,7 +110,7 @@ class AppConfig:
                     yield f"{cause.value}{cause.name} {location} {module}"
             elif cause == Dependency.FILE_ERROR:
                 yield f"{cause.value} {src_pth}"
-            elif (pkg_ := pkg(module)) not in cache:
+            elif (pkg_ := main_module(module)) not in cache:
                 cache.add(pkg_)
                 if cause == Dependency.NA or self.show_all:
                     yield f"{cause.value} {pkg_}"

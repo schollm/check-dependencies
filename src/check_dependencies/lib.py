@@ -22,16 +22,16 @@ class Dependency(Enum):
     FILE_ERROR = "!!"  # Error getting import statement (e.g. io error, syntax error)
 
 
-def pkg(module: str) -> str:
-    """Extract the top-level package name from a module import.
+def main_module(module: str) -> str:
+    """Extract the top-level module name from a module import.
 
     **Examples:**
-    >>> pkg("numpy.linalg")
+    >>> main_module("numpy.linalg")
     "numpy"
-    >>> pkg("sklearn")
+    >>> main_module("sklearn")
     "sklearn"
-    >>> pkg("PIL.Image")
-    "pil"
+    >>> main_module("PIL.Image")
+    "PIL"
 
     :param module: Full module path (e.g., "package.submodule.module")
     :returns: Normalized top-level package name
@@ -135,7 +135,7 @@ class Packages:
 
         :param module_name: The module name (import name) to look up.
         """
-        module_ = pkg(module_name)
+        module_ = main_module(module_name)
         return self._packages.get(module_, {Package(module_)})
 
 

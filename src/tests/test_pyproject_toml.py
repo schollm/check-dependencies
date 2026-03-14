@@ -18,7 +18,6 @@ from tests.conftest import (
     HATCH,
     PEP631,
     POETRY,
-    PYPROJECT_EMPTY,
     PYPROJECT_PROVIDES,
     UV_LEGACY,
 )
@@ -65,7 +64,9 @@ class TestPyProjectToml:
 
     def test_unsupported_dependencies(self) -> None:
         """Test unsupported dependencies in pyproject.toml."""
-        cfg = self.cfg(PYPROJECT_EMPTY)
+        cfg = PyProjectToml(
+            cfg={"project": {"name": "test-project"}}, path=Path(), include_dev=False
+        )
         with pytest.raises(ValueError, match="No dependency management found"):
             _ = cfg.dependencies
 

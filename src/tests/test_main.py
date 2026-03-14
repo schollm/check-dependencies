@@ -24,6 +24,7 @@ from tests.conftest import (
     POETRY,
     POETRY_EXTRA,
     PYPROJECT_CFG,
+    PYPROJECT_EMPTY,
     PYPROJECT_PROVIDES,
     PYPROJECT_UNICODE,
     SRC,
@@ -134,6 +135,54 @@ class TestYieldWrongImports:
             "! missing_def",
         ]
 
+    @pytest.mark.parametrize(
+        "stmt, expected",
+        [
+            ("import foo", ["foo"]),
+            ("import foo as bar", ["foo"]),
+            ("from foo import bar", ["foo"]),
+            ("from foo import bar as baz", ["foo"]),
+            ("from foo import bar, baz", ["foo"]),
+            ("from . import bar", []),
+            ("from .internal import bar", []),
+            ("import foo\nimport bar", ["foo", "bar"]),
+            ("import foo.bar", ["foo"]),
+            ("class X:\n    import foo", ["foo"]),
+            ("def x():\n    import foo", ["foo"]),
+            (
+                "try:\n    import foo\nexcept ImportError:\n    import bar",
+                ["foo", "bar"],
+            ),
+            ("__import__('foo', {}, {})", ["foo"]),
+            ("__import__('foo')", ["foo"]),
+            ("__import__(foo)", ["!t.py:1:0 __import__(...)"]),
+            ("\nab;__import__(foo)", ["!t.py:2:3 __import__(...)"]),
+            (
+                "__import__('foo')\n__import__(foo)",
+                ["foo", "!t.py:2:0 __import__(...)"],
+            ),
+            ("__import__(name='foo')", ["foo"]),
+            ("__import__(name=foo)", ["!t.py:1:0 __import__(...)"]),
+            ("__import__(f())", ["!t.py:1:0 __import__(...)"]),
+            ("__import__(fox + bar)", ["!t.py:1:0 __import__(...)"]),
+            ("__import__(0)", ["!t.py:1:0 __import__(...)"]),
+            ("bar = __import__('foo')", ["foo"]),
+            ("(bar := __import__('foo'))", ["foo"]),
+            ("x = (bar := __import__('foo'))", ["foo"]),
+            ("lambda: __import__('foo')", ["foo"]),
+            ("__builtins__.__import__('foo')", ["foo"]),
+        ],
+    )
+    def test_import_statement(
+        self, stmt: str, expected: list[str], tmp_path: Path
+    ) -> None:
+        """Test that the import statement is correctly parsed."""
+        py_file = tmp_path / "test_import_statement.py"
+        py_file.write_text(stmt)
+        assert self.fn(
+            overwrite_cfg=PYPROJECT_EMPTY, file_names=[py_file.as_posix()]
+        ) == [f"! {exp.replace('!t.py', py_file.as_posix())}" for exp in expected]
+
     def test_dev(self) -> None:
         """Test default with dev."""
         assert self.fn(overwrite_cfg=PYPROJECT_CFG, include_dev=True) == [
@@ -161,7 +210,7 @@ class TestYieldWrongImports:
 
     def test_extra_requirements_as_cfg(self) -> None:
         """Do not flog unused requirements passed in as an extra."""
-        assert not self.fn(overwrite_cfg=PYPROJECT_CFG)
+        assert self.fn(overwrite_cfg=PYPROJECT_CFG) == []
 
     def test_provides_from_config(self) -> None:
         """Packages with a provides mapping should not appear as missing or extra.
@@ -375,6 +424,7 @@ class TestYieldWrongImports:
         ("(bar := __import__('foo'))", ["foo"]),
         ("x = (bar := __import__('foo'))", ["foo"]),
         ("lambda: __import__('foo')", ["foo"]),
+        ("__builtins__.__import__('foo')", ["foo"]),
     ],
 )
 def test_imports_iter(stmt: str, expected: list[str]) -> None:

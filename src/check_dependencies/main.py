@@ -134,10 +134,14 @@ def _imports(stmt: ast.AST) -> Iterable[tuple[str, ast.AST]]:
 
 
 def _import_builtin(stmt: ast.AST, file: Path | str) -> Iterable[tuple[str, ast.AST]]:
-    if (
-        isinstance(stmt, ast.Call)
-        and isinstance(func := stmt.func, ast.Name)
-        and (func.id == "__import__")
+    if not isinstance(stmt, ast.Call):
+        return
+    func = stmt.func
+
+    if (isinstance(func, ast.Name) and (func.id == "__import__")) or (
+        isinstance(func, ast.Attribute)
+        and func.value.id == "__builtins__"
+        and func.attr == "__import__"
     ):
         args = stmt.args
         if args:
@@ -151,6 +155,7 @@ def _import_builtin(stmt: ast.AST, file: Path | str) -> Iterable[tuple[str, ast.
             yield arg.value, stmt
         else:
             yield (
-                f"!{file}:{stmt.lineno}:{stmt.col_offset} {func.id}(...)",
+                f"!{Path(file).as_posix()}:{stmt.lineno}:{stmt.col_offset} "
+                "{func.id}(...)",
                 stmt,
             )

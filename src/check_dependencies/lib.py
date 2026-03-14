@@ -33,8 +33,11 @@ def main_module(module: str) -> str:
     >>> main_module("PIL.Image")
     "PIL"
 
-    :param module: Full module path (e.g., "package.submodule.module")
-    :returns: Normalized top-level package name
+    :param module: Full module path (e.g., "package.submodule.module"). A leading
+        ``!`` indicates a dynamically imported module and is stripped before
+        processing.
+    :returns: The top-level module name (or the module name after a leading
+        ``!``), preserving case.
     """
     if module.startswith("!"):
         return module[1:].strip()

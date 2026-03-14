@@ -11,8 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [ ] Update the README.md if necessary
 - [ ] Merge the release branch into main
 - [ ] Create a new release on GitHub with the new version and changelog
+## Planned
+- Limited support of __import__ style dynamic imports
 
 ## Upcoming
+
+## [1.0.0] - 2026-03-14 - Initial stable release
 ### Added
 - Add support for Hatch and uv-legacy style dependencies.
 - Add support for Python 3.13 -- 3.15
@@ -22,13 +26,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Bugfix
 - Fix PEP621 parsing of development dependencies
 - Handle Python source files that declare a non-UTF8 encoding (PEP 263 encoding cookie or BOM)
-## [0.13.0] - 2025-05-01 - Support for package - module mapping in pyproject.toml
+## [0.13.0] - 2026-03-06 - Support for package - module mapping in pyproject.toml
 ### Added
 - Support for package - module mapping in pyproject.toml, to allow for different package and module names.
-## [0.12.6] - Fix typos and pipelines
+## [0.12.6] -  2025-04-11 - Fix typos and pipelines
 ### Changed
 - Fix typos in changelog and pipelines
-## [0.12.5] - Fix typos
+## [0.12.5] - 2025-04-11 - Fix typos
 ### Changed
 - Fix typos in changelog
 ## [0.12.4] - 2025-04-11 - Bugfix: github actions upload artifact overwrite

@@ -36,6 +36,8 @@ def main_module(module: str) -> str:
     :param module: Full module path (e.g., "package.submodule.module")
     :returns: Normalized top-level package name
     """
+    if module.startswith("!"):
+        return module[1:].strip()
     return module.split(".", 1)[0].strip()
 
 

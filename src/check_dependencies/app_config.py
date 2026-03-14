@@ -94,7 +94,7 @@ class AppConfig:
 
     def mk_src_formatter(
         self,
-    ) -> Callable[[str, Dependency, str, ast.stmt | None], Iterator[str]]:
+    ) -> Callable[[str, Dependency, str, ast.AST | None], Iterator[str]]:
         """Formatter for missing or used dependencies."""
         cache: set[str] = set()
 
@@ -102,7 +102,7 @@ class AppConfig:
             src_pth: str,
             cause: Dependency,
             module: str,
-            stmt: ast.stmt | None,
+            stmt: ast.AST | None,
         ) -> Iterator[str]:
             if self.verbose:
                 location = f"{Path(src_pth).as_posix()}:{getattr(stmt, 'lineno', -1)}"

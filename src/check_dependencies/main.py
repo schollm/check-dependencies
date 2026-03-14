@@ -5,7 +5,7 @@ from __future__ import annotations
 import ast
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable
 
 from check_dependencies.builtin_module import BUILTINS
 from check_dependencies.lib import Dependency, Package, Packages
@@ -92,7 +92,7 @@ def _missing_imports_iter(
     file: Path,
     dependencies: Collection[Package],
     provides: Packages,
-) -> Iterator[tuple[Dependency, str, ast.stmt]]:
+) -> Iterator[tuple[Dependency, str, ast.AST]]:
     """Find missing imports in a Python file.
 
     :param file: Pyton file to analyze
@@ -105,30 +105,52 @@ def _missing_imports_iter(
         logger.warning("Could not parse %s", file, exc_info=False)
         yield Dependency.FILE_ERROR, file.as_posix(), ast.Raise(lineno=-1)
         return
-    for module, stmt in _imports_iter(parsed.body):
+    for module, stmt in _imports_iter(parsed.body, file):
         pkg_ = provides.packages(module)
         status = Dependency.OK if pkg_.intersection(dependencies) else Dependency.NA
         yield status, module, stmt
 
 
-def _imports_iter(body: list[ast.stmt]) -> Iterator[tuple[str, ast.stmt]]:
+def _imports_iter(
+    body: list[ast.stmt], file: Path | str = "-"
+) -> Iterator[tuple[str, ast.AST]]:
     """Yield all import statements from a body of code.
 
     :param body: List of AST statements to analyze.
     """
-    try:
-        iter(body)
-    except TypeError:
-        # not iterable, so return empty
-        return
+    for node in (node for stmt in body for node in ast.walk(stmt)):
+        yield from _imports(node)
+        yield from _import_builtin(node, file=file)
 
-    for x in body:
-        if isinstance(x, ast.Import):
-            for alias in x.names:
-                yield alias.name, x  # yield x, not alias to get lineno
-        elif isinstance(x, ast.ImportFrom) and x.level == 0 and x.module:
-            # level > 0 means relative import
-            yield x.module, x
-        elif hasattr(x, "body"):
-            for f in x._fields:
-                yield from _imports_iter(getattr(x, f))
+
+def _imports(stmt: ast.AST) -> Iterable[tuple[str, ast.AST]]:
+    """Yield all module names from an import statement."""
+    if isinstance(stmt, ast.Import):
+        for alias in stmt.names:
+            yield alias.name, stmt
+    elif isinstance(stmt, ast.ImportFrom) and stmt.level == 0 and stmt.module:
+        # level > 0 means relative import
+        yield stmt.module, stmt
+
+
+def _import_builtin(stmt: ast.AST, file: Path | str) -> Iterable[tuple[str, ast.AST]]:
+    if (
+        isinstance(stmt, ast.Call)
+        and isinstance(func := stmt.func, ast.Name)
+        and (func.id == "__import__")
+    ):
+        args = stmt.args
+        if args:
+            arg = args[0]
+        elif name := [kw.value for kw in stmt.keywords if kw.arg == "name"]:
+            arg = name[0]
+        else:
+            return
+
+        if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+            yield arg.value, stmt
+        else:
+            yield (
+                f"!{file}:{stmt.lineno}:{stmt.col_offset} {func.id}(...)",
+                stmt,
+            )

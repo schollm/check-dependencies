@@ -105,8 +105,10 @@ class AppConfig:
             stmt: ast.AST | None,
         ) -> Iterator[str]:
             if self.verbose:
-                location = f"{Path(src_pth).as_posix()}:{getattr(stmt, 'lineno', -1)}"
                 if cause in (Dependency.NA, Dependency.FILE_ERROR) or self.show_all:
+                    location = (
+                        f"{Path(src_pth).as_posix()}:{getattr(stmt, 'lineno', -1)}"
+                    )
                     yield f"{cause.value}{cause.name} {location} {module.name}"
             elif cause == Dependency.FILE_ERROR:
                 yield f"{cause.value} {src_pth}"

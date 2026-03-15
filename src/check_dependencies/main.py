@@ -39,7 +39,7 @@ def yield_wrong_imports(
         *app_cfg.dependencies,  # dependencies from pyproject.toml
         *app_cfg.known_extra,
         *Package.set(BUILTINS),
-        *Package.set(app_cfg.known_missing),
+        *Package.set(x.name for x in app_cfg.known_missing),
     }
     provides = app_cfg.provides
 
@@ -52,7 +52,7 @@ def yield_wrong_imports(
             if cause not in (Dependency.OK, Dependency.FILE_ERROR):
                 exit_status |= ERR_MISSING_DEPENDENCY
             if not module.raw:
-                used_deps |= provides.packages(module.name)
+                used_deps |= provides.packages(module)
             yield from src_fmt(src_pth.as_posix(), cause, module, stmt)
 
     if superfluous_requirements := [
@@ -113,7 +113,7 @@ def _missing_imports_iter(
         if module.raw:
             yield Dependency.UNKNOWN, module, stmt
         else:
-            pkg_ = provides.packages(module.name)
+            pkg_ = provides.packages(module)
             status = Dependency.OK if pkg_.intersection(dependencies) else Dependency.NA
             yield status, module, stmt
 

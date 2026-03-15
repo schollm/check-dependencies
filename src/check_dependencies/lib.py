@@ -24,11 +24,16 @@ class Dependency(Enum):
 
 
 @dataclass(frozen=True)
+@total_ordering
 class Module:
     """Describe an imported Module."""
 
     name: str
     raw: bool = False
+
+    def __post_init__(self) -> None:
+        """Initialize the Module."""
+        object.__setattr__(self, "name", self.name.strip())
 
     def __hash__(self) -> int:
         """Hash based on the module name."""
@@ -40,23 +45,37 @@ class Module:
             return NotImplemented
         return (self.name, self.raw) == (other.name, other.raw)
 
+    def __gt__(self, other: object) -> bool:
+        """Compare with another module."""
+        if isinstance(other, Module):
+            if self.raw != other.raw:
+                return self.raw > other.raw
+            return self.name > other.name
+        return NotImplemented
+
+    def __repr__(self) -> str:
+        """Get the string representation of the Module."""
+        if self.raw:
+            return f"M(!{self.name})"
+        return f"M({self.name})"
+
     @property
-    def main(self) -> str:
+    def main(self) -> Module:
         """Extract the top-level module name from a module import.
 
         **Examples:**
         >>> Module("numpy.linalg").main
-        "numpy"
+        Module("numpy")
         >>> Module("sklearn").main
-        "sklearn"
+        Module("sklearn")
         >>> Module("PIL.Image").main
-        "PIL"
+        Module("PIL")
 
         :returns: The top-level module name.
         """
         if self.raw:
-            return self.name
-        return self.name.split(".", 1)[0].strip()
+            return self
+        return Module(self.name.split(".", 1)[0].strip())
 
 
 @dataclass(frozen=True)
@@ -97,6 +116,10 @@ class Package:
         """Get the Original name."""
         return self._original
 
+    def __repr__(self) -> str:
+        """Get the Original name."""
+        return f"P('{self._original}')"
+
     def __bool__(self) -> bool:
         """Check if there is a package (i.e. empty package name is Falsy)."""
         return bool(self.canonical)
@@ -118,10 +141,10 @@ class Package:
 class Packages:
     """Translation layer to map between packages and modules."""
 
-    _modules: dict[Package, set[str]]
-    _packages: dict[str, set[Package]]
+    _modules: dict[Package, set[Module]]
+    _packages: dict[Module, set[Package]]
 
-    def __init__(self, packages: list[tuple[Package, str]]) -> None:
+    def __init__(self, packages: list[tuple[Package, Module]]) -> None:
         """Initialize the Packages dataclass.
 
         :param packages: List of (package, module) tuples, where package is the
@@ -141,22 +164,21 @@ class Packages:
             )
         }
 
-    def modules(self, pkg_: str | Package) -> set[str]:
+    def modules(self, pkg_: Package) -> set[Module]:
         """Get the modules (import name) for a given package name.
 
         :param pkg_: The package to look up.
         """
         if isinstance(pkg_, str):
             pkg_ = Package(pkg_)
-        return self._modules.get(pkg_, {str(pkg_.canonical)})
+        return self._modules.get(pkg_, {Module(pkg_.canonical)})
 
-    def packages(self, module_name: str) -> set[Package]:
+    def packages(self, module: Module) -> set[Package]:
         """Get the packages for a given module (import name).
 
-        :param module_name: The module name (import name) to look up.
+        :param module: The module (import name) to look up.
         """
-        module_ = Module(module_name).main
-        return self._packages.get(module_, {Package(module_)})
+        return self._packages.get(module.main, {Package(module.main.name)})
 
 
 def _canonical(name: str) -> str:

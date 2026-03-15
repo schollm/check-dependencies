@@ -96,7 +96,7 @@ class TestPackage:
     ) -> None:
         """Fallback for unmapped packages should be a canonical module name."""
         packages = Packages([])  # no explicit mapping -> fallback path
-        assert packages.modules(Package(requirement)) == {expected_module}
+        assert packages.modules(Package(requirement)) == {Module(expected_module)}
 
 
 class TestPackages:
@@ -108,26 +108,31 @@ class TestPackages:
         - one package can provide multiple modules
         - one module can be provided by multiple packages
         """
+        pkg_a, pkg_b, pkg_c = (Package(f"pkg_{x}") for x in "abc")
+        mod_common = Module("mod_common")
+        mod_a_only = Module("mod_a_only")
+        mod_b_only = Module("mod_b_only")
+        mod_c_only = Module("mod_c_only")
         packages = Packages(
             [
-                (Package("pkg_a"), "mod_common"),
-                (Package("pkg_a"), "mod_a_only"),
-                (Package("pkg_b"), "mod_common"),
-                (Package("pkg_b"), "mod_b_only"),
-                (Package("pkg_c"), "mod_c_only"),
+                (pkg_a, mod_common),
+                (pkg_a, mod_a_only),
+                (pkg_b, mod_common),
+                (pkg_b, mod_b_only),
+                (pkg_c, mod_c_only),
             ]
         )
 
         # package -> modules (one package provides multiple modules)
-        assert packages.modules("pkg_a") == {"mod_common", "mod_a_only"}
-        assert packages.modules("pkg_b") == {"mod_common", "mod_b_only"}
-        assert packages.modules("pkg_c") == {"mod_c_only"}
+        assert packages.modules(pkg_a) == {mod_common, mod_a_only}
+        assert packages.modules(pkg_b) == {mod_common, mod_b_only}
+        assert packages.modules(pkg_c) == {mod_c_only}
 
         # module -> packages (one module provided by multiple packages)
-        assert packages.packages("mod_common") == {"pkg_a", "pkg_b"}
-        assert packages.packages("mod_a_only") == {"pkg_a"}
-        assert packages.packages("mod_b_only") == {"pkg_b"}
-        assert packages.packages("mod_c_only") == {"pkg_c"}
+        assert packages.packages(mod_common) == {pkg_a, pkg_b}
+        assert packages.packages(mod_a_only) == {pkg_a}
+        assert packages.packages(mod_b_only) == {pkg_b}
+        assert packages.packages(mod_c_only) == {pkg_c}
 
 
 class TestNormalizePkg:

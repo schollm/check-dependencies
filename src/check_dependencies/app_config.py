@@ -25,7 +25,7 @@ class AppConfig:
     """Application config and helper functions."""
 
     known_extra: Collection[Package]
-    known_missing: Collection[str]
+    known_missing: Collection[Module]
     provides: Packages
     dependencies: Collection[Package]
     pyproject_file: Path | None = None
@@ -56,12 +56,12 @@ class AppConfig:
         :verbose: Whether to include detailed information in the output.
         :show_all: Whether to show all dependencies, including those that are OK.
         """
-        provides_list: list[tuple[Package, str]] = []
+        provides_list: list[tuple[Package, Module]] = []
         for package_name, _, module in (
             map1.partition("=") for maps in provides for map1 in maps.split(",")
         ):
             if package_name.strip() and module.strip():
-                provides_list.append((Package(package_name), module.strip()))
+                provides_list.append((Package(package_name), Module(module)))
 
         if not file_names:
             file_names = ["."]
@@ -78,7 +78,7 @@ class AppConfig:
                 if pkg.canonical
             ),
             known_missing=frozenset(
-                module.strip()
+                Module(module)
                 for module in (*known_missing.split(","), *src_cfg.known_missing)
                 if module.strip()
             ),
@@ -96,7 +96,7 @@ class AppConfig:
         self,
     ) -> Callable[[str, Dependency, Module, ast.AST | None], Iterator[str]]:
         """Formatter for missing or used dependencies."""
-        cache: set[str] = set()
+        cache: set[Module] = set()
 
         def src_cause_formatter(
             src_pth: str,
@@ -105,7 +105,10 @@ class AppConfig:
             stmt: ast.AST | None,
         ) -> Iterator[str]:
             if self.verbose:
-                if cause in (Dependency.NA, Dependency.FILE_ERROR) or self.show_all:
+                if (
+                    cause in (Dependency.NA, Dependency.FILE_ERROR, Dependency.UNKNOWN)
+                    or self.show_all
+                ):
                     location = (
                         f"{Path(src_pth).as_posix()}:{getattr(stmt, 'lineno', -1)}"
                     )
@@ -113,12 +116,12 @@ class AppConfig:
             elif cause == Dependency.FILE_ERROR:
                 yield f"{cause.value} {src_pth}"
             elif module.raw:
-                if cause == Dependency.NA or self.show_all:
+                if cause in (Dependency.NA, Dependency.UNKNOWN) or self.show_all:
                     yield f"{cause.value} {module.name}"
             elif (pkg_ := module.main) not in cache:
                 cache.add(pkg_)
                 if cause == Dependency.NA or self.show_all:
-                    yield f"{cause.value} {pkg_}"
+                    yield f"{cause.value} {pkg_.name}"
 
         return src_cause_formatter
 

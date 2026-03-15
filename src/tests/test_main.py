@@ -13,7 +13,7 @@ import pytest
 
 from check_dependencies.__main__ import main as cli_main
 from check_dependencies.app_config import AppConfig
-from check_dependencies.lib import Dependency, Package, Packages
+from check_dependencies.lib import Dependency, Module, Package, Packages
 from check_dependencies.main import (
     _imports_iter,
     _missing_imports_iter,
@@ -64,10 +64,6 @@ TEST_IMPORTS = [
     ("__builtins__.__import__('foo')", ["foo"]),
     ("__builtins__.__import__(foo)", ["__builtins__.__import__(...)"]),
 ]
-if False:
-    foo = "foo"
-    __import__(foo)
-    __import__("foo")
 
 
 def test__main__(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -127,7 +123,9 @@ def test__main__provides_parsing(
         cli_main()
     packages = captured["provides"]
     for expected_pkg, expected_import in expected_provides:
-        assert packages.modules(Package(expected_pkg)) == expected_import
+        assert packages.modules(Package(expected_pkg)) == {
+            Module(item) for item in expected_import
+        }
 
 
 class TestYieldWrongImports:
@@ -182,9 +180,31 @@ class TestYieldWrongImports:
         """Test that the import statement is correctly parsed."""
         py_file = tmp_path / "test_import_statement.py"
         py_file.write_text(stmt)
-        assert self.fn(
-            overwrite_cfg=PYPROJECT_EMPTY, file_names=[py_file.as_posix()]
-        ) == [f"! {exp}" for exp in expected]
+
+        res = self.fn(overwrite_cfg=PYPROJECT_EMPTY, file_names=[py_file.as_posix()])
+
+        assert [r[2:] for r in res] == expected
+
+    @pytest.mark.parametrize(
+        "stmt, expected",
+        [
+            *TEST_IMPORTS,
+            ("import foo.bar", ["foo"]),
+        ],
+    )
+    def test_import_statement_verbose(
+        self, stmt: str, expected: list[str], tmp_path: Path
+    ) -> None:
+        """Test that the import statement is correctly parsed."""
+        py_file = tmp_path / "test_import_statement.py"
+        py_file.write_text(stmt)
+
+        res = self.fn(
+            overwrite_cfg=PYPROJECT_EMPTY, file_names=[py_file.as_posix()], verbose=True
+        )
+
+        assert len(res) == len(expected)
+        assert all(expect1 in res1 for expect1, res1 in zip(expected, res))
 
     def test_dev(self) -> None:
         """Test default with dev."""

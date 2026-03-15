@@ -162,7 +162,8 @@ def _import_builtin(
         else:
             yield (
                 Module(
-                    f"{Path(file).as_posix()}:{stmt.lineno}:{stmt.col_offset} {id_}(...)",
+                    f"{Path(file).as_posix()}:{stmt.lineno}:{stmt.col_offset} "
+                    f"{id_}(...)",
                     raw=True,
                 ),
                 stmt,

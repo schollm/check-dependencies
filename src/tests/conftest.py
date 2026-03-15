@@ -1,6 +1,5 @@
 """Common fixtures and constans for tests."""
 
-import contextlib
 from pathlib import Path
 
 import pytest

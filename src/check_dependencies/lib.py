@@ -22,28 +22,6 @@ class Dependency(Enum):
     FILE_ERROR = "!!"  # Error getting import statement (e.g. io error, syntax error)
 
 
-def main_module(module: str) -> str:
-    """Extract the top-level module name from a module import.
-
-    **Examples:**
-    >>> main_module("numpy.linalg")
-    "numpy"
-    >>> main_module("sklearn")
-    "sklearn"
-    >>> main_module("PIL.Image")
-    "PIL"
-
-    :param module: Full module path (e.g., "package.submodule.module"). A leading
-        ``!`` indicates a dynamically imported module of unknown origin and
-         is stripped before processing.
-    :returns: The top-level module name (or the module import location and command after
-         a leading `!``), preserving case.
-    """
-    if module.startswith("!"):
-        return module[1:].strip()
-    return module.split(".", 1)[0].strip()
-
-
 @dataclass(frozen=True)
 class Module:
     """Describe an imported Module."""
@@ -60,6 +38,25 @@ class Module:
         if not isinstance(other, Module):
             return NotImplemented
         return (self.name, self.raw) == (other.name, other.raw)
+
+    @property
+    def main(self) -> str:
+        """Extract the top-level module name from a module import.
+
+        **Examples:**
+        >>> Module("numpy.linalg").main
+        "numpy"
+        >>> Module("sklearn").main
+        "sklearn"
+        >>> Module("PIL.Image").main
+        "PIL"
+
+        :param module: Full module path (e.g., "package.submodule.module").
+        :returns: The top-level module name.
+        """
+        if self.raw:
+            return self.name
+        return self.name.split(".", 1)[0].strip()
 
 
 @dataclass(frozen=True)
@@ -158,7 +155,7 @@ class Packages:
 
         :param module_name: The module name (import name) to look up.
         """
-        module_ = main_module(module_name)
+        module_ = Module(module_name).main
         return self._packages.get(module_, {Package(module_)})
 
 

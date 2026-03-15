@@ -49,7 +49,7 @@ def yield_wrong_imports(
         for cause, module, stmt in _missing_imports_iter(
             src_pth, dependencies=allowed_dependencies, provides=provides
         ):
-            if cause not in (Dependency.OK, Dependency.FILE_ERROR):
+            if cause not in (Dependency.OK, Dependency.FILE_ERROR, Dependency.UNKNOWN):
                 exit_status |= ERR_MISSING_DEPENDENCY
             if not module.raw:
                 used_deps |= provides.packages(module)

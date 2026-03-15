@@ -115,12 +115,16 @@ class PyProjectToml:
     def provides(self) -> list[tuple[Package, Module]]:
         """Mapping from import name to package name.
 
-        E.g. ``{"jwt": "pyjwt", "shapefile": "pyshp"}`` means that the package
+        E.g. ``[
+            (Package("pyjwt"), Module("jwt")),
+            (Package("pysh"), Module("shapefile"))
+        ]``
+        means that the package
         ``pyjwt`` is imported as ``jwt`` and ``pyshp`` as ``shapefile``.
 
-        Package keys are canonicalized via :class:`Package` (case-insensitive,
+        Package keys are canonicalized  (case-insensitive,
         hyphen/underscore equivalent), so e.g. ``PyJWT``, ``pyjwt``, and
-        ``py-jwt`` resolve to the same package identity.
+        ``pyJwt`` resolve to the same package identity.
         """
         return [
             (Package(package), Module(module))

@@ -1,4 +1,4 @@
-"""Common fixtures and constans for tests."""
+"""Common fixtures and constants for tests."""
 
 from pathlib import Path
 

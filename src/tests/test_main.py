@@ -63,6 +63,7 @@ TEST_IMPORTS = [
     ("lambda: __import__('foo')", ["foo"]),
     ("__builtins__.__import__('foo')", ["foo"]),
     ("__builtins__.__import__(foo)", ["__builtins__.__import__(...)"]),
+    ("__import__()", []),
 ]
 
 

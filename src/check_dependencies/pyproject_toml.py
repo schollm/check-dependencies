@@ -45,7 +45,7 @@ class PyProjectToml:
             pyproject_candidate = Path(
                 commonpath(Path(p).expanduser().resolve() for p in paths),
             )
-        except ValueError as exc:
+        except ValueError as exc:  # pragma: no cover
             # Can only be reached in Windows when two different drives are provided.
             msg = f"Error finding common path for {paths}: {exc}"
             raise ValueError(msg) from exc

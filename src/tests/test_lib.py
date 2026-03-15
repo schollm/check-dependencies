@@ -10,6 +10,53 @@ from check_dependencies.app_config import AppConfig
 from check_dependencies.lib import Dependency, Module, Package, Packages, _canonical
 
 
+class TestModule:
+    """Test suite for the Module."""
+
+    def test__lt__(self) -> None:
+        """Test comparison."""
+        assert Module("a") < Module("x")
+        assert Module("x", raw=False) < Module("a", raw=True)
+        assert Module("a", raw=True) < Module("x", raw=True)
+
+    def test__lt___notimplemented(self) -> None:
+        """Test comparison against non-Module returns NotImplemented."""
+        assert Module("foo").__lt__(0) is NotImplemented
+
+    def test__eq__(self) -> None:
+        """Test equality."""
+        assert Module("foo") == Module("foo")
+        assert Module("foo", raw=False) == Module("foo", raw=False)
+        assert Module("foo", raw=True) == Module("foo", raw=True)
+        assert Module("foo") != Module("foo", raw=True)
+        assert Module("foo").__eq__(0) is NotImplemented
+
+    @pytest.mark.parametrize(
+        "module, expected",
+        [
+            (Module("foo"), "Module('foo')"),
+            (Module("foo", raw=False), "Module('foo')"),
+            (Module("foo", raw=True), "Module('foo', raw=True)"),
+        ],
+    )
+    def test__repr__(self, module: Module, expected: str) -> None:
+        """Test __repr__."""
+        assert repr(module) == expected
+
+    @pytest.mark.parametrize(
+        "module, expected",
+        [
+            (Module("numpy.linalg").main, Module("numpy")),
+            (Module("sklearn").main, Module("sklearn")),
+            (Module("PIL.Image").main, Module("PIL")),
+            (Module("foo.bar.baz", raw=True).main, Module("foo.bar.baz", raw=True)),
+        ],
+    )
+    def test_main(self, module: Module, expected: Module) -> None:
+        """Test the main property."""
+        assert module.main == expected
+
+
 class TestPackage:
     """Test suite for the Package value object."""
 
@@ -97,6 +144,10 @@ class TestPackage:
         """Fallback for unmapped packages should be a canonical module name."""
         packages = Packages([])  # no explicit mapping -> fallback path
         assert packages.modules(Package(requirement)) == {Module(expected_module)}
+
+    def test___repr__(self) -> None:
+        """Test __repr__."""
+        assert repr(Package("foo")) == "Package('foo')"
 
 
 class TestPackages:

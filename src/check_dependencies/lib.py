@@ -56,8 +56,8 @@ class Module:
     def __repr__(self) -> str:
         """Get the string representation of the Module."""
         if self.raw:
-            return f"M(!{self.name})"
-        return f"M({self.name})"
+            return f"Module({self.name!r}, raw={self.raw!r})"
+        return f"Module({self.name!r})"
 
     @property
     def main(self) -> Module:
@@ -116,10 +116,6 @@ class Package:
         """Get the Original name."""
         return self._original
 
-    def __repr__(self) -> str:
-        """Get the Original name."""
-        return f"P('{self._original}')"
-
     def __bool__(self) -> bool:
         """Check if there is a package (i.e. empty package name is Falsy)."""
         return bool(self.canonical)
@@ -131,6 +127,10 @@ class Package:
         if isinstance(other, str):
             return self.canonical > _canonical(other)
         return NotImplemented
+
+    def __repr__(self) -> str:
+        """Get the string representation of the Package."""
+        return f"Package({self._original!r})"
 
     @classmethod
     def set(cls, package_names: Iterable[str]) -> __builtins__.set[Package]:
@@ -169,8 +169,6 @@ class Packages:
 
         :param pkg_: The package to look up.
         """
-        if isinstance(pkg_, str):
-            pkg_ = Package(pkg_)
         return self._modules.get(pkg_, {Module(pkg_.canonical)})
 
     def packages(self, module: Module) -> set[Package]:

@@ -51,7 +51,6 @@ class Module:
         >>> Module("PIL.Image").main
         "PIL"
 
-        :param module: Full module path (e.g., "package.submodule.module").
         :returns: The top-level module name.
         """
         if self.raw:

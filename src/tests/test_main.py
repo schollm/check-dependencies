@@ -49,21 +49,25 @@ TEST_IMPORTS = [
     ("try:\n    import foo\nexcept ImportError:\n    import bar", ["foo", "bar"]),
     ("__import__('foo', {}, {})", ["foo"]),
     ("__import__('foo')", ["foo"]),
-    ("__import__(foo)", ["t.py:1:0 __import__(...)"]),
-    ("\nab;__import__(foo)", ["t.py:2:3 __import__(...)"]),
-    ("__import__('foo')\n__import__(foo)", ["foo", "t.py:2:0 __import__(...)"]),
+    ("__import__(foo)", ["__import__(...)"]),
+    ("\nab;__import__(foo)", ["__import__(...)"]),
+    ("__import__('foo')\n__import__(foo)", ["foo", "__import__(...)"]),
     ("__import__(name='foo')", ["foo"]),
-    ("__import__(name=foo)", ["t.py:1:0 __import__(...)"]),
-    ("__import__(f())", ["t.py:1:0 __import__(...)"]),
-    ("__import__(fox + bar)", ["t.py:1:0 __import__(...)"]),
-    ("__import__(0)", ["t.py:1:0 __import__(...)"]),
+    ("__import__(name=foo)", ["__import__(...)"]),
+    ("__import__(f())", ["__import__(...)"]),
+    ("__import__(fox + bar)", ["__import__(...)"]),
+    ("__import__(0)", ["__import__(...)"]),
     ("bar = __import__('foo')", ["foo"]),
     ("(bar := __import__('foo'))", ["foo"]),
     ("x = (bar := __import__('foo'))", ["foo"]),
     ("lambda: __import__('foo')", ["foo"]),
     ("__builtins__.__import__('foo')", ["foo"]),
-    ("__builtins__.__import__(foo)", ["t.py:1:0 __builtins__.__import__(...)"]),
+    ("__builtins__.__import__(foo)", ["__builtins__.__import__(...)"]),
 ]
+if False:
+    foo = "foo"
+    __import__(foo)
+    __import__("foo")
 
 
 def test__main__(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -180,7 +184,7 @@ class TestYieldWrongImports:
         py_file.write_text(stmt)
         assert self.fn(
             overwrite_cfg=PYPROJECT_EMPTY, file_names=[py_file.as_posix()]
-        ) == [f"! {exp.replace('t.py', py_file.as_posix())}" for exp in expected]
+        ) == [f"! {exp}" for exp in expected]
 
     def test_dev(self) -> None:
         """Test default with dev."""
@@ -404,7 +408,7 @@ class TestYieldWrongImports:
 def test_imports_iter(stmt: str, expected: list[str]) -> None:
     """Test the imports iterator for statement junks."""
     parsed = ast.parse(dedent(stmt))
-    assert [x.name for x, _ in _imports_iter(parsed.body, file="t.py")] == expected
+    assert [x.name for x, _ in _imports_iter(parsed.body)] == expected
 
 
 def test_missing_import_iter_silent_on_invalid_python_code() -> None:

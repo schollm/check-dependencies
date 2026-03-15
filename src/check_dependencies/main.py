@@ -109,25 +109,23 @@ def _missing_imports_iter(
             ast.Raise(lineno=-1),
         )
         return
-    for module, stmt in _imports_iter(parsed.body, file):
+    for module, stmt in _imports_iter(parsed.body):
         if module.raw:
-            yield Dependency.NA, module, stmt
+            yield Dependency.UNKNOWN, module, stmt
         else:
             pkg_ = provides.packages(module.name)
             status = Dependency.OK if pkg_.intersection(dependencies) else Dependency.NA
             yield status, module, stmt
 
 
-def _imports_iter(
-    body: list[ast.stmt], file: Path | str = "-"
-) -> Iterator[tuple[Module, ast.AST]]:
+def _imports_iter(body: list[ast.stmt]) -> Iterator[tuple[Module, ast.AST]]:
     """Yield all import statements from a body of code.
 
     :param body: List of AST statements to analyze.
     """
     for node in (node for stmt in body for node in ast.walk(stmt)):
         yield from _imports(node)
-        yield from _import_builtin(node, file=file)
+        yield from _import_builtin(node)
 
 
 def _imports(stmt: ast.AST) -> Iterable[tuple[Module, ast.AST]]:
@@ -140,9 +138,7 @@ def _imports(stmt: ast.AST) -> Iterable[tuple[Module, ast.AST]]:
         yield Module(stmt.module), stmt
 
 
-def _import_builtin(
-    stmt: ast.AST, file: Path | str
-) -> Iterable[tuple[Module, ast.AST]]:
+def _import_builtin(stmt: ast.AST) -> Iterable[tuple[Module, ast.AST]]:
     if not isinstance(stmt, ast.Call):
         return
 
@@ -160,14 +156,7 @@ def _import_builtin(
         if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
             yield Module(arg.value), stmt
         else:
-            yield (
-                Module(
-                    f"{Path(file).as_posix()}:{stmt.lineno}:{stmt.col_offset} "
-                    f"{id_}(...)",
-                    raw=True,
-                ),
-                stmt,
-            )
+            yield Module(f"{id_}(...)", raw=True), stmt
 
 
 def _fq_call_name(stmt: ast.Call) -> str | None:

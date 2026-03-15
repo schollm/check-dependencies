@@ -19,6 +19,7 @@ class Dependency(Enum):
     NA = "!"  # Not Available
     EXTRA = "+"  # Extra dependency in config file
     OK = " "  # Correct import (declared in config file)
+    UNKNOWN = "?"  # Unknown import (e.g. dynamic import)
     FILE_ERROR = "!!"  # Error getting import statement (e.g. io error, syntax error)
 
 

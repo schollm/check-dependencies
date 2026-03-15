@@ -95,9 +95,9 @@ def _missing_imports_iter(
 ) -> Iterator[tuple[Dependency, Module, ast.AST]]:
     """Find missing imports in a Python file.
 
-    :param file: Pyton file to analyze
+    :param file: Python file to analyze
     :param dependencies: Declared dependencies from pyproject file
-    :yields: Tuple of status, module name and optional import statement
+    :yields: Tuple of status, module and import statement
     """
     try:
         parsed = ast.parse(file.read_bytes(), filename=file.as_posix())

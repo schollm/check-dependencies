@@ -19,24 +19,63 @@ class Dependency(Enum):
     NA = "!"  # Not Available
     EXTRA = "+"  # Extra dependency in config file
     OK = " "  # Correct import (declared in config file)
+    UNKNOWN = "?"  # Unknown import (e.g. dynamic import)
     FILE_ERROR = "!!"  # Error getting import statement (e.g. io error, syntax error)
 
 
-def pkg(module: str) -> str:
-    """Extract the top-level package name from a module import.
+@dataclass(frozen=True)
+@total_ordering
+class Module:
+    """Describe an imported Module."""
 
-    **Examples:**
-    >>> pkg("numpy.linalg")
-    "numpy"
-    >>> pkg("sklearn")
-    "sklearn"
-    >>> pkg("PIL.Image")
-    "pil"
+    name: str
+    raw: bool = False
 
-    :param module: Full module path (e.g., "package.submodule.module")
-    :returns: Normalized top-level package name
-    """
-    return module.split(".", 1)[0].strip()
+    def __post_init__(self) -> None:
+        """Initialize the Module."""
+        object.__setattr__(self, "name", self.name.strip())
+
+    def __hash__(self) -> int:
+        """Hash based on the module name."""
+        return hash((self.name, self.raw))
+
+    def __eq__(self, other: object) -> bool:
+        """Compare with another module."""
+        if not isinstance(other, Module):
+            return NotImplemented
+        return (self.name, self.raw) == (other.name, other.raw)
+
+    def __gt__(self, other: object) -> bool:
+        """Compare with another module."""
+        if isinstance(other, Module):
+            if self.raw != other.raw:
+                return self.raw > other.raw
+            return self.name > other.name
+        return NotImplemented
+
+    def __repr__(self) -> str:
+        """Get the string representation of the Module."""
+        if self.raw:
+            return f"Module({self.name!r}, raw={self.raw!r})"
+        return f"Module({self.name!r})"
+
+    @property
+    def main(self) -> Module:
+        """Extract the top-level module name from a module import.
+
+        **Examples:**
+        >>> Module("numpy.linalg").main
+        Module("numpy")
+        >>> Module("sklearn").main
+        Module("sklearn")
+        >>> Module("PIL.Image").main
+        Module("PIL")
+
+        :returns: The top-level module name.
+        """
+        if self.raw:
+            return self
+        return Module(self.name.split(".", 1)[0].strip())
 
 
 @dataclass(frozen=True)
@@ -49,7 +88,7 @@ class Package:
     same package are treated as equal.
 
     Added advantage is that we now have a clear distinction between a module
-    (presented as a string) and a package.
+    and a package - they used to be both strings.
     """
 
     __slots__ = ("_original", "canonical")
@@ -89,6 +128,10 @@ class Package:
             return self.canonical > _canonical(other)
         return NotImplemented
 
+    def __repr__(self) -> str:
+        """Get the string representation of the Package."""
+        return f"Package({self._original!r})"
+
     @classmethod
     def set(cls, package_names: Iterable[str]) -> __builtins__.set[Package]:
         """Get a set of packages from a package names."""
@@ -98,10 +141,10 @@ class Package:
 class Packages:
     """Translation layer to map between packages and modules."""
 
-    _modules: dict[Package, set[str]]
-    _packages: dict[str, set[Package]]
+    _modules: dict[Package, set[Module]]
+    _packages: dict[Module, set[Package]]
 
-    def __init__(self, packages: list[tuple[Package, str]]) -> None:
+    def __init__(self, packages: list[tuple[Package, Module]]) -> None:
         """Initialize the Packages dataclass.
 
         :param packages: List of (package, module) tuples, where package is the
@@ -121,22 +164,19 @@ class Packages:
             )
         }
 
-    def modules(self, pkg_: str | Package) -> set[str]:
+    def modules(self, pkg_: Package) -> set[Module]:
         """Get the modules (import name) for a given package name.
 
         :param pkg_: The package to look up.
         """
-        if isinstance(pkg_, str):
-            pkg_ = Package(pkg_)
-        return self._modules.get(pkg_, {str(pkg_.canonical)})
+        return self._modules.get(pkg_, {Module(pkg_.canonical)})
 
-    def packages(self, module_name: str) -> set[Package]:
+    def packages(self, module: Module) -> set[Package]:
         """Get the packages for a given module (import name).
 
-        :param module_name: The module name (import name) to look up.
+        :param module: The module (import name) to look up.
         """
-        module_ = pkg(module_name)
-        return self._packages.get(module_, {Package(module_)})
+        return self._packages.get(module.main, {Package(module.main.name)})
 
 
 def _canonical(name: str) -> str:

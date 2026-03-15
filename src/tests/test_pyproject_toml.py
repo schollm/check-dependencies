@@ -8,7 +8,7 @@ from typing import TypeVar
 
 import pytest
 
-from check_dependencies.lib import Package
+from check_dependencies.lib import Module, Package
 from check_dependencies.pyproject_toml import (
     PyProjectToml,
     _get_pyproject_path,
@@ -18,7 +18,6 @@ from tests.conftest import (
     HATCH,
     PEP631,
     POETRY,
-    PYPROJECT_EMPTY,
     PYPROJECT_PROVIDES,
     UV_LEGACY,
 )
@@ -65,7 +64,9 @@ class TestPyProjectToml:
 
     def test_unsupported_dependencies(self) -> None:
         """Test unsupported dependencies in pyproject.toml."""
-        cfg = self.cfg(PYPROJECT_EMPTY)
+        cfg = PyProjectToml(
+            cfg={"project": {"name": "test-project"}}, path=Path(), include_dev=False
+        )
         with pytest.raises(ValueError, match="No dependency management found"):
             _ = cfg.dependencies
 
@@ -77,7 +78,7 @@ class TestPyProjectToml:
     def test_provides(self) -> None:
         """Test that provides returns the correct mapping."""
         cfg = self.cfg(PYPROJECT_PROVIDES)
-        assert cfg.provides == [(Package("test_alias_pkg"), "test_1")]
+        assert cfg.provides == [(Package("test_alias_pkg"), Module("test_1"))]
 
     @pytest.mark.parametrize(
         "raw, expected",
@@ -97,7 +98,7 @@ class TestPyProjectToml:
             path=Path("dummy"),
             include_dev=False,
         )
-        assert cfg.provides == [(Package(expected), "some_import")]
+        assert cfg.provides == [(Package(expected), Module("some_import"))]
 
     @pytest.mark.skipif(sys.platform != "win32", reason="Windows-specific test")
     def test_fails_on_different_paths(self) -> None:

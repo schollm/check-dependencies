@@ -7,7 +7,54 @@ import ast
 import pytest
 
 from check_dependencies.app_config import AppConfig
-from check_dependencies.lib import Dependency, Package, Packages, _canonical
+from check_dependencies.lib import Dependency, Module, Package, Packages, _canonical
+
+
+class TestModule:
+    """Test suite for the Module."""
+
+    def test__lt__(self) -> None:
+        """Test comparison."""
+        assert Module("a") < Module("x")
+        assert Module("x", raw=False) < Module("a", raw=True)
+        assert Module("a", raw=True) < Module("x", raw=True)
+
+    def test__lt___notimplemented(self) -> None:
+        """Test comparison against non-Module returns NotImplemented."""
+        assert Module("foo").__lt__(0) is NotImplemented
+
+    def test__eq__(self) -> None:
+        """Test equality."""
+        assert Module("foo") == Module("foo")
+        assert Module("foo", raw=False) == Module("foo", raw=False)
+        assert Module("foo", raw=True) == Module("foo", raw=True)
+        assert Module("foo") != Module("foo", raw=True)
+        assert Module("foo").__eq__(0) is NotImplemented
+
+    @pytest.mark.parametrize(
+        "module, expected",
+        [
+            (Module("foo"), "Module('foo')"),
+            (Module("foo", raw=False), "Module('foo')"),
+            (Module("foo", raw=True), "Module('foo', raw=True)"),
+        ],
+    )
+    def test__repr__(self, module: Module, expected: str) -> None:
+        """Test __repr__."""
+        assert repr(module) == expected
+
+    @pytest.mark.parametrize(
+        "module, expected",
+        [
+            (Module("numpy.linalg").main, Module("numpy")),
+            (Module("sklearn").main, Module("sklearn")),
+            (Module("PIL.Image").main, Module("PIL")),
+            (Module("foo.bar.baz", raw=True).main, Module("foo.bar.baz", raw=True)),
+        ],
+    )
+    def test_main(self, module: Module, expected: Module) -> None:
+        """Test the main property."""
+        assert module.main == expected
 
 
 class TestPackage:
@@ -96,7 +143,11 @@ class TestPackage:
     ) -> None:
         """Fallback for unmapped packages should be a canonical module name."""
         packages = Packages([])  # no explicit mapping -> fallback path
-        assert packages.modules(Package(requirement)) == {expected_module}
+        assert packages.modules(Package(requirement)) == {Module(expected_module)}
+
+    def test___repr__(self) -> None:
+        """Test __repr__."""
+        assert repr(Package("foo")) == "Package('foo')"
 
 
 class TestPackages:
@@ -108,26 +159,31 @@ class TestPackages:
         - one package can provide multiple modules
         - one module can be provided by multiple packages
         """
+        pkg_a, pkg_b, pkg_c = (Package(f"pkg_{x}") for x in "abc")
+        mod_common = Module("mod_common")
+        mod_a_only = Module("mod_a_only")
+        mod_b_only = Module("mod_b_only")
+        mod_c_only = Module("mod_c_only")
         packages = Packages(
             [
-                (Package("pkg_a"), "mod_common"),
-                (Package("pkg_a"), "mod_a_only"),
-                (Package("pkg_b"), "mod_common"),
-                (Package("pkg_b"), "mod_b_only"),
-                (Package("pkg_c"), "mod_c_only"),
+                (pkg_a, mod_common),
+                (pkg_a, mod_a_only),
+                (pkg_b, mod_common),
+                (pkg_b, mod_b_only),
+                (pkg_c, mod_c_only),
             ]
         )
 
         # package -> modules (one package provides multiple modules)
-        assert packages.modules("pkg_a") == {"mod_common", "mod_a_only"}
-        assert packages.modules("pkg_b") == {"mod_common", "mod_b_only"}
-        assert packages.modules("pkg_c") == {"mod_c_only"}
+        assert packages.modules(pkg_a) == {mod_common, mod_a_only}
+        assert packages.modules(pkg_b) == {mod_common, mod_b_only}
+        assert packages.modules(pkg_c) == {mod_c_only}
 
         # module -> packages (one module provided by multiple packages)
-        assert packages.packages("mod_common") == {"pkg_a", "pkg_b"}
-        assert packages.packages("mod_a_only") == {"pkg_a"}
-        assert packages.packages("mod_b_only") == {"pkg_b"}
-        assert packages.packages("mod_c_only") == {"pkg_c"}
+        assert packages.packages(mod_common) == {pkg_a, pkg_b}
+        assert packages.packages(mod_a_only) == {pkg_a}
+        assert packages.packages(mod_b_only) == {pkg_b}
+        assert packages.packages(mod_c_only) == {pkg_c}
 
 
 class TestNormalizePkg:
@@ -165,7 +221,7 @@ class TestMkSrcFormatter:
             file_names=(), verbose=verbose, show_all=False, known_extra="foo"
         )
         fn = cfg.mk_src_formatter()
-        assert not list(fn("src.py", Dependency.OK, "foo", stmt))
+        assert not list(fn("src.py", Dependency.OK, Module("foo"), stmt))
 
     @pytest.mark.parametrize(
         "verbose, show_all, cause, expected",
@@ -189,11 +245,11 @@ class TestMkSrcFormatter:
         """MkSrcFormatter generic tests."""
         cfg = AppConfig.from_cli_args(file_names=(), verbose=verbose, show_all=show_all)
         fn = cfg.mk_src_formatter()
-        assert next(fn("src.py", Dependency(cause), "foo", stmt)) == expected
+        assert next(fn("src.py", Dependency(cause), Module("foo"), stmt)) == expected
 
     def test_cache(self, stmt: ast.stmt) -> None:
         """Test the cache mechanism for the formatter."""
         cfg = AppConfig.from_cli_args(file_names=(), verbose=False)
         fn = cfg.mk_src_formatter()
-        assert list(fn("src.py", Dependency.NA, "foo", stmt))
-        assert not list(fn("src.py", Dependency.NA, "foo", stmt))
+        assert list(fn("src.py", Dependency.NA, Module("foo"), stmt))
+        assert not list(fn("src.py", Dependency.NA, Module("foo"), stmt))

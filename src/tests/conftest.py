@@ -1,13 +1,10 @@
-"""Common fixtures and constans for tests."""
+"""Common fixtures and constants for tests."""
 
-import contextlib
 from pathlib import Path
 
 import pytest
 
-DATA = Path(__file__).parent / "data"
-with contextlib.suppress(ValueError):
-    DATA = DATA.resolve().relative_to(Path.cwd())
+DATA = (Path(__file__).parent / "data").resolve()
 SRC_MODULE = DATA / "src"
 SRC = (SRC_MODULE / "src.py").as_posix()
 SRC_UNICODE = (DATA / "src_unicode.py").as_posix()

@@ -9,7 +9,7 @@ from os.path import commonpath
 from pathlib import Path
 from typing import Any, Collection, Mapping, TypeVar
 
-from check_dependencies.lib import Package
+from check_dependencies.lib import Module, Package
 
 try:
     import tomllib  # type: ignore[unresolved-import]
@@ -45,7 +45,7 @@ class PyProjectToml:
             pyproject_candidate = Path(
                 commonpath(Path(p).expanduser().resolve() for p in paths),
             )
-        except ValueError as exc:
+        except ValueError as exc:  # pragma: no cover
             # Can only be reached in Windows when two different drives are provided.
             msg = f"Error finding common path for {paths}: {exc}"
             raise ValueError(msg) from exc
@@ -112,18 +112,22 @@ class PyProjectToml:
         )
 
     @property
-    def provides(self) -> list[tuple[Package, str]]:
+    def provides(self) -> list[tuple[Package, Module]]:
         """Mapping from import name to package name.
 
-        E.g. ``{"jwt": "pyjwt", "shapefile": "pyshp"}`` means that the package
+        E.g. ``[
+            (Package("pyjwt"), Module("jwt")),
+            (Package("pysh"), Module("shapefile"))
+        ]``
+        means that the package
         ``pyjwt`` is imported as ``jwt`` and ``pyshp`` as ``shapefile``.
 
-        Package keys are canonicalized via :class:`Package` (case-insensitive,
+        Package keys are canonicalized  (case-insensitive,
         hyphen/underscore equivalent), so e.g. ``PyJWT``, ``pyjwt``, and
-        ``py-jwt`` resolve to the same package identity.
+        ``pyJwt`` resolve to the same package identity.
         """
         return [
-            (Package(package), module)
+            (Package(package), Module(module))
             for package, modules in _nested_item(
                 self.cfg, "tool.check-dependencies.provides", dict
             ).items()

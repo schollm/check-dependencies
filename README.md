@@ -43,12 +43,16 @@ The output is a list of imports with a prefix indicating the status of the impor
 
 - `!` - Undeclared import
 - `+` - Extra import, declared in pyproject.toml, but not used in the file
+- `?` - Dynamic import that could not be resolved.
+- `!!` - Could not parse the file (e.g. syntax error)
 - ` ` - Correct import (only shown with `--all`)
 
 **In case of `--verbose`**, the output is a list of all imports in the file, prefixed with:
 
 - `!NA` - Undeclared import
 - `+EXTRA` - Extra import, declared in pyproject.toml, but not used in the file
+- `?UNKNOWN` - Dynamic import that could not be resolved.
+- `!!FILE_ERROR` - Could not parse the file (e.g. syntax error)
 - ` OK` - Correct import (only shown with `--all`)
 
 Additionally, each import is prefixed with the file name and line number

@@ -18,7 +18,7 @@ usage: check-dependencies [-h] [--include-dev] [--verbose] [--all] [--missing MI
 Find undeclared and unused (or all) imports in Python files
 
 positional arguments:
-  file_name          Python Source file to analyse
+  file_name             Python Source file to analyse
 
 options:
   -h, --help         show this help message and exit
@@ -57,6 +57,16 @@ The output is a list of imports with a prefix indicating the status of the impor
 
 Additionally, each import is prefixed with the file name and line number
 where it is imported.
+
+### Notes
+This can be used as a stand-alone application or as part of a CI/CD pipeline.
+In the former case, it can be installed via `uvx` or `pipx`.
+
+```commandline
+uvx check-dependencies
+pipx run check-dependencies
+```
+
 
 ### Examples
 

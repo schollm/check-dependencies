@@ -67,7 +67,6 @@ uvx check-dependencies
 pipx run check-dependencies
 ```
 
-
 ### Examples
 
 #### Basic usage

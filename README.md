@@ -60,8 +60,21 @@ where it is imported.
 
 ### Notes
 This can be used as a stand-alone application or as part of a CI/CD pipeline.
-In the former case, it can be installed via `uvx` or `pipx`.
+In the former case, it can be installed via `uv tool` or `pipx`.
 
+**Using `uv`:**
+```commandline
+uv tool install check-dependencies
+check-dependencies
+```
+
+**Using `pipx`:**
+```commandline
+pipx install check-dependencies
+check-dependencies
+```
+
+Alternatively, to run without installing:
 ```commandline
 uvx check-dependencies
 pipx run check-dependencies

@@ -68,6 +68,10 @@ uv tool install check-dependencies
 check-dependencies
 ```
 
+For an ephemeral run
+```commandline
+uvx check-dependencies
+```
 **Using `pipx`:**
 ```commandline
 pipx install check-dependencies

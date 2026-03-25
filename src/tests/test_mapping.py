@@ -1,13 +1,12 @@
 from pathlib import Path
 
 from check_dependencies.mapping import (
+    DependencyMapping,
     create_mapping,
-    find_smallest_valid_index,
     gather_venv_mappings,
     get_package_name_from_directory,
     parse_venv_config,
 )
-from check_dependencies.mapping import DependencyMapping
 
 
 def test_parse_example_config() -> None:
@@ -26,12 +25,13 @@ def test_create_mapping() -> None:
     mapping = create_mapping(
         "mapped_package",
         """
+../../Scripts/some.exe,sha256=vv43hgw89hcoanuv4jkgnnawuiogbek4j,7435
 _mapped_import_file.py,sha256=2jinvvJ_mJtFWwq2c5r0kLKA2QhQDJT_lb85CBc0UcU,22589
 mapped_import/__init__.py,sha256=98abxVfn8od1jJaTIr65YrYrIb7zMKbOJ5o68ryE2O0,2094
-mapped_import/main.py,sha256=X8eIpGlmHfnp7zazp5mdav228Itcf2lkiMP0tLU6X9c,140
+mapped_import\\main.py,sha256=X8eIpGlmHfnp7zazp5mdav228Itcf2lkiMP0tLU6X9c,140
 mapped_package-11.1.0.dist-info/LICENSE,sha256=Y6m7FH97jUPSEfBgAP5AYGc5rZP71csfhEvHQPi8Uew,56662
 mapped_package-11.1.0.dist-info/METADATA,sha256=sYK2WLlgLj7uN9DKsiS93-M9CuOHSiogmkVnvgc56Aw,9313
-mapped_package-11.1.0.dist-info/WHEEL,sha256=pWXrJbnZSH-J-PhYmKs2XNn4DHCPNBYq965vsBJBFvA,101
+mapped_package-11.1.0.dist-info\\WHEEL,sha256=pWXrJbnZSH-J-PhYmKs2XNn4DHCPNBYq965vsBJBFvA,101
 mapped_package-11.1.0.dist-info/top_level.txt,sha256=riZqrk-hyZqh5f1Z0Zwii3dKfxEsByhu9cU9IODF-NY,4
 mapped_package-11.1.0.dist-info/zip-safe,sha256=frcCV1k9oG9oKj3dpUqdJg1PxRT2RSN_XKdLCPjaYaY,2
 mapped_package-11.1.0.dist-info/INSTALLER,sha256=HLHRd3rVxZqLVn0Nby492_jJUNACT5LifwfFYrwaW0E,12
@@ -40,11 +40,6 @@ mapped_package-11.1.0.dist-info/RECORD,,
     )
     assert mapping.pip_name == "mapped_package"
     assert mapping.import_names == ("_mapped_import_file", "mapped_import")
-
-
-def test_smallest_valid_index() -> None:
-    assert find_smallest_valid_index([-1, 2]) == 2
-    assert find_smallest_valid_index([3, 4]) == 3
 
 
 def test_package_name_extraction() -> None:

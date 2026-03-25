@@ -45,23 +45,22 @@ class DependencyMapping:
     import_names: tuple[str]
 
 
-def find_smallest_valid_index(indices: list[int]) -> int:
-    valid_indices = [index for index in indices if index != -1]
-    return min(valid_indices)
-
-
 def create_mapping(pip_name: str, record_content: str) -> DependencyMapping:
     import_names: set[str] = set()
     for line in record_content.split("\n"):
         line = line.strip()
         if line != "":
-            first_slash = line.find("/")
-            first_dotpy = line.find(".py")
-            potential_import_name = line[
-                : find_smallest_valid_index([first_slash, first_dotpy])
-            ]
-            if not potential_import_name.endswith(".dist-info"):
-                import_names.add(potential_import_name)
+            if "/" in line:
+                line = line[: line.find("/")]
+            if "\\" in line:
+                line = line[: line.find("\\")]
+            if line.endswith(".dist-info"):
+                continue
+
+            if "." in line:
+                line = line[: line.find(".")]
+            if line != "":
+                import_names.add(line)
     return DependencyMapping(pip_name, tuple(sorted(import_names)))
 
 
@@ -85,12 +84,8 @@ def gather_dependency_mappings(
     return mappings
 
 
-def gather_venv_mappings(
-    project_id: str, venv: Path
-) -> set[DependencyMapping]:
-    venv_config = parse_venv_config(
-        (venv / "pyvenv.cfg").read_text()
-    )
+def gather_venv_mappings(project_id: str, venv: Path) -> set[DependencyMapping]:
+    venv_config = parse_venv_config((venv / "pyvenv.cfg").read_text())
     mappings = gather_dependency_mappings(project_id, venv / "Lib" / "site-packages")
     if venv_config.include_base_site_packages:
         mappings.update(

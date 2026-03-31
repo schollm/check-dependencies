@@ -80,7 +80,7 @@ def _ensure_key(key: str, doc: MutableMapping) -> None:
     """Ensure a key exists in a TOML document.
 
     Updates the document in-place!
-    :param key: The key to update in dot-separated format,.
+    :param key: The key to update in dot-separated format.
     :param doc: The document to update.
     """
     for key1 in key.split("."):

@@ -1,12 +1,17 @@
+"""Tests for writer.cli."""
+
 from __future__ import annotations
 
 import sys
 from importlib import import_module
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
-from check_dependencies.writer.cli import EXIT_FAILURE, EXIT_VALUE_ERROR, EXIT_SUCCESS
+from check_dependencies.writer.cli import EXIT_FAILURE, EXIT_SUCCESS, EXIT_VALUE_ERROR
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 @pytest.mark.parametrize("python_switch", ["-p", "--python"])
@@ -17,6 +22,7 @@ def test__main__args__stdout(
     python_switch: str,
     cfg_switch: str,
 ) -> None:
+    """Test writer with write to stdout."""
     monkeypatch.setattr(
         sys,
         "argv",
@@ -42,7 +48,8 @@ def test__main__args__stdout(
 )
 def test_main__args(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, cfg_content: str | None
-):
+) -> None:
+    """Test writer with different pre-set config."""
     cfg_file = tmp_path / "check-dependencies.cfg"
     if cfg_content is not None:
         cfg_file.write_text(cfg_content)
@@ -71,7 +78,8 @@ def test__main__invalid_cfg(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
     capteesys: pytest.CaptureFixture,
-):
+) -> None:
+    """Test with invalid cfg file."""
     cfg_file = tmp_path / "check-dependencies.cfg"
     cfg_file.write_text("[invalid cfg]")
     monkeypatch.setattr(
@@ -95,7 +103,8 @@ def test__main__cfg_file_is_non_readable(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
     capteesys: pytest.CaptureFixture,
-):
+) -> None:
+    """Test unreadable cfg file (because it's a directory)."""
     monkeypatch.setattr(
         sys,
         "argv",
@@ -113,7 +122,8 @@ def test__main__cfg_file_is_non_readable(
     assert "--config file must be a readable file" in capteesys.readouterr().err
 
 
-def test__main__(monkeypatch: pytest.MonkeyPatch) -> None:
+def test__main__() -> None:
+    """Test writer without arguments."""
     with pytest.raises(SystemExit) as exc:
         import_module("check_dependencies.writer.__main__")
     assert exc.value.code == EXIT_FAILURE

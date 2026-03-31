@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from check_dependencies.writer.provides import mappings_for_env
 
@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 
 
 def main() -> int:
+    """Provide the main entry point for writer."""
     args = _get_arg_parser().parse_args()
     try:
         _update_config(Path(args.config), Path(args.python))
@@ -33,7 +34,7 @@ def main() -> int:
     return EXIT_SUCCESS
 
 
-def _get_arg_parser():
+def _get_arg_parser() -> argparse.ArgumentParser:
     """Parse command line arguments."""
     """Run the writer application."""
     parser = argparse.ArgumentParser()
@@ -52,15 +53,15 @@ def _update_config(config_file: Path, python: Path) -> None:
     provides = mappings_for_env(python)
     is_stdout = config_file.as_posix() == "-"
 
-    cfg = _get_existing_config(config_file, is_stdout)
+    cfg = _get_existing_config(config_file, is_stdout=is_stdout)
     _ensure_key("tool.check-dependencies.provides", cfg)
-    cfg["tool"]["check-dependencies"]["provides"].update(provides)
+    cfg["tool"]["check-dependencies"]["provides"].update(provides)  # type: ignore[not-subscriptable]
     dumps = tomlkit.dumps(cfg)
     writer = print if is_stdout else config_file.write_text
     writer(dumps)
 
 
-def _get_existing_config(config_file: Path, is_stdout: bool) -> Any:
+def _get_existing_config(config_file: Path, *, is_stdout: bool) -> tomlkit.TOMLDocument:
     if is_stdout or not config_file.exists():
         return tomlkit.TOMLDocument()
 

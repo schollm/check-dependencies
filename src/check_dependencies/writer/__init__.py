@@ -1,4 +1,4 @@
 """Functions that write config files.
 
-NOTE: These require the [writer] extra to be installed.
+NOTE: These require the [write] extra to be installed.
 """

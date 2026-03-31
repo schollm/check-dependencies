@@ -57,8 +57,10 @@ def _update_config(config_file: Path, python: Path) -> None:
     _ensure_key("tool.check-dependencies.provides", cfg)
     cfg["tool"]["check-dependencies"]["provides"].update(provides)  # type: ignore[not-subscriptable]
     dumps = tomlkit.dumps(cfg)
-    writer = print if is_stdout else config_file.write_text
-    writer(dumps)
+    if is_stdout:
+        print(dumps)
+    else:
+        config_file.write_text(dumps, encoding="utf-8")
 
 
 def _get_existing_config(config_file: Path, *, is_stdout: bool) -> tomlkit.TOMLDocument:

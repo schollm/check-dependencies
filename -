@@ -1,0 +1,2 @@
+[tool.check-dependencies.provides]
+pytest = ["_pytest", "py"]

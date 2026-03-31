@@ -110,7 +110,7 @@ def test__main__cfg_file_is_non_readable(
     with pytest.raises(SystemExit) as exc:
         import_module("check_dependencies.writer.__main__")
     assert exc.value.code == EXIT_VALUE_ERROR
-    assert "Permission denied: " in capteesys.readouterr().err
+    assert "--config file must be a readable file" in capteesys.readouterr().err
 
 
 def test__main__(monkeypatch: pytest.MonkeyPatch) -> None:

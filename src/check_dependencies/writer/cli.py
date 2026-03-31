@@ -36,15 +36,15 @@ def main() -> int:
 
 def _get_arg_parser() -> argparse.ArgumentParser:
     """Parse command line arguments."""
-    """Run the writer application."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--python",
         "-p",
         help="Python executable to check.",
+        required=True,
     )
     parser.add_argument(
-        "--config", "-c", help="Location of yaml config file.", type=Path, required=True
+        "--config", "-c", help="Location of toml config file.", type=Path, required=True
     )
     return parser
 
@@ -58,7 +58,7 @@ def _update_config(config_file: Path, python: Path) -> None:
     cfg["tool"]["check-dependencies"]["provides"].update(provides)  # type: ignore[not-subscriptable]
     dumps = tomlkit.dumps(cfg)
     if is_stdout:
-        print(dumps)
+        print(dumps)  # noqa: T201
     else:
         config_file.write_text(dumps, encoding="utf-8")
 

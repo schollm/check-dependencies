@@ -65,4 +65,4 @@ def _get_paths(python: Path) -> Iterable[Path]:
         timeout=10,
         shell=False,
     )
-    return (Path(p.strip()) for p in proc.stdout.decode().split("\n"))
+    return (Path(p.strip()) for p in proc.stdout.decode().split("\n") if p.strip())

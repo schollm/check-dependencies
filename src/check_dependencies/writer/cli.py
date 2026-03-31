@@ -13,7 +13,7 @@ EXIT_SUCCESS, EXIT_VALUE_ERROR, EXIT_FAILURE = 0, 1, 2
 try:
     import tomlkit
 except ImportError as _exc:  # pragma: no cover
-    _msg = f"{_exc}: Require group [writer] to be installed."
+    _msg = f"{_exc}: Require group [write] to be installed."
     raise ImportError(_msg) from _exc
 
 if TYPE_CHECKING:

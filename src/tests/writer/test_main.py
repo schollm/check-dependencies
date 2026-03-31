@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 @pytest.mark.parametrize("cfg_switch", ["-c", "--config"])
 def test__main__args__stdout(
     monkeypatch: pytest.MonkeyPatch,
-    capteesys: pytest.CaptureFixture,
+    capsys: pytest.CaptureFixture,
     python_switch: str,
     cfg_switch: str,
 ) -> None:
@@ -31,7 +31,7 @@ def test__main__args__stdout(
     with pytest.raises(SystemExit) as exc:
         import_module("check_dependencies.writer.__main__")
     assert exc.value.code == EXIT_SUCCESS
-    stdout = capteesys.readouterr().out
+    stdout = capsys.readouterr().out
     assert "[tool.check-dependencies.provides]\n" in stdout
     assert "pytest = " in stdout
 
@@ -77,7 +77,7 @@ def test_main__args(
 def test__main__invalid_cfg(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
-    capteesys: pytest.CaptureFixture,
+    capsys: pytest.CaptureFixture,
 ) -> None:
     """Test with invalid cfg file."""
     cfg_file = tmp_path / "check-dependencies.cfg"
@@ -96,13 +96,13 @@ def test__main__invalid_cfg(
     with pytest.raises(SystemExit) as exc:
         import_module("check_dependencies.writer.__main__")
     assert exc.value.code == 1
-    assert 'Invalid key "invalid cfg" at line 1' in capteesys.readouterr().err
+    assert 'Invalid key "invalid cfg" at line 1' in capsys.readouterr().err
 
 
 def test__main__cfg_file_is_non_readable(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
-    capteesys: pytest.CaptureFixture,
+    capsys: pytest.CaptureFixture,
 ) -> None:
     """Test unreadable cfg file (because it's a directory)."""
     monkeypatch.setattr(
@@ -119,7 +119,7 @@ def test__main__cfg_file_is_non_readable(
     with pytest.raises(SystemExit) as exc:
         import_module("check_dependencies.writer.__main__")
     assert exc.value.code == EXIT_VALUE_ERROR
-    assert "--config file must be a readable file" in capteesys.readouterr().err
+    assert "--config file must be a readable file" in capsys.readouterr().err
 
 
 def test__main__() -> None:

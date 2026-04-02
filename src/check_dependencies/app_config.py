@@ -84,7 +84,11 @@ class AppConfig:
                     yield cfg
                     yield from with_includes(res_pth.parent, cfg.includes, seen)
 
-        cfgs = list(with_includes(Path(), [*src_cfg.includes, *includes], set()))
+        seen: set[Path] = set()
+        cfgs = [
+            *with_includes(Path(), includes, seen),
+            *with_includes(src_cfg.path.parent, src_cfg.includes, seen)
+        ]
 
         def cfg_of(key: str) -> Iterable[Any]:
             yield from getattr(src_cfg, key)

@@ -423,7 +423,7 @@ class TestYieldWrongImports:
 
     def test_include_switch(self, tmp_path: Path) -> None:
         """Test the --include switch."""
-        extra_cfg = tmp_path / ".check-depedencies.yml"
+        extra_cfg = tmp_path / "check-dependencies.toml"
         extra_cfg.write_text(
             dedent("""\
         [tool.check-dependencies]

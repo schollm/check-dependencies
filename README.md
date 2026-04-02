@@ -13,7 +13,7 @@ This is a pure-Python zero-dependency (Up until Python 3.11 one, toml) package.
 ## Usage
 
 ```text
-usage: check_dependencies [-h] [--include-dev] [--verbose] [--all] [--missing MISSING] [--extra EXTRA] [--provides PACKAGE=IMPORT] [--include INCLUDE] file_name [file_name ...]
+usage: check-dependencies [-h] [--include-dev] [--verbose] [--all] [--missing MISSING] [--extra EXTRA] [--provides PACKAGE=IMPORT] [--include INCLUDE] file_name [file_name ...]
 
 Find undeclared and unused (or all) imports in Python files
 
@@ -182,7 +182,7 @@ includes = [
 
 - 0: No missing or superfluous dependencies found
 - 2: Missing (used, but not declared in pyproject.toml) dependencies found
-- 4: Extra (declared in pyproject.toml, but unused) dependencies found
+- 4: Extra (declaredfcheck_ in pyproject.toml, but unused) dependencies found
 - 6: Both missing and superfluous dependencies found
 - 8: Could not find associated pyproject.toml file
 - 16: Could not parse source file(s)

@@ -20,7 +20,6 @@ def main() -> None:
     )
 
     parser = argparse.ArgumentParser(
-        "check_dependencies",
         description="Find undeclared and unused (or all) imports in Python files",
         add_help=True,
     )

@@ -132,16 +132,18 @@ def test__main__provides_parsing(
 class TestYieldWrongImports:
     """Test collection for the yield wrong imports function."""
 
+    @staticmethod
     def fn(  # pylint: disable=too-many-arguments
-        self,
         overwrite_cfg: Path = POETRY,
         file_names: Sequence[str] = (SRC,),
+        *,
         include_dev: bool = False,
         verbose: bool = False,
         show_all: bool = False,
         known_extra: Sequence[str] = (),
         known_missing: Sequence[str] = (),
         provides: Sequence[str] = (),
+        includes: Sequence[str] = (),
     ) -> list[str]:
         """Call the yield wrong imports function with patched pyproject.toml."""
         with patch("check_dependencies.pyproject_toml._PYPROJECT_TOML", overwrite_cfg):
@@ -156,6 +158,7 @@ class TestYieldWrongImports:
                         known_extra=",".join(known_extra),
                         known_missing=",".join(known_missing),
                         provides=provides or [],
+                        includes=includes,
                     ),
                 ),
             )
@@ -417,6 +420,20 @@ class TestYieldWrongImports:
         missing_file = (SRC_MODULE / "non-existing.pyy").as_posix()
         res = self.fn(file_names=[missing_file])
         assert res[0] == f"!! {missing_file}"
+
+    def test_include_switch(self, tmp_path: Path) -> None:
+        """Test the --include switch."""
+        extra_cfg = tmp_path / ".check-depedencies.yml"
+        extra_cfg.write_text(
+            dedent("""\
+        [tool.check-dependencies]
+        "known-extra" = ["missing"]
+        [tool.check-dependencies.provides]
+        missing = ["missing_class", "missing_def"]
+        """)
+        )
+        res = self.fn(file_names=[SRC], includes=[extra_cfg.as_posix()])
+        assert res == []
 
 
 @pytest.mark.parametrize(

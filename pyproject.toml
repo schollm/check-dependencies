@@ -55,6 +55,7 @@ known-extra = [
     "tomllib", # Missing until Python 3.11
     "toml", # Missing after Python 3.11
 ]
+includes= ["src/tests/check-dependencies.toml"]
 
 [tool.ruff]
 exclude = ["src/tests/data"]

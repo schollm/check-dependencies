@@ -1,0 +1,20 @@
+[tool.check-dependencies]
+"known-extra" = [
+    "pytest",
+    "tests",
+    "ö",
+    "ä",
+    "café",
+    "naïve",
+    "日本語",
+    "Москва",
+    "москва2",
+    "missing",
+    "test_1",
+    "test_main",
+    "missing_class",
+    "missing_def",
+    "missing_src2",
+    "tests_main",
+ ]
+ "includes" = ["./check-dependencies.toml"]

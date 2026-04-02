@@ -87,7 +87,7 @@ class AppConfig:
         seen: set[Path] = set()
         cfgs = [
             *with_includes(Path(), includes, seen),
-            *with_includes(src_cfg.path.parent, src_cfg.includes, seen)
+            *with_includes(src_cfg.path.parent, src_cfg.includes, seen),
         ]
 
         def cfg_of(key: str) -> Iterable[Any]:

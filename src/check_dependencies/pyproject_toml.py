@@ -31,6 +31,7 @@ class ConfigToml:
     @classmethod
     def for_path(cls, path: Path) -> ConfigToml:
         """Get a config from a path."""
+        logger.debug("Parsing %s", path)
         return ConfigToml(
             cfg=tomllib.loads(path.read_text("utf-8")),
             path=path,

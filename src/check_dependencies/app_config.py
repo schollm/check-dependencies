@@ -83,6 +83,8 @@ class AppConfig:
                     cfg = ConfigToml.for_path(res_pth)
                     yield cfg
                     yield from with_includes(res_pth.parent, cfg.includes, seen)
+                else:
+                    logger.debug("Already parsed: %s", res_pth)
 
         seen: set[Path] = set()
         cfgs = [

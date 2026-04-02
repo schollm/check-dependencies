@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from logging import getLogger
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
+    Any,
     Callable,
     Collection,
     Iterable,
@@ -14,10 +16,13 @@ from typing import (
 )
 
 from check_dependencies.lib import Dependency, Module, Package, Packages
-from check_dependencies.pyproject_toml import PyProjectToml
+from check_dependencies.pyproject_toml import ConfigToml, PyProjectToml
 
 if TYPE_CHECKING:
     import ast
+
+
+logger = getLogger(__name__)
 
 
 @dataclass()
@@ -44,6 +49,7 @@ class AppConfig:
         include_dev: bool = False,
         verbose: bool = False,
         show_all: bool = False,
+        includes: Sequence[str] = (),
     ) -> AppConfig:
         """Create an AppConfig instance from CLI arguments.
 
@@ -68,21 +74,47 @@ class AppConfig:
 
         src_cfg = PyProjectToml.for_paths(file_names, include_dev=include_dev)
 
+        def with_includes(
+            current_path: Path, paths: Iterable[Path | str], seen: set[Path]
+        ) -> Iterable[ConfigToml]:
+            for pth in paths:
+                if (res_pth := (current_path / pth).resolve()) not in seen:
+                    seen.add(res_pth)
+                    cfg = ConfigToml.for_path(res_pth)
+                    yield cfg
+                    yield from with_includes(res_pth.parent, cfg.includes, seen)
+                else:
+                    logger.debug("Already parsed: %s", res_pth)
+
+        seen: set[Path] = set()
+        cfgs = [
+            *with_includes(Path(), includes, seen),
+            *with_includes(src_cfg.path.parent, src_cfg.includes, seen),
+        ]
+
+        def cfg_of(key: str) -> Iterable[Any]:
+            yield from getattr(src_cfg, key)
+            for cfg in cfgs:
+                yield from getattr(cfg, key)
+
         return cls(
             include_dev=include_dev,
             verbose=verbose,
             show_all=show_all,
             known_extra=frozenset(
                 pkg
-                for pkg in (*Package.set(known_extra.split(",")), *src_cfg.known_extra)
+                for pkg in (
+                    *Package.set(known_extra.split(",")),
+                    *cfg_of("known_extra"),
+                )
                 if pkg.canonical
             ),
             known_missing=frozenset(
                 Module(module)
-                for module in (*known_missing.split(","), *src_cfg.known_missing)
+                for module in (*known_missing.split(","), *cfg_of("known_missing"))
                 if module.strip()
             ),
-            provides=Packages([*provides_list, *src_cfg.provides]),
+            provides=Packages([*provides_list, *cfg_of("provides")]),
             dependencies=src_cfg.dependencies,
             pyproject_file=src_cfg.path,
         )

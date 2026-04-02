@@ -13,7 +13,7 @@ This is a pure-Python zero-dependency (Up until Python 3.11 one, toml) package.
 ## Usage
 
 ```text
-usage: check-dependencies [-h] [--include-dev] [--verbose] [--all] [--missing MISSING] [--extra EXTRA] [--provides PROVIDES] file_name [file_name ...]
+usage: check-dependencies [-h] [--include-dev] [--verbose] [--all] [--missing MISSING] [--extra EXTRA] [--provides PACKAGE=IMPORT] [--include INCLUDE] file_name [file_name ...]
 
 Find undeclared and unused (or all) imports in Python files
 
@@ -21,20 +21,24 @@ positional arguments:
   file_name             Python Source file to analyse
 
 options:
-  -h, --help         show this help message and exit
-  --include-dev      Include dev dependencies
-  --verbose          Show every import of a package
-  --all              Show all imports (including correct ones)
-  --missing MISSING  Comma separated list of requirements known to be missing.
-                     Assume they are part of the requirements.
-  --extra EXTRA      Comma separated list of requirements known to not be imported.
-                     Assume they are not part of the requirements.
+  -h, --help            show this help message and exit
+  --include-dev         Include dev dependencies
+  --verbose             Show every import of a package
+  --all                 Show all imports (including correct ones)
+  --missing MISSING     Comma separated list of requirements known to be missing.
+                        Assume they are part of the requirements.
+  --extra EXTRA         Comma separated list of requirements known to not be imported.
+                        Assume they are not part of the requirements.
+                        This can be plugins or similar that affect the package but are not imported explicitly.
   --provides PACKAGE=IMPORT
-                     Map a package name to its import name for packages whose
-                     import name differs from the package name. Can be specified
-                     multiple times. E.g. --provides Pillow=PIL --provides PyJWT=jwt.
-                     Package name is normalized (case-insensitive, hyphens and
-                     underscores equivalent), so Pillow=PIL and pillow=PIL are the same.
+                        Map a package name to its import name for packages whose import name differs
+                        from the package name. Can be specified multiple times.
+                        E.g. --provides Pillow=PIL --provides PyJWT=jwt. The package name is
+                        normalized (case-insensitive, hyphens and underscores are equivalent),
+                        so Pillow=PIL, pillow=PIL and PIL-ow=PIL are all the same.
+  --include, -I INCLUDE
+                        Additional config files to include. Can be specified multiple times.
+                        E.g. --include check-dependencies.toml.
 ```
 
 ### Output
@@ -147,6 +151,9 @@ supports the following entries:
   packages whose import name differs from the package name.
   E.g. Pillow is imported as PIL, but the package name is Pillow.
   The value can be either a single module or a list of modules.
+- `[tool.check-dependencies.includes]` to include additional config files.
+  This is useful for monorepos or similar setups where multiple packages share a
+  common configuration file.
 
 ```toml
 [tool.check-dependencies]
@@ -164,13 +171,18 @@ Pillow = "PIL"
 PyJWT = "jwt"
 pyshp = "shapefile"
 foxtrox = ["fox", "trox"]  # This package provides both `import fox` and `import trox`, but the package name is `foxtrox`
+[tool.check-dependencies]
+includes = [
+  "check-dependencies.toml",
+  "../../common-provides.toml"
+]
 ```
 
 #### Exit code
 
 - 0: No missing or superfluous dependencies found
 - 2: Missing (used, but not declared in pyproject.toml) dependencies found
-- 4: Extra (declared in pyproject.toml, but unused) dependencies found
+- 4: Extra (declaredfcheck_ in pyproject.toml, but unused) dependencies found
 - 6: Both missing and superfluous dependencies found
 - 8: Could not find associated pyproject.toml file
 - 16: Could not parse source file(s)

@@ -20,7 +20,6 @@ def main() -> None:
     )
 
     parser = argparse.ArgumentParser(
-        "check_dependencies",
         description="Find undeclared and unused (or all) imports in Python files",
         add_help=True,
     )
@@ -61,7 +60,7 @@ def main() -> None:
         type=str,
         help="Comma separated list of requirements known to not be imported."
         " Assume they are not part of the requirements. This can be plugins or similar"
-        "that affect the package but are not imported explicitly.",
+        " that affect the package but are not imported explicitly.",
         default="",
     )
     parser.add_argument(
@@ -76,6 +75,15 @@ def main() -> None:
         " The package name is normalized (case-insensitive, hyphens and underscores"
         " are equivalent), so Pillow=PIL, pillow=PIL and PIL-ow=PIL are all the same.",
     )
+    parser.add_argument(
+        "--include",
+        "-I",
+        type=str,
+        action="append",
+        default=[],
+        help="Additional config files to include."
+        " Can be specified multiple times. E.g. --include check-dependencies.toml.",
+    )
     args = parser.parse_args()
 
     cfg = AppConfig.from_cli_args(
@@ -86,6 +94,7 @@ def main() -> None:
         include_dev=args.include_dev,
         verbose=args.verbose,
         show_all=args.all,
+        includes=args.include,
     )
 
     wrong_import_lines = yield_wrong_imports(args.file_name, cfg)

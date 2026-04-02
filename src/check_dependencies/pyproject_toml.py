@@ -22,7 +22,76 @@ _T = TypeVar("_T")
 
 
 @dataclass(frozen=True)
-class PyProjectToml:
+class ConfigToml:
+    """Additional config for check-dependencies options. Useful for mono-repos."""
+
+    cfg: dict[str, Any]
+    path: Path
+
+    @classmethod
+    def for_path(cls, path: Path) -> ConfigToml:
+        """Get a config from a path."""
+        logger.debug("Parsing %s", path)
+        return ConfigToml(
+            cfg=tomllib.loads(path.read_text("utf-8")),
+            path=path,
+        )
+
+    @property
+    def includes(self) -> frozenset[Path]:
+        """Additional config files to include."""
+        return frozenset(
+            Path(p)
+            for p in _nested_item(self.cfg, "tool.check-dependencies.includes", list)
+        )
+
+    @property
+    def known_missing(self) -> frozenset[str]:
+        """Known to be used in application but not declared in requirements."""
+        return frozenset(
+            _nested_item(
+                self.cfg,
+                "tool.check-dependencies.known-missing",
+                list,
+            )
+        )
+
+    @property
+    def known_extra(self) -> frozenset[Package]:
+        """Dependencies that are known to be unused in application."""
+        return frozenset(
+            map(
+                Package,
+                _nested_item(self.cfg, "tool.check-dependencies.known-extra", list),
+            )
+        )
+
+    @property
+    def provides(self) -> list[tuple[Package, Module]]:
+        """Mapping from import name to package name.
+
+        E.g. ``[
+            (Package("pyjwt"), Module("jwt")),
+            (Package("pysh"), Module("shapefile"))
+        ]``
+        means that the package
+        ``pyjwt`` is imported as ``jwt`` and ``pyshp`` as ``shapefile``.
+
+        Package keys are canonicalized  (case-insensitive,
+        hyphen/underscore equivalent), so e.g. ``PyJWT``, ``pyjwt``, and
+        ``pyJwt`` resolve to the same package identity.
+        """
+        return [
+            (Package(package), Module(module))
+            for package, modules in _nested_item(
+                self.cfg, "tool.check-dependencies.provides", dict
+            ).items()
+            for module in ([modules] if isinstance(modules, str) else modules)
+        ]
+
+
+@dataclass(frozen=True)
+class PyProjectToml(ConfigToml):
     """Project specific options (dependencies, config) from a pyproject.toml file."""
 
     cfg: dict[str, Any]
@@ -89,50 +158,9 @@ class PyProjectToml:
         return frozenset(
             filter(
                 None,
-                (
-                    pep631_name.canonical,
-                    poetry_name.canonical,
-                    *_nested_item(
-                        self.cfg,
-                        "tool.check-dependencies.known-missing",
-                        list,
-                    ),
-                ),
+                (pep631_name.canonical, poetry_name.canonical, *super().known_missing),
             ),
         )
-
-    @property
-    def known_extra(self) -> frozenset[Package]:
-        """Dependencies that are known to be unused in application."""
-        return frozenset(
-            map(
-                Package,
-                _nested_item(self.cfg, "tool.check-dependencies.known-extra", list),
-            )
-        )
-
-    @property
-    def provides(self) -> list[tuple[Package, Module]]:
-        """Mapping from import name to package name.
-
-        E.g. ``[
-            (Package("pyjwt"), Module("jwt")),
-            (Package("pysh"), Module("shapefile"))
-        ]``
-        means that the package
-        ``pyjwt`` is imported as ``jwt`` and ``pyshp`` as ``shapefile``.
-
-        Package keys are canonicalized  (case-insensitive,
-        hyphen/underscore equivalent), so e.g. ``PyJWT``, ``pyjwt``, and
-        ``pyJwt`` resolve to the same package identity.
-        """
-        return [
-            (Package(package), Module(module))
-            for package, modules in _nested_item(
-                self.cfg, "tool.check-dependencies.provides", dict
-            ).items()
-            for module in ([modules] if isinstance(modules, str) else modules)
-        ]
 
 
 @dataclass(frozen=True)

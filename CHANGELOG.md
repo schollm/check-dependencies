@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Limited support of __import__ style dynamic imports
 
 ## Upcoming
+### Added
+- Add support --include/-I/[tool.check_dependencies.include] to include config.
 
 ## [1.0.0] - 2026-03-14 - Initial stable release
 ### Added

@@ -210,7 +210,7 @@ options:
 
 ### Examples
 #### Write to pyproject.toml
-The following command will update the `[tool.check-dependency.options]` section of the `pyproject.toml` file
+The following command will update the `[tool.check-dependencies.provides]` section of the `pyproject.toml` file
 with all the mappings of packages to imports found in the virtual environment.
 
 ```commandline

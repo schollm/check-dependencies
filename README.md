@@ -198,7 +198,7 @@ The `dependency-writer` CLI application can be used to write the mapping of impo
 It can be used to generate the initial config file or to update it after changes in the codebase.
 
 In combination with `[tool.check-dependencies.includes]` it can be also used to generate a global
-`[tool.check-dependencies.provides` mapping for a monorepo. 
+`[tool.check-dependencies.provides]` mapping for a monorepo. 
 
 ```text
 usage: dependency-writer [-h] --python PYTHON --config CONFIG                                                                                                                                                                                                                                                                                                                                                                                                           
@@ -222,7 +222,7 @@ dependency-writer -p .venv/bin/python -c pyproject.toml
 dependency-writer -p apps/my-app/.venv/bin/python -c ./check-dependencies.toml 
 ```
 
-This requires a entry `[tool.check-dependencies.includes]` in the `pyproject.toml` file of the application to 
+This requires an entry `[tool.check-dependencies.includes]` in the `pyproject.toml` file of the application to 
 include the generated config file:
 
 ```toml

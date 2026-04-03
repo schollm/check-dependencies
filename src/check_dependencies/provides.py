@@ -14,8 +14,8 @@ def mappings_for_env(python: Path) -> dict[str, list[str]]:
         (package_name, import_name)
         for path in _get_paths(python)
         for record_file in path.glob("*.dist-info/")
-        for package_name, import_name in _mapping_from_record(record_file)
         if record_file.is_dir()
+        for package_name, import_name in _mapping_from_record(record_file)
     )
 
     return {

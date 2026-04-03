@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Planned
 
 ## Upcoming
+### Added
+- New Script dependency-writer to write dependency mappings to config file.
 
 ## [1.1.0] - 2026-04-03 - Support for including additional config files
 ### Added

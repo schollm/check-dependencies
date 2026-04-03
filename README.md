@@ -10,7 +10,11 @@ It supports PEP-621, Poetry (v1.2+), UV (0.2+) and Hatch style dependencies.
 
 This is a pure-Python zero-dependency (Up until Python 3.11 one, toml) package.
 
-## Usage
+It also provides a secondary CLI application `dependency-writer` to write the mapping of imports to packages to the
+config file. This can be used to generate the initial config file or to update it after changes in the codebase.
+
+
+## check-dependencies
 
 ```text
 usage: check-dependencies [-h] [--include-dev] [--verbose] [--all] [--missing MISSING] [--extra EXTRA] [--provides PACKAGE=IMPORT] [--include INCLUDE] file_name [file_name ...]
@@ -187,6 +191,44 @@ includes = [
 - 8: Could not find associated pyproject.toml file
 - 16: Could not parse source file(s)
 - 1: Another error occurred
+
+## dependency-writer
+
+The `dependency-writer` CLI application can be used to write the mapping of imports to packages to the config file.
+It can be used to generate the initial config file or to update it after changes in the codebase.
+
+In combination with `[tool.check-dependencies.includes]` it can be also used to generate a global
+`[tool.check-dependencies.provides` mapping for a monorepo. 
+
+```text
+usage: dependency-writer [-h] --python PYTHON --config CONFIG                                                                                                                                                                                                                                                                                                                                                                                                           
+options:                                                                                                                                                                                                                            
+  -h, --help           show this help message and exit
+  --python, -p PYTHON  Python executable to check.
+  --config, -c CONFIG  Location of toml config file.
+```
+
+### Examples
+#### Write to pyproject.toml
+The following command will update the `[tool.check-dependency.options]` section of the `pyproject.toml` file
+with all the mappings of packages to imports found in the virtual environment.
+
+```commandline
+dependency-writer -p .venv/bin/python -c pyproject.toml
+```
+
+#### Write a global provides file for a monorepo
+```commandline
+dependency-writer -p apps/my-app/.venv/bin/python -c ./check-dependencies.toml 
+```
+
+This requires a entry `[tool.check-dependencies.includes]` in the `pyproject.toml` file of the application to 
+include the generated config file:
+
+```toml
+[tool.check-dependencies]
+includes = [ "../../check-dependencies.toml" ]
+```
 
 ## Development
 

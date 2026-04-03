@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import sys
-from importlib import import_module
 from typing import TYPE_CHECKING
 
 import pytest
@@ -64,7 +63,7 @@ def test_main__args(
         ],
     )
 
-    assert main() ==  EXIT_SUCCESS
+    assert main() == EXIT_SUCCESS
     cfg = cfg_file.read_text("utf-8")
     assert "[tool.check-dependencies.provides]\n" in cfg
     assert "pytest = " in cfg

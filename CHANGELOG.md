@@ -12,11 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [ ] Merge the release branch into main
 - [ ] Create a new release on GitHub with the new version and changelog
 ## Planned
-- Limited support of __import__ style dynamic imports
 
 ## Upcoming
+
+## [1.1.0] - 2026-04-03 - Support for including additional config files
 ### Added
 - Add support --include/-I/[tool.check_dependencies.include] to include config.
+- Limited support of __import__ style dynamic imports
 
 ## [1.0.0] - 2026-03-14 - Initial stable release
 ### Added

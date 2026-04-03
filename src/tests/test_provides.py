@@ -8,7 +8,7 @@ from textwrap import dedent
 
 import pytest
 
-from check_dependencies.writer import provides
+from check_dependencies import provides
 from tests.conftest import DATA
 
 

@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from check_dependencies.writer.cli import EXIT_FAILURE, EXIT_SUCCESS, EXIT_VALUE_ERROR
+from check_dependencies.writer import EXIT_FAILURE, EXIT_SUCCESS, EXIT_VALUE_ERROR, main
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -28,9 +28,7 @@ def test__main__args__stdout(
         "argv",
         ["check-dependencies", python_switch, sys.executable, cfg_switch, "-"],
     )
-    with pytest.raises(SystemExit) as exc:
-        import_module("check_dependencies.writer.__main__")
-    assert exc.value.code == EXIT_SUCCESS
+    assert main() == EXIT_SUCCESS
     stdout = capsys.readouterr().out
     assert "[tool.check-dependencies.provides]\n" in stdout
     assert "pytest = " in stdout
@@ -65,9 +63,8 @@ def test_main__args(
             cfg_file.as_posix(),
         ],
     )
-    with pytest.raises(SystemExit) as exc:
-        import_module("check_dependencies.writer.__main__")
-    assert exc.value.code == EXIT_SUCCESS
+
+    assert main() ==  EXIT_SUCCESS
     cfg = cfg_file.read_text("utf-8")
     assert "[tool.check-dependencies.provides]\n" in cfg
     assert "pytest = " in cfg
@@ -93,9 +90,7 @@ def test__main__invalid_cfg(
             cfg_file.as_posix(),
         ],
     )
-    with pytest.raises(SystemExit) as exc:
-        import_module("check_dependencies.writer.__main__")
-    assert exc.value.code == 1
+    assert main() == EXIT_VALUE_ERROR
     assert 'Invalid key "invalid cfg" at line 1' in capsys.readouterr().err
 
 
@@ -116,14 +111,12 @@ def test__main__cfg_file_is_non_readable(
             tmp_path.as_posix(),
         ],
     )
-    with pytest.raises(SystemExit) as exc:
-        import_module("check_dependencies.writer.__main__")
-    assert exc.value.code == EXIT_VALUE_ERROR
+    assert main() == EXIT_VALUE_ERROR
     assert "--config file must be a readable file" in capsys.readouterr().err
 
 
 def test__main__() -> None:
     """Test writer without arguments."""
     with pytest.raises(SystemExit) as exc:
-        import_module("check_dependencies.writer.__main__")
+        main()
     assert exc.value.code == EXIT_FAILURE

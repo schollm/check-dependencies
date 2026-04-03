@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from check_dependencies.writer.provides import mappings_for_env
+from check_dependencies.provides import mappings_for_env
 
 EXIT_SUCCESS, EXIT_VALUE_ERROR, EXIT_FAILURE = 0, 1, 2
 try:
@@ -87,3 +87,7 @@ def _ensure_key(key: str, doc: MutableMapping) -> None:
         if key1 not in doc:
             doc[key1] = {}
         doc = doc[key1]
+
+
+if __name__ == "__main__":
+    sys.exit(main())  # pragma: no cover

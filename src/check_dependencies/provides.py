@@ -1,4 +1,4 @@
-"""Get the mappings directly from an installed environment."""
+"""Get the package provides modules mappings directly from an installed environment."""
 
 from __future__ import annotations
 

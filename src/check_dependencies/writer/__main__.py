@@ -2,6 +2,12 @@
 
 import sys
 
-from check_dependencies.writer import cli
+import check_dependencies.writer.cli as cli
 
-sys.exit(cli.main())
+
+def main() -> None:
+    """Run the CLI for writer."""
+    sys.exit(cli.main())
+
+
+main()

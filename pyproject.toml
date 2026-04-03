@@ -50,6 +50,7 @@ dev = [
 ]
 [project.scripts]
 check-dependencies = "check_dependencies.__main__:main"
+dependency-writer = "check_dependencies.writer.__main__:main"
 
 [tool.check-dependencies]
 known-missing = [

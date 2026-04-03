@@ -13,7 +13,7 @@ EXIT_SUCCESS, EXIT_VALUE_ERROR, EXIT_FAILURE = 0, 1, 2
 try:
     import tomlkit
 except ImportError as _exc:  # pragma: no cover
-    print(f"{_exc}: Require group [write] to be installed.")
+    print(f"{_exc}: Require group [write] to be installed.")  # noqa: T201
     raise SystemExit(1) from _exc
 
 if TYPE_CHECKING:

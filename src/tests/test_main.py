@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import ast
 import time
 from pathlib import Path
@@ -11,6 +12,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from check_dependencies.__main__ import _MultiSepAction
 from check_dependencies.__main__ import main as cli_main
 from check_dependencies.app_config import AppConfig
 from check_dependencies.lib import Dependency, Module, Package, Packages
@@ -33,7 +35,7 @@ from tests.conftest import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Generator, Sequence
 
 TEST_IMPORTS = [
     ("import foo", ["foo"]),
@@ -73,10 +75,8 @@ def test__main__(monkeypatch: pytest.MonkeyPatch) -> None:
     This also tests if all dependencies are defined correctly.
     """
     main_module = Path(__file__).parents[1] / "check_dependencies"
-    monkeypatch.setattr("sys.argv", ["check_dependencies", main_module.as_posix()])
-    with pytest.raises(SystemExit) as excinfo:
-        cli_main()
-    assert excinfo.value.code == 0
+    monkeypatch.setattr("sys.argv", ["check-dependencies", main_module.as_posix()])
+    assert cli_main() == 0
 
 
 @pytest.mark.parametrize(
@@ -112,16 +112,19 @@ def test__main__provides_parsing(
     """Test that --provides flags are parsed, merged, and normalized correctly."""
     captured: dict[str, Packages] = {}
 
-    def _mock_yield(_file_names: object, app_cfg: AppConfig) -> object:
+    def _mock_yield(
+        _file_names: object, app_cfg: AppConfig
+    ) -> Generator[str, None, int]:
         captured["provides"] = app_cfg.provides
-        return iter([])
+        yield "_mock_yield"
+        return 0
 
     monkeypatch.setattr("check_dependencies.__main__.yield_wrong_imports", _mock_yield)
     monkeypatch.setattr(
         "sys.argv", ["check_dependencies", *argv_provides, DATA.as_posix()]
     )
-    with pytest.raises(SystemExit):
-        cli_main()
+
+    assert cli_main() == 0
     packages = captured["provides"]
     for expected_pkg, expected_import in expected_provides:
         assert packages.modules(Package(expected_pkg)) == {
@@ -135,33 +138,24 @@ class TestYieldWrongImports:
     @staticmethod
     def fn(  # pylint: disable=too-many-arguments
         overwrite_cfg: Path = POETRY,
+        args: Sequence[str] | str = (),
         file_names: Sequence[str] = (SRC,),
-        *,
-        include_dev: bool = False,
-        verbose: bool = False,
-        show_all: bool = False,
-        known_extra: Sequence[str] = (),
-        known_missing: Sequence[str] = (),
-        provides: Sequence[str] = (),
-        includes: Sequence[str] = (),
     ) -> list[str]:
         """Call the yield wrong imports function with patched pyproject.toml."""
-        with patch("check_dependencies.pyproject_toml._PYPROJECT_TOML", overwrite_cfg):
-            return list(
-                yield_wrong_imports(
-                    file_names,
-                    AppConfig.from_cli_args(
-                        file_names=file_names,
-                        include_dev=include_dev,
-                        verbose=verbose,
-                        show_all=show_all,
-                        known_extra=",".join(known_extra),
-                        known_missing=",".join(known_missing),
-                        provides=provides or [],
-                        includes=includes,
-                    ),
-                ),
-            )
+        if isinstance(args, str):
+            args = args.split()
+
+        stdout = MagicMock()
+        lines: list[str] = []
+        stdout.write = lines.append
+
+        with patch(
+            "check_dependencies.pyproject_toml._PYPROJECT_TOML", overwrite_cfg
+        ), patch("sys.argv", ["check-dependencies", *args, *file_names]), patch(
+            "sys.stdout", stdout
+        ):
+            cli_main()
+            return [line for line in lines if line != "\n"]
 
     def test(self, pyproject: Path) -> None:
         """By default, we should only see the missing (and extra) imports."""
@@ -204,7 +198,9 @@ class TestYieldWrongImports:
         py_file.write_text(stmt)
 
         res = self.fn(
-            overwrite_cfg=PYPROJECT_EMPTY, file_names=[py_file.as_posix()], verbose=True
+            overwrite_cfg=PYPROJECT_EMPTY,
+            file_names=[py_file.as_posix()],
+            args="--verbose",
         )
 
         assert len(res) == len(expected)
@@ -212,7 +208,7 @@ class TestYieldWrongImports:
 
     def test_dev(self) -> None:
         """Test default with dev."""
-        assert self.fn(overwrite_cfg=PYPROJECT_CFG, include_dev=True) == [
+        assert self.fn(overwrite_cfg=PYPROJECT_CFG, args="--include-dev") == [
             "+ test_devtest > 0",
             "+ test_doctest > 0",
         ]
@@ -230,7 +226,7 @@ class TestYieldWrongImports:
 
     def test_extra_requirements_verbose(self, pyproject_extra: Path) -> None:
         """Ensure extra requirements are printed by default."""
-        assert set(self.fn(overwrite_cfg=pyproject_extra, verbose=True)) > {
+        assert set(self.fn(overwrite_cfg=pyproject_extra, args="--verbose")) > {
             "",
             "### Dependencies in config file not used in application:",
         }
@@ -255,7 +251,7 @@ class TestYieldWrongImports:
         """AppConfig.provides (CLI --provides) resolves false positives like config."""
         # POETRY has test_alias_pkg NOT declared, but we pass provides via AppConfig
         # to map test_1 -> test_main (test_main IS declared in POETRY).
-        result = self.fn(overwrite_cfg=POETRY, provides="test_main=test_1")
+        result = self.fn(overwrite_cfg=POETRY, args="--provides test_main=test_1")
         assert "! test_1" not in result
         assert "+ test_main" not in result
 
@@ -264,14 +260,14 @@ class TestYieldWrongImports:
         # Config maps test_1 -> test_alias_pkg.  CLI overrides to test_1 -> test_main.
         result = self.fn(
             overwrite_cfg=PYPROJECT_PROVIDES,
-            provides="test_main=test_1",
+            args="--provides=test_main=test_1",
         )
         assert "! test_1" not in result
         assert "+ test_main" not in result
 
     def test_ignore_requirements(self, pyproject_extra: Path) -> None:
         """Ensure ignored requirements are not printed."""
-        assert self.fn(overwrite_cfg=pyproject_extra, known_extra=["test_extra"]) == [
+        assert self.fn(overwrite_cfg=pyproject_extra, args="--extra test_extra") == [
             "! missing",
             "! missing_class",
             "! missing_def",
@@ -279,8 +275,8 @@ class TestYieldWrongImports:
 
     def test_ignore_requirements_still_check_in_src(self) -> None:
         """Ensure ignored requirements are not flagged even if they come up in src."""
-        assert "  test_1" in self.fn(overwrite_cfg=POETRY, show_all=True)
-        assert self.fn(overwrite_cfg=POETRY, known_missing=["test_1"]) == [
+        assert "  test_1" in self.fn(overwrite_cfg=POETRY, args="--all")
+        assert self.fn(overwrite_cfg=POETRY, args="--extra=test_1") == [
             "! missing",
             "! missing_class",
             "! missing_def",
@@ -288,7 +284,7 @@ class TestYieldWrongImports:
 
     def test_show_all(self) -> None:
         """Show all imports, including correct ones."""
-        assert self.fn(show_all=True) == [
+        assert self.fn(args="--all") == [
             "! missing",
             "  test_1",
             "  test_main",
@@ -299,7 +295,7 @@ class TestYieldWrongImports:
 
     def test_include_extra(self) -> None:
         """Include development dependencies in the check."""
-        res = self.fn(include_dev=True)
+        res = self.fn(args="--include-dev")
         assert [part.split("=", 1)[0].strip() for part in res] == [
             "! missing",
             "! missing_class",
@@ -313,12 +309,12 @@ class TestYieldWrongImports:
 
         Include requirements as known-missing - they should not appear in the output.
         """
-        res = self.fn(known_missing=["missing", "test_1"])
+        res = self.fn(args="--missing=missing,test_1")
         assert res == ["! missing_class", "! missing_def"]
 
     def test_verbose(self) -> None:
         """Verbose output should include the file and line number of the import."""
-        assert self.fn(verbose=True) == [
+        assert self.fn(args="--verbose") == [
             f"!NA {SRC}:1 missing.bar",
             f"!NA {SRC}:2 missing.foo",
             f"!NA {SRC}:5 missing",
@@ -329,7 +325,7 @@ class TestYieldWrongImports:
 
     def test_verbose_show_all(self) -> None:
         """Test for the most verbose output."""
-        assert self.fn(verbose=True, show_all=True) == [
+        assert self.fn(args="--verbose --all") == [
             f"!NA {SRC}:1 missing.bar",
             f"!NA {SRC}:2 missing.foo",
             f" OK {SRC}:3 test_1",
@@ -341,17 +337,15 @@ class TestYieldWrongImports:
             f"!NA {SRC}:16 missing_def",
         ]
 
-    @pytest.mark.parametrize("show_all", [True, False])
-    @pytest.mark.parametrize("include_extra", [True, False])
-    def test_directory_only_one_use(self, show_all: bool, include_extra: bool) -> None:
+    @pytest.mark.parametrize("show_all", ["--all", ""])
+    @pytest.mark.parametrize("include_dev", ["--include-dev", ""])
+    def test_directory_only_one_use(self, show_all: str, include_dev: str) -> None:
         """Print out only one instance of a missing import.
 
         Even for multiple files, make sure we only print out one instance of a
         missing import.
         """
-        res = self.fn(
-            file_names=[DATA.as_posix()], show_all=show_all, include_dev=include_extra
-        )
+        res = self.fn(file_names=[DATA.as_posix()], args=f"{show_all} {include_dev}")
         assert len(res) == len(set(res))
 
     def test_directory_both_files(self) -> None:
@@ -361,7 +355,7 @@ class TestYieldWrongImports:
 
     def test_all_imports_all_files(self) -> None:
         """show_all=True should show all imports in all files."""
-        res = self.fn(file_names=[SRC_MODULE.as_posix()], show_all=True)
+        res = self.fn(file_names=[SRC_MODULE.as_posix()], args="--all")
         assert set(res) == {
             "  check_dependencies",
             "  test_1",
@@ -375,7 +369,7 @@ class TestYieldWrongImports:
 
     def test_doublette_entries(self) -> None:
         """Test that doublette entries are not printed twice."""
-        res = self.fn(file_names=[SRC_MODULE.as_posix()] * 2, show_all=True)
+        res = self.fn(file_names=[SRC_MODULE.as_posix()] * 2, args="--all")
         assert sorted(res) == [
             "  check_dependencies",
             "  test_1",
@@ -391,8 +385,8 @@ class TestYieldWrongImports:
         """Test that we do not fail if the source file is missing."""
         res = AppConfig.from_cli_args(
             file_names=["nonexistent.py"],
-            known_extra="",
-            known_missing="",
+            known_extra=[],
+            known_missing=[],
             provides=[],
             include_dev=False,
             verbose=False,
@@ -409,7 +403,7 @@ class TestYieldWrongImports:
 
     def test_unicode_imports_verbose(self) -> None:
         """Test verbose output with Unicode module names."""
-        result = self.fn(file_names=[SRC_UNICODE], verbose=True)
+        result = self.fn(file_names=[SRC_UNICODE], args="--verbose")
 
         # Should show file path and line numbers for Unicode imports
         assert any("ö" in line and SRC_UNICODE in line for line in result)
@@ -432,7 +426,7 @@ class TestYieldWrongImports:
         missing = ["missing_class", "missing_def"]
         """)
         )
-        res = self.fn(file_names=[SRC], includes=[extra_cfg.as_posix()])
+        res = self.fn(file_names=[SRC], args=["--include", extra_cfg.as_posix()])
         assert res == []
 
 
@@ -581,3 +575,42 @@ def test_performance_large_project(tmp_path: Path) -> None:
     duration = time.time() - start
 
     assert duration < max_duration_per_file * n_files
+
+
+class TestMultiSepAction:
+    """Test _MultiSepAction."""
+
+    @pytest.mark.parametrize(
+        "args, expected",
+        [
+            (["--foo=a,b"], ["a", "b"]),
+            (["--foo", "a,b"], ["a", "b"]),
+            (["--foo=a", "--foo=b"], ["a", "b"]),
+            (["--foo", "a,b", "--foo", "c"], ["a", "b", "c"]),
+            (["-f", "a", "--foo", "b,c", "-f=d"], ["a", "b", "c", "d"]),
+        ],
+    )
+    def test(self, args: list[str], expected: list[str]) -> None:
+        """MultiSepAction with different lists."""
+        parser = argparse.ArgumentParser()
+        parser.add_argument(
+            "--foo",
+            "-f",
+            type=str,
+            action=_MultiSepAction,
+        )
+        res = parser.parse_args(args)
+        assert res.foo == expected
+
+    def test_invalid_type(self) -> None:
+        """MultiSepAction with invalid type."""
+        parser = argparse.ArgumentParser()
+        with pytest.raises(ValueError, match="type: Only"):
+            parser.add_argument("--foo", type=int, action=_MultiSepAction)
+
+    @pytest.mark.parametrize("nargs", ["*", "?", "+"])
+    def test_invalid_nargs(self, nargs: str) -> None:
+        """MultiSepAction with invalid nargs."""
+        parser = argparse.ArgumentParser()
+        with pytest.raises(ValueError, match="nargs not allowed"):
+            parser.add_argument("--foo", nargs=nargs, action=_MultiSepAction)

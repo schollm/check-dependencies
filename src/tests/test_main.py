@@ -610,7 +610,7 @@ class TestMultiSepAction:
 
     @pytest.mark.parametrize("nargs", ["*", "?", "+"])
     def test_invalid_nargs(self, nargs: str) -> None:
-        """MultiSepAction with invalid type."""
+        """MultiSepAction with invalid nargs."""
         parser = argparse.ArgumentParser()
         with pytest.raises(ValueError, match="nargs not allowed"):
             parser.add_argument("--foo", nargs=nargs, action=_MultiSepAction)

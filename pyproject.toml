@@ -1,11 +1,11 @@
 [project]
 authors = [
-    {name = "Micha Scholl", email = "schollm-git@gmx.com"},
+    { name = "Micha Scholl", email = "schollm-git@gmx.com" },
 ]
-license = {text = "MIT"}
+license = { text = "MIT" }
 requires-python = ">=3.8"
 name = "check-dependencies"
-version = "1.1.0"
+version = "1.2.0"
 readme = "README.md"
 description = "Check dependencies of a python project against pyproject.toml requirements"
 keywords = ["packaging", "development", "requirements", "dependencies"]
@@ -61,17 +61,17 @@ known-extra = [
     "tomllib", # Missing until Python 3.11
     "toml", # Missing after Python 3.11
 ]
-includes= [ "src/tests/check-dependencies.toml" ]
+includes = ["src/tests/check-dependencies.toml"]
 
 [tool.check-dependencies.provides]
 pytest = ["_pytest", "py"]
 
 [tool.ruff]
-exclude = [ "src/tests/data" ]
+exclude = ["src/tests/data"]
 
 [tool.ruff.lint]
-select = [ "ALL" ]
-ignore = [ "COM812", "D213", "D203" ]
+select = ["ALL"]
+ignore = ["COM812", "D213", "D203"]
 
 
 [tool.ruff.lint.per-file-ignores]

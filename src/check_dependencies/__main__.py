@@ -13,7 +13,8 @@ from check_dependencies.main import yield_wrong_imports
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-def main() -> None:
+
+def main() -> int:
     """CLI entry point for check_dependencies."""
     logging.basicConfig(
         level=logging.INFO,
@@ -108,9 +109,10 @@ def main() -> None:
     wrong_import_lines = yield_wrong_imports(args.file_name, cfg)
     try:
         while True:
-            print(next(wrong_import_lines))  # noqa: T201
+            sys.stdout.write(next(wrong_import_lines))
+            sys.stdout.write("\n")
     except StopIteration as ex:  # Return value is the exit status
-        sys.exit(ex.value)
+        return ex.value
 
 
 class _MultiSepAction(argparse.Action):
@@ -150,4 +152,4 @@ class _MultiSepAction(argparse.Action):
 
 
 if __name__ == "__main__":
-    main()  # pragma: no cover
+    sys.exit(main())  # pragma: no cover

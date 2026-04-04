@@ -35,7 +35,7 @@ from tests.conftest import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Generator, Sequence
 
 TEST_IMPORTS = [
     ("import foo", ["foo"]),
@@ -75,10 +75,8 @@ def test__main__(monkeypatch: pytest.MonkeyPatch) -> None:
     This also tests if all dependencies are defined correctly.
     """
     main_module = Path(__file__).parents[1] / "check_dependencies"
-    monkeypatch.setattr("sys.argv", ["check_dependencies", main_module.as_posix()])
-    with pytest.raises(SystemExit) as excinfo:
-        cli_main()
-    assert excinfo.value.code == 0
+    monkeypatch.setattr("sys.argv", ["check-dependencies", main_module.as_posix()])
+    assert cli_main() == 0
 
 
 @pytest.mark.parametrize(
@@ -114,16 +112,19 @@ def test__main__provides_parsing(
     """Test that --provides flags are parsed, merged, and normalized correctly."""
     captured: dict[str, Packages] = {}
 
-    def _mock_yield(_file_names: object, app_cfg: AppConfig) -> object:
+    def _mock_yield(
+        _file_names: object, app_cfg: AppConfig
+    ) -> Generator[str, None, int]:
         captured["provides"] = app_cfg.provides
-        return iter([])
+        yield "_mock_yield"
+        return 0
 
     monkeypatch.setattr("check_dependencies.__main__.yield_wrong_imports", _mock_yield)
     monkeypatch.setattr(
         "sys.argv", ["check_dependencies", *argv_provides, DATA.as_posix()]
     )
-    with pytest.raises(SystemExit):
-        cli_main()
+
+    assert cli_main() == 0
     packages = captured["provides"]
     for expected_pkg, expected_import in expected_provides:
         assert packages.modules(Package(expected_pkg)) == {
@@ -148,22 +149,35 @@ class TestYieldWrongImports:
         includes: Sequence[str] = (),
     ) -> list[str]:
         """Call the yield wrong imports function with patched pyproject.toml."""
-        with patch("check_dependencies.pyproject_toml._PYPROJECT_TOML", overwrite_cfg):
-            return list(
-                yield_wrong_imports(
-                    file_names,
-                    AppConfig.from_cli_args(
-                        file_names=file_names,
-                        include_dev=include_dev,
-                        verbose=verbose,
-                        show_all=show_all,
-                        known_extra=",".join(known_extra),
-                        known_missing=",".join(known_missing),
-                        provides=provides or [],
-                        includes=includes,
-                    ),
-                ),
+        flags: list[str] = []
+        if include_dev:
+            flags.append("--include-dev")
+        if verbose:
+            flags.append("--verbose")
+        if show_all:
+            flags.append("--all")
+
+        options = [
+            f"--{option_name}={option}"
+            for option_name, option in (
+                *(("extra", extra1) for extra1 in known_extra),
+                *(("missing", missing1) for missing1 in known_missing),
+                *(("provides", provide) for provide in provides),
+                *(("include", include) for include in includes),
             )
+        ]
+
+        stdout = MagicMock()
+        lines: list[str] = []
+        stdout.write = lines.append
+
+        with patch(
+            "check_dependencies.pyproject_toml._PYPROJECT_TOML", overwrite_cfg
+        ), patch(
+            "sys.argv", ["check-dependencies", *file_names, *flags, *options]
+        ), patch("sys.stdout", stdout):
+            cli_main()
+            return [line for line in lines if line != "\n"]
 
     def test(self, pyproject: Path) -> None:
         """By default, we should only see the missing (and extra) imports."""

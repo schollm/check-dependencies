@@ -61,7 +61,8 @@ def main() -> int:
         metavar="MODULE",
         default=[],
         help="Comma separated list of requirements known to be missing."
-        " Assume they are part of the requirements.",
+        " Assume they are part of the requirements."
+        " Can be specified multiple times.",
     )
     parser.add_argument(
         "--extra",
@@ -71,7 +72,8 @@ def main() -> int:
         default=[],
         help="Comma separated list of requirements known to not be imported."
         " Assume they are not part of the requirements. This can be plugins or similar"
-        " that affect the package but are not imported explicitly.",
+        " that affect the package but are not imported explicitly."
+        " Can be specified multiple times.",
     )
     parser.add_argument(
         "--provides",

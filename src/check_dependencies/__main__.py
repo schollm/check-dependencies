@@ -1,12 +1,17 @@
 """CLI entry point for check_dependencies."""
 
+from __future__ import annotations
+
 import argparse
 import logging
 import sys
+from typing import TYPE_CHECKING, Any
 
 from check_dependencies.app_config import AppConfig
 from check_dependencies.main import yield_wrong_imports
 
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 def main() -> None:
     """CLI entry point for check_dependencies."""
@@ -51,22 +56,26 @@ def main() -> None:
     parser.add_argument(
         "--missing",
         type=str,
+        action=_MultiSepAction,
+        metavar="MODULE",
+        default=[],
         help="Comma separated list of requirements known to be missing."
         " Assume they are part of the requirements.",
-        default="",
     )
     parser.add_argument(
         "--extra",
         type=str,
+        action=_MultiSepAction,
+        metavar="PACKAGE",
+        default=[],
         help="Comma separated list of requirements known to not be imported."
         " Assume they are not part of the requirements. This can be plugins or similar"
         " that affect the package but are not imported explicitly.",
-        default="",
     )
     parser.add_argument(
         "--provides",
         type=str,
-        action="append",
+        action=_MultiSepAction,
         default=[],
         metavar="PACKAGE=IMPORT",
         help="Map a package name to its import name for packages whose import name"
@@ -96,13 +105,48 @@ def main() -> None:
         show_all=args.all,
         includes=args.include,
     )
-
     wrong_import_lines = yield_wrong_imports(args.file_name, cfg)
     try:
         while True:
             print(next(wrong_import_lines))  # noqa: T201
     except StopIteration as ex:  # Return value is the exit status
         sys.exit(ex.value)
+
+
+class _MultiSepAction(argparse.Action):
+    def __init__(
+        self,
+        option_strings: list[str],
+        dest: str,
+        nargs: None | str = None,
+        type: type | None = None,  # noqa: A002
+        **kwargs: Any,  # noqa: ANN401
+    ) -> None:
+        """Initialize MultiSepAction."""
+        if nargs is not None:
+            msg = "nargs not allowed"
+            raise ValueError(msg)
+        if type not in (str, None):
+            msg = "type: Only support str"
+            raise ValueError(msg)
+        super().__init__(option_strings, dest, type=type, **kwargs)
+
+    def __call__(
+        self,
+        parser: argparse.ArgumentParser,
+        namespace: argparse.Namespace,
+        values: str | Sequence | None,
+        option_string: str | None = None,
+    ) -> None:
+        """Set provided argument on namespace."""
+        del parser, option_string
+        existing = getattr(namespace, self.dest, None) or []
+        if not isinstance(values, str):
+            msg = f"expected a string, got {type(values).__name__}"
+            raise TypeError(msg)
+        for value in values.split(","):
+            existing.append(value)
+        setattr(namespace, self.dest, existing)
 
 
 if __name__ == "__main__":

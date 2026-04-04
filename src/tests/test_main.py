@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import ast
 import time
 from pathlib import Path
@@ -11,6 +12,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from check_dependencies.__main__ import _MultiSepAction
 from check_dependencies.__main__ import main as cli_main
 from check_dependencies.app_config import AppConfig
 from check_dependencies.lib import Dependency, Module, Package, Packages
@@ -581,3 +583,42 @@ def test_performance_large_project(tmp_path: Path) -> None:
     duration = time.time() - start
 
     assert duration < max_duration_per_file * n_files
+
+
+class TestMultiSepAction:
+    """Test _MultiSepAction."""
+
+    @pytest.mark.parametrize(
+        "args, expected",
+        [
+            (["--foo=a,b"], ["a", "b"]),
+            (["--foo", "a,b"], ["a", "b"]),
+            (["--foo=a", "--foo=b"], ["a", "b"]),
+            (["--foo", "a,b", "--foo", "c"], ["a", "b", "c"]),
+            (["-f", "a", "--foo", "b,c", "-f=d"], ["a", "b", "c", "d"]),
+        ],
+    )
+    def test(self, args: list[str], expected: list[str]) -> None:
+        """MultiSepAction with different lists."""
+        parser = argparse.ArgumentParser()
+        parser.add_argument(
+            "--foo",
+            "-f",
+            type=str,
+            action=_MultiSepAction,
+        )
+        res = parser.parse_args(args)
+        assert res.foo == expected
+
+    def test_invalid_type(self) -> None:
+        """MultiSepAction with invalid type."""
+        parser = argparse.ArgumentParser()
+        with pytest.raises(ValueError, match="type: Only"):
+            parser.add_argument("--foo", type=int, action=_MultiSepAction)
+
+    @pytest.mark.parametrize("nargs", ["*", "?", "+"])
+    def test_invalid_nargs(self, nargs: str) -> None:
+        """MultiSepAction with invalid type."""
+        parser = argparse.ArgumentParser()
+        with pytest.raises(ValueError, match="nargs not allowed"):
+            parser.add_argument("--foo", nargs=nargs, action=_MultiSepAction)

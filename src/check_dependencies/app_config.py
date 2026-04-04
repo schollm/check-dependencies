@@ -44,7 +44,7 @@ class AppConfig:
         *,
         file_names: Sequence[str],
         known_extra: str = "",
-        known_missing: str = "",
+        known_missing: Sequence[str] = (),
         provides: Iterable[str] = (),
         include_dev: bool = False,
         verbose: bool = False,
@@ -63,9 +63,7 @@ class AppConfig:
         :show_all: Whether to show all dependencies, including those that are OK.
         """
         provides_list: list[tuple[Package, Module]] = []
-        for package_name, _, module in (
-            map1.partition("=") for maps in provides for map1 in maps.split(",")
-        ):
+        for package_name, _, module in (map1.partition("=") for map1 in provides):
             if package_name.strip() and module.strip():
                 provides_list.append((Package(package_name), Module(module)))
 
@@ -103,15 +101,12 @@ class AppConfig:
             show_all=show_all,
             known_extra=frozenset(
                 pkg
-                for pkg in (
-                    *Package.set(known_extra.split(",")),
-                    *cfg_of("known_extra"),
-                )
+                for pkg in (*map(Package, known_extra), *cfg_of("known_extra"))
                 if pkg.canonical
             ),
             known_missing=frozenset(
                 Module(module)
-                for module in (*known_missing.split(","), *cfg_of("known_missing"))
+                for module in (*known_missing, *cfg_of("known_missing"))
                 if module.strip()
             ),
             provides=Packages([*provides_list, *cfg_of("provides")]),

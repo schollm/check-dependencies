@@ -43,7 +43,7 @@ class AppConfig:
         cls,
         *,
         file_names: Sequence[str],
-        known_extra: str = "",
+        known_extra: Sequence[str] = (),
         known_missing: Sequence[str] = (),
         provides: Iterable[str] = (),
         include_dev: bool = False,
@@ -54,8 +54,8 @@ class AppConfig:
         """Create an AppConfig instance from CLI arguments.
 
         :file_names: List of file paths to analyze.
-        :known_extra: Comma-separated list of known extra dependencies.
-        :known_missing: Comma-separated list of known missing dependencies.
+        :known_extra: List of known extra dependencies.
+        :known_missing: List of known missing dependencies.
         :provides: Iterable of strings in the format "package=module" to specify
             provided modules.
         :include_dev: Whether to include development dependencies from pyproject.toml.

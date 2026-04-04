@@ -385,8 +385,8 @@ class TestYieldWrongImports:
         """Test that we do not fail if the source file is missing."""
         res = AppConfig.from_cli_args(
             file_names=["nonexistent.py"],
-            known_extra="",
-            known_missing="",
+            known_extra=[],
+            known_missing=[],
             provides=[],
             include_dev=False,
             verbose=False,

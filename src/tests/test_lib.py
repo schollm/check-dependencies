@@ -218,7 +218,7 @@ class TestMkSrcFormatter:
     def test_no_show_all_on_status_ok(self, stmt: ast.stmt, verbose: bool) -> None:
         """If the import is expected, we do not show it."""
         cfg = AppConfig.from_cli_args(
-            file_names=(), verbose=verbose, show_all=False, known_extra="foo"
+            file_names=(), verbose=verbose, show_all=False, known_extra=["foo"]
         )
         fn = cfg.mk_src_formatter()
         assert not list(fn("src.py", Dependency.OK, Module("foo"), stmt))

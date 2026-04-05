@@ -235,7 +235,7 @@ class TestYieldWrongImports:
             self.fn(overwrite_cfg=pyproject_extra, args="--verbose", with_comment=True)
         ) > {
             "",
-            "# MISSING: check_dependencies",
+            "# MISSING check_dependencies",
             "### Dependencies in config file not used in application:",
         }
 

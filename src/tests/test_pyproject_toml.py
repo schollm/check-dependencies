@@ -106,7 +106,7 @@ class TestPyProjectToml:
         with pytest.raises(
             ValueError, match=r"Error finding common path for.*C:.test.*D:.test"
         ):
-            PyProjectToml.for_paths(["C:/test", "D:/test"])
+            PyProjectToml.for_paths([Path("C:/test"), Path("D:/test")])
 
 
 class TestNestedItem:

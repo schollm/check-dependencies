@@ -384,7 +384,7 @@ class TestYieldWrongImports:
     def test_no_fail_on_missing_source(self) -> None:
         """Test that we do not fail if the source file is missing."""
         res = AppConfig.from_cli_args(
-            file_names=["nonexistent.py"],
+            file_names=[Path("nonexistent.py")],
             known_extra=[],
             known_missing=[],
             provides=[],
@@ -496,7 +496,7 @@ def test_missing_imports_iter() -> None:
 )
 def test_mk_unused_formatter(verbose: bool, expected: str) -> None:
     """Test the unused formatter."""
-    cfg = AppConfig.from_cli_args(file_names=[DATA.as_posix()], verbose=verbose)
+    cfg = AppConfig.from_cli_args(file_names=[DATA], verbose=verbose)
     assert list(cfg.unused_fmt("foo")) == [expected]
 
 

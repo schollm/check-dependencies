@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from check_dependencies.app_config import AppConfig
@@ -32,7 +33,7 @@ def main() -> int:
 
     parser.add_argument(
         "file_name",
-        type=str,
+        type=Path,
         nargs="+",
         help="Python Source file to analyse",
     )
@@ -90,7 +91,7 @@ def main() -> int:
     parser.add_argument(
         "--include",
         "-I",
-        type=str,
+        type=Path,
         action="append",
         default=[],
         help="Additional config files to include."

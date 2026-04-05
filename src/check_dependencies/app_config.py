@@ -42,14 +42,14 @@ class AppConfig:
     def from_cli_args(  # noqa: PLR0913 (factory method)
         cls,
         *,
-        file_names: Sequence[str],
+        file_names: Sequence[Path],
         known_extra: Sequence[str] = (),
         known_missing: Sequence[str] = (),
         provides: Iterable[str] = (),
         include_dev: bool = False,
         verbose: bool = False,
         show_all: bool = False,
-        includes: Sequence[str] = (),
+        includes: Sequence[Path] = (),
     ) -> AppConfig:
         """Create an AppConfig instance from CLI arguments.
 
@@ -67,13 +67,12 @@ class AppConfig:
             if package_name.strip() and module.strip():
                 provides_list.append((Package(package_name), Module(module)))
 
-        if not file_names:
-            file_names = ["."]
-
-        src_cfg = PyProjectToml.for_paths(file_names, include_dev=include_dev)
+        src_cfg = PyProjectToml.for_paths(
+            file_names or [Path()], include_dev=include_dev
+        )
 
         def with_includes(
-            current_path: Path, paths: Iterable[Path | str], seen: set[Path]
+            current_path: Path, paths: Iterable[Path], seen: set[Path]
         ) -> Iterable[ConfigToml]:
             for pth in paths:
                 if (res_pth := (current_path / pth).resolve()) not in seen:

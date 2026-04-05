@@ -81,9 +81,10 @@ def _verbose_info(app_cfg: AppConfig) -> Iterable[str]:
         for missing in sorted(app_cfg.known_missing):
             yield f"# MISSING {missing.name}"
         for package in sorted(app_cfg.provides.all_packages()):
-            yield f"# PROVIDES {package} -> [{
-                ', '.join(m.name for m in sorted(app_cfg.provides.modules(package)))
-            }]"
+            modules = ", ".join(
+                m.name for m in sorted(app_cfg.provides.modules(package))
+            )
+            yield f"# PROVIDES {package} -> [{modules}]"
 
 
 def _project_files(file_names: Collection[str]) -> Iterator[Path]:

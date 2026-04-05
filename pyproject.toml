@@ -63,9 +63,6 @@ known-extra = [
 ]
 includes = ["src/tests/check-dependencies.toml"]
 
-[tool.check-dependencies.provides]
-pytest = ["_pytest", "py"]
-
 [tool.ruff]
 exclude = ["src/tests/data"]
 

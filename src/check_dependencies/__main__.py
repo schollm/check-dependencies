@@ -115,6 +115,7 @@ def main() -> int:
         verbose=args.verbose,
         show_all=args.all,
         includes=args.include,
+        provides_from_venv=args.provides_from_venv,
     )
     wrong_import_lines = yield_wrong_imports(args.file_name, cfg)
     try:

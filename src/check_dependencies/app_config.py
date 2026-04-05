@@ -16,6 +16,7 @@ from typing import (
 )
 
 from check_dependencies.lib import Dependency, Module, Package, Packages
+from check_dependencies.provides import mappings_for_env
 from check_dependencies.pyproject_toml import ConfigToml, PyProjectToml
 
 if TYPE_CHECKING:
@@ -50,6 +51,7 @@ class AppConfig:
         verbose: bool = False,
         show_all: bool = False,
         includes: Sequence[Path] = (),
+        provides_from_venv: Path | None = None,
     ) -> AppConfig:
         """Create an AppConfig instance from CLI arguments.
 
@@ -66,7 +68,11 @@ class AppConfig:
         for package_name, _, module in (map1.partition("=") for map1 in provides):
             if package_name.strip() and module.strip():
                 provides_list.append((Package(package_name), Module(module)))
-
+        if provides_from_venv:
+            provides_list.extend(
+                (Package(package_name), Module(module_name))
+                for (package_name, module_name) in mappings_for_env(provides_from_venv)
+            )
         src_cfg = PyProjectToml.for_paths(
             file_names or [Path()], include_dev=include_dev
         )

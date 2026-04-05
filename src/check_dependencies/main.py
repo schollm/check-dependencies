@@ -44,6 +44,7 @@ def yield_wrong_imports(
     provides = app_cfg.provides
 
     exit_status = 0
+    yield from _verbose_info(app_cfg)
 
     for src_pth in _project_files(file_names):
         for cause, module, stmt in _missing_imports_iter(
@@ -69,6 +70,20 @@ def yield_wrong_imports(
             yield f"# Config file: {app_cfg.pyproject_file}"
         yield from superfluous_requirements
     return exit_status
+
+
+def _verbose_info(app_cfg: AppConfig) -> Iterable[str]:
+    if app_cfg.verbose:
+        yield f"# ALL={app_cfg.show_all}"
+        yield f"# INCLUDE_DEV={app_cfg.include_dev}"
+        for extra in sorted(app_cfg.known_extra):
+            yield f"# EXTRA {extra}"
+        for missing in sorted(app_cfg.known_missing):
+            yield f"# MISSING {missing.name}"
+        for package in sorted(app_cfg.provides.all_packages()):
+            yield f"# PROVIDES {package} -> [{
+                ', '.join(m.name for m in sorted(app_cfg.provides.modules(package)))
+            }]"
 
 
 def _project_files(file_names: Collection[str]) -> Iterator[Path]:

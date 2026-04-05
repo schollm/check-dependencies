@@ -164,6 +164,10 @@ class Packages:
             )
         }
 
+    def all_packages(self) -> Iterable[Package]:
+        """Get all packages in the mapping."""
+        return self._modules.keys()
+
     def modules(self, pkg_: Package) -> set[Module]:
         """Get the modules (import name) for a given package name.
 

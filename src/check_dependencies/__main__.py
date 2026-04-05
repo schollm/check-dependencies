@@ -97,6 +97,13 @@ def main() -> int:
         help="Additional config files to include."
         " Can be specified multiple times. E.g. --include check-dependencies.toml.",
     )
+    parser.add_argument(
+        "--provides-from-venv",
+        metavar="PYTHON_ENV",
+        type=Path,
+        help="Path to a virtual environment to include all packages installed in it"
+        " as provides.",
+    )
     args = parser.parse_args()
 
     cfg = AppConfig.from_cli_args(

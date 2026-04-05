@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+## [1.2.0] -- 2026-04-05 - New dependency-writer CLI application and support for multiple arguments
+
+### Added
+
 - New Script dependency-writer to write dependency mappings to config file.
 - Support multiple arguments --extra, --missing, and --provides flags.
 

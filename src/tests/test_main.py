@@ -140,6 +140,7 @@ class TestYieldWrongImports:
         overwrite_cfg: Path = POETRY,
         args: Sequence[str] | str = (),
         file_names: Sequence[str] = (SRC,),
+        with_comment: bool = False,
     ) -> list[str]:
         """Call the yield wrong imports function with patched pyproject.toml."""
         if isinstance(args, str):
@@ -155,7 +156,11 @@ class TestYieldWrongImports:
             "sys.stdout", stdout
         ):
             cli_main()
-            return [line for line in lines if line != "\n"]
+            return [
+                line
+                for line in lines
+                if line != "\n" and (with_comment or not line.startswith("#"))
+            ]
 
     def test(self, pyproject: Path) -> None:
         """By default, we should only see the missing (and extra) imports."""
@@ -226,8 +231,11 @@ class TestYieldWrongImports:
 
     def test_extra_requirements_verbose(self, pyproject_extra: Path) -> None:
         """Ensure extra requirements are printed by default."""
-        assert set(self.fn(overwrite_cfg=pyproject_extra, args="--verbose")) > {
+        assert set(
+            self.fn(overwrite_cfg=pyproject_extra, args="--verbose", with_comment=True)
+        ) > {
             "",
+            "# MISSING check_dependencies",
             "### Dependencies in config file not used in application:",
         }
 
@@ -384,7 +392,7 @@ class TestYieldWrongImports:
     def test_no_fail_on_missing_source(self) -> None:
         """Test that we do not fail if the source file is missing."""
         res = AppConfig.from_cli_args(
-            file_names=["nonexistent.py"],
+            file_names=[Path("nonexistent.py")],
             known_extra=[],
             known_missing=[],
             provides=[],
@@ -496,7 +504,7 @@ def test_missing_imports_iter() -> None:
 )
 def test_mk_unused_formatter(verbose: bool, expected: str) -> None:
     """Test the unused formatter."""
-    cfg = AppConfig.from_cli_args(file_names=[DATA.as_posix()], verbose=verbose)
+    cfg = AppConfig.from_cli_args(file_names=[DATA], verbose=verbose)
     assert list(cfg.unused_fmt("foo")) == [expected]
 
 

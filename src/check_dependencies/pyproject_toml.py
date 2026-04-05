@@ -100,7 +100,7 @@ class PyProjectToml(ConfigToml):
 
     @classmethod
     def for_paths(
-        cls, paths: Collection[str], *, include_dev: bool = False
+        cls, paths: Collection[Path], *, include_dev: bool = False
     ) -> PyProjectToml:
         """Create a PyProjectToml instance from a pyproject.toml file.
 
@@ -112,7 +112,7 @@ class PyProjectToml(ConfigToml):
         """
         try:
             pyproject_candidate = Path(
-                commonpath(Path(p).expanduser().resolve() for p in paths),
+                commonpath(p.expanduser().resolve() for p in paths),
             )
         except ValueError as exc:  # pragma: no cover
             # Can only be reached in Windows when two different drives are provided.

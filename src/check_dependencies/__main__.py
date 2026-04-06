@@ -56,37 +56,47 @@ def main() -> int:
         help="Show all imports (including correct ones)",
     )
     parser.add_argument(
+        "--provides-from-venv",
+        metavar="PYTHON_ENV",
+        type=Path,
+        help="Path to a virtual environment to include all packages installed in it"
+        " as provides.",
+    )
+    parser.add_argument(
         "--missing",
         type=str,
         action=_MultiSepAction,
-        metavar="MODULE",
+        metavar="MODULE,...",
         default=[],
         help="Comma separated list of requirements known to be missing."
         " Assume they are part of the requirements."
-        " Can be specified multiple times.",
+        " Can be specified multiple times."
+        " Toml Key: [tool.check-dependencies] mising=[]",
     )
     parser.add_argument(
         "--extra",
         type=str,
         action=_MultiSepAction,
-        metavar="PACKAGE",
+        metavar="PACKAGE,...",
         default=[],
         help="Comma separated list of requirements known to not be imported."
         " Assume they are not part of the requirements. This can be plugins or similar"
         " that affect the package but are not imported explicitly."
-        " Can be specified multiple times.",
+        " Can be specified multiple times."
+        " Toml Key: [tool.check-dependencies] known_extra=[]",
     )
     parser.add_argument(
         "--provides",
         type=str,
         action=_MultiSepAction,
         default=[],
-        metavar="PACKAGE=IMPORT",
-        help="Map a package name to its import name for packages whose import name"
-        " differs from the package name. Can be specified multiple times."
+        metavar="PACKAGE=MODULE,...",
+        help="Map a package name to its module (import) name for packages whose import"
+        " name differs from the package name. Can be specified multiple times."
         " E.g. --provides Pillow=PIL --provides PyJWT=jwt."
         " The package name is normalized (case-insensitive, hyphens and underscores"
-        " are equivalent), so Pillow=PIL, pillow=PIL and PIL-ow=PIL are all the same.",
+        " are equivalent), so Pillow=PIL, pillow=PIL and PIL-ow=PIL are all the same."
+        " Toml Key: [tool.check-dependencies.provides]",
     )
     parser.add_argument(
         "--include",
@@ -95,15 +105,10 @@ def main() -> int:
         action="append",
         default=[],
         help="Additional config files to include."
-        " Can be specified multiple times. E.g. --include check-dependencies.toml.",
+        " Can be specified multiple times. E.g. --include check-dependencies.toml."
+        " Toml Key: [tool.check-dependencies] include=[]",
     )
-    parser.add_argument(
-        "--provides-from-venv",
-        metavar="PYTHON_ENV",
-        type=Path,
-        help="Path to a virtual environment to include all packages installed in it"
-        " as provides.",
-    )
+
     args = parser.parse_args()
 
     cfg = AppConfig.from_cli_args(

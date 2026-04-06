@@ -71,7 +71,7 @@ def main() -> int:
         help="Comma separated list of requirements known to be missing."
         " Assume they are part of the requirements."
         " Can be specified multiple times."
-        " Toml Key: [tool.check-dependencies] mising=[]",
+        " Toml Key: [tool.check-dependencies] known-missing=[]",
     )
     parser.add_argument(
         "--extra",
@@ -83,7 +83,7 @@ def main() -> int:
         " Assume they are not part of the requirements. This can be plugins or similar"
         " that affect the package but are not imported explicitly."
         " Can be specified multiple times."
-        " Toml Key: [tool.check-dependencies] known_extra=[]",
+        " Toml Key: [tool.check-dependencies] known-extra=[]",
     )
     parser.add_argument(
         "--provides",
@@ -106,7 +106,7 @@ def main() -> int:
         default=[],
         help="Additional config files to include."
         " Can be specified multiple times. E.g. --include check-dependencies.toml."
-        " Toml Key: [tool.check-dependencies] include=[]",
+        " Toml Key: [tool.check-dependencies] includes=[]",
     )
 
     args = parser.parse_args()

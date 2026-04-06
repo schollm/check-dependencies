@@ -33,7 +33,7 @@ options:
   --all                 Show all imports (including correct ones)
   --missing MODULE      Comma separated list of requirements known to be missing. Assume they are part of the
                         requirements. Can be specified multiple times.Toml Key: [tool.check-
-                        dependencies] mising=[]
+                        dependencies] known_mising=[]
   --extra PACKAGE       Comma separated list of requirements known to not be imported. Assume they are not part
                         of the requirements. This can be plugins or similar that affect the package but are not
                         imported explicitly. Can be specified multiple times. Toml Key: [tool.check-
@@ -46,7 +46,7 @@ options:
                         [tool.check-dependencies.provides]
   --include, -I INCLUDE
                         Additional config files to include. Can be specified multiple times. E.g. --include
-                        check-dependencies.toml.Toml Key: [tool.check-dependencies] include=[]
+                        check-dependencies.toml.Toml Key: [tool.check-dependencies] includes=[]
   --provides-from-venv PYTHON_ENV
                         Path to a virtual environment to include all packages installed in it as provides.
 ```
@@ -170,7 +170,7 @@ includes = [ "../global-check-dependencies.toml" ]
 #### Include dev dependencies
 
 ```shell
-textcheck-dependencies --include-dev project/tests/
+check-dependencies --include-dev project/tests/
 ```
 
 #### Include provides from virtual environment
@@ -266,7 +266,7 @@ includes = [
 
 - `0`: No missing or superfluous dependencies found
 - `2`: Missing (used, but not declared in pyproject.toml) dependencies found
-- `4`: Extra (declaredfcheck_ in pyproject.toml, but unused) dependencies found
+- `4`: Extra (declared in pyproject.toml, but unused) dependencies found
 - `6`: Both missing and superfluous dependencies found
 - `8`: Could not find associated pyproject.toml file
 - `16`: Could not parse source file(s)

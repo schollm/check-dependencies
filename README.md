@@ -48,7 +48,8 @@ options:
                         Additional config files to include. Can be specified multiple times. E.g. --include
                         check-dependencies.toml.Toml Key: [tool.check-dependencies] includes=[]
   --provides-from-venv PYTHON_ENV
-                        Path to a virtual environment to include all packages installed in it as provides.
+                        Path to a virtual environment python executable to include all packages installed in it
+                        as provides.
 ```
 
 ### Output

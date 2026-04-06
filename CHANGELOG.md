@@ -21,9 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- `check-dependencies --verbose` also shows all extras, missing, provides and configurations as comments.
-
+## [1.3. 0] -- 2026-04-06 - Gets provides from virtual environment
 ### Added
+- `check-dependencies --provides-from-venv` to get the --provides entries from a virtual environment
+- `check-dependencies --verbose` also shows all extras, missing, provides and configurations as comments.
 
 ## [1.2.0] -- 2026-04-05 - New dependency-writer CLI application and support for multiple arguments
 

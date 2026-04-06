@@ -19,7 +19,7 @@ def test_mappings_for_env() -> None:
 
 
 def test_collect_mappings__mocked_python(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test mappings_for_env with mocked python."""
+    """Test collect_mappings(mappings_for_env(...)) with mocked python."""
     monkeypatch.setattr(
         provides, "_get_paths", lambda _: [DATA / "mapping" / "site-packages"]
     )
@@ -45,7 +45,7 @@ def test_mappings_for_env__mocked_python(monkeypatch: pytest.MonkeyPatch) -> Non
 
 
 def test_collect_mappings() -> None:
-    """Test mappings_for_env with mocked python."""
+    """Test collect_mappings with mocked python."""
     mappings = provides.collect_mappings([("a", "x"), ("a", "y"), ("b", "z")])
     assert mappings == {
         "a": ["x", "y"],

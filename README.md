@@ -17,7 +17,9 @@ config file. This can be used to generate the initial config file or to update i
 ## check-dependencies
 
 ```text
-usage: check-dependencies [-h] [--include-dev] [--verbose] [--all] [--missing MISSING] [--extra EXTRA] [--provides PACKAGE=IMPORT] [--include INCLUDE] file_name [file_name ...]
+usage: check-dependencies [-h] [--include-dev] [--verbose] [--all] [--missing MODULE] [--extra PACKAGE]
+                          [--provides PACKAGE=IMPORT] [--include INCLUDE] [--provides-from-venv PYTHON_ENV]
+                          file_name [file_name ...]
 
 Find undeclared and unused (or all) imports in Python files
 
@@ -29,20 +31,24 @@ options:
   --include-dev         Include dev dependencies
   --verbose             Show every import of a package
   --all                 Show all imports (including correct ones)
-  --missing MISSING     Comma separated list of requirements known to be missing.
-                        Assume they are part of the requirements.
-  --extra EXTRA         Comma separated list of requirements known to not be imported.
-                        Assume they are not part of the requirements.
-                        This can be plugins or similar that affect the package but are not imported explicitly.
+  --missing MODULE      Comma separated list of requirements known to be missing. Assume they are part of the
+                        requirements. Can be specified multiple times.Toml Key: [tool.check-
+                        dependencies] mising=[]
+  --extra PACKAGE       Comma separated list of requirements known to not be imported. Assume they are not part
+                        of the requirements. This can be plugins or similar that affect the package but are not
+                        imported explicitly. Can be specified multiple times. Toml Key: [tool.check-
+                        dependencies] known_extra=[]
   --provides PACKAGE=IMPORT
-                        Map a package name to its import name for packages whose import name differs
-                        from the package name. Can be specified multiple times.
-                        E.g. --provides Pillow=PIL --provides PyJWT=jwt. The package name is
-                        normalized (case-insensitive, hyphens and underscores are equivalent),
-                        so Pillow=PIL, pillow=PIL and PIL-ow=PIL are all the same.
+                        Map a package name to its import name for packages whose import name differs from the
+                        package name. Can be specified multiple times. E.g. --provides Pillow=PIL --provides
+                        PyJWT=jwt. The package name is normalized (case-insensitive, hyphens and underscores are
+                        equivalent), so Pillow=PIL, pillow=PIL and PIL-ow=PIL are all the same.Toml Key:
+                        [tool.check-dependencies.provides]
   --include, -I INCLUDE
-                        Additional config files to include. Can be specified multiple times.
-                        E.g. --include check-dependencies.toml.
+                        Additional config files to include. Can be specified multiple times. E.g. --include
+                        check-dependencies.toml.Toml Key: [tool.check-dependencies] include=[]
+  --provides-from-venv PYTHON_ENV
+                        Path to a virtual environment to include all packages installed in it as provides.
 ```
 
 ### Output
@@ -100,6 +106,80 @@ check-dependencies  project/src/
 + requests
 ```
 
+#### Add known extra requirements
+Add requirements that are known to be used, but not imported in the codebase (e.g. plugins).
+
+Via CLI:
+```text
+check-dependencies --extra snowflake-sqlalchemy project/src
+```
+
+Via `pyproject.toml`:
+```toml
+[tool.check-dependencies]
+known-extra = [ "snowflake-sqlalchemy" ]
+```
+
+#### Translate package names
+Some packages have different names for the package and the import (e.g. Pillow is imported as PIL).
+
+Via CLI:
+```text
+check-dependencies --provides Pillow=PIL --provides PyJWT=jwt project/src
+```
+
+Via `pyproject.toml`:
+```toml
+[tool.check-dependencies.provides]
+Pillow = "PIL"
+PyJWT = "jwt"
+```
+
+#### Add known missing requirements
+Add requirements that are known to be missing, but are imported in the codebase.
+
+Via CLI:
+```text
+check-dependencies --missing numpy check-dependencies project/src
+```
+
+Via `pyproject.toml`:
+```toml
+[tool.check-dependencies]
+known-missing = [ "numpy" ]
+```
+
+
+#### Include additional config file
+Use an additional config file to include extra or missing dependencies or provides.
+This is useful for monorepos or similar setups where multiple packages share a common configuration file.
+
+Via CLI:
+```text
+> check-dependencies project/src/
+! snowflake-sqlalchemy
+> check-dependencies --include ../global-check-dependencies.toml project/src/
+```
+
+Via `pyproject.toml`:
+```toml
+[tool.check-dependencies]
+includes = [ "../global-check-dependencies.toml" ]
+```
+
+#### Include dev dependencies
+
+```shell
+textcheck-dependencies --include-dev project/tests/
+```
+
+#### Include provides from virtual environment
+
+Get all provides from the virtual environment and include them in the check.
+```text
+check-dependencies --provides-from-venv .venv/bin/python project/src/
+```
+
 #### Output all dependencies
 
 Output all dependencies, including the correct ones.
@@ -118,6 +198,14 @@ Output each erroneous import and extra dependency with cause, file name and line
 
 ```text
 check-dependencies --verbose project/src/
+# ALL=False
+# INCLUDE_DEV=False
+# EXTRA pytest
+# EXTRA toml
+# EXTRA tomllib
+# MISSING check_dependencies
+# MISSING toml
+# MISSING tomllib
 !NA matplotlib project/src/main.py:4
 +EXTRA project/pyproject.toml requests
 ```
@@ -126,8 +214,16 @@ check-dependencies --verbose project/src/
 
 Output all imports, including the correct ones with file name and line number.
 
-```commandline
+```text
 check-dependencies --verbose --all project/src/
+# ALL=True
+# INCLUDE_DEV=False
+# EXTRA pytest
+# EXTRA toml
+# EXTRA tomllib
+# MISSING check_dependencies
+# MISSING toml
+# MISSING tomllib
  OK project/src/data.py:5 pandas
  OK project/src/main.py:3 pandas
  OK project/src/plotting.py:4 pandas
@@ -141,23 +237,7 @@ check-dependencies --verbose --all project/src/
 
 ### Configuration
 
-The configuration is read from `pyproject.toml` file. The configuration file
-supports the following entries:
-
-- `[tool.check-dependencies.known-extra]` to
-  add extra packages to the list of dependencies.
-
-- `[tool.check-dependencies.known-missing]` does the opposite, it will
-  ignore existing dependencies even if they are not imported. This is useful for
-  packages, that provide functionality via plugins (e.g. sqlalchemy plugins)
-  and are not imported directly in the codebase.
-- `[tool.check-dependencies.provides]` to map package names to import names for
-  packages whose import name differs from the package name.
-  E.g. Pillow is imported as PIL, but the package name is Pillow.
-  The value can be either a single module or a list of modules.
-- `[tool.check-dependencies.includes]` to include additional config files.
-  This is useful for monorepos or similar setups where multiple packages share a
-  common configuration file.
+The configuration is read from `pyproject.toml` file.
 
 ```toml
 [tool.check-dependencies]
@@ -184,15 +264,15 @@ includes = [
 
 #### Exit code
 
-- 0: No missing or superfluous dependencies found
-- 2: Missing (used, but not declared in pyproject.toml) dependencies found
-- 4: Extra (declaredfcheck_ in pyproject.toml, but unused) dependencies found
-- 6: Both missing and superfluous dependencies found
-- 8: Could not find associated pyproject.toml file
-- 16: Could not parse source file(s)
-- 1: Another error occurred
+- `0`: No missing or superfluous dependencies found
+- `2`: Missing (used, but not declared in pyproject.toml) dependencies found
+- `4`: Extra (declaredfcheck_ in pyproject.toml, but unused) dependencies found
+- `6`: Both missing and superfluous dependencies found
+- `8`: Could not find associated pyproject.toml file
+- `16`: Could not parse source file(s)
+- `1`: Another error occurred
 
-## dependency-writer
+## Dependency Writer
 
 The `dependency-writer` CLI application can be used to write the mapping of imports to packages to the config file.
 It can be used to generate the initial config file or to update it after changes in the codebase.

@@ -16,6 +16,7 @@ from typing import (
 )
 
 from check_dependencies.lib import Dependency, Module, Package, Packages
+from check_dependencies.provides import mappings_for_env
 from check_dependencies.pyproject_toml import ConfigToml, PyProjectToml
 
 if TYPE_CHECKING:
@@ -50,23 +51,31 @@ class AppConfig:
         verbose: bool = False,
         show_all: bool = False,
         includes: Sequence[Path] = (),
+        provides_from_venv: Path | None = None,
     ) -> AppConfig:
         """Create an AppConfig instance from CLI arguments.
 
-        :file_names: List of file paths to analyze.
-        :known_extra: List of known extra dependencies.
-        :known_missing: List of known missing dependencies.
-        :provides: Iterable of strings in the format "package=module" to specify
+        :param file_names: List of file paths to analyze.
+        :param known_extra: List of known extra dependencies.
+        :param known_missing: List of known missing dependencies.
+        :param provides: Iterable of strings in the format "package=module" to specify
             provided modules.
-        :include_dev: Whether to include development dependencies from pyproject.toml.
-        :verbose: Whether to include detailed information in the output.
-        :show_all: Whether to show all dependencies, including those that are OK.
+        :param include_dev: Whether to include development dependencies from
+            pyproject.toml.
+        :param verbose: Whether to include detailed information in the output.
+        :param show_all: Whether to show all dependencies, including those that are OK.
+        :param includes: Files containing additional configs to include.
+        :param provides_from_venv: Path to a python executable of a virtual environment.
         """
         provides_list: list[tuple[Package, Module]] = []
         for package_name, _, module in (map1.partition("=") for map1 in provides):
             if package_name.strip() and module.strip():
                 provides_list.append((Package(package_name), Module(module)))
-
+        if provides_from_venv:
+            provides_list.extend(
+                (Package(package_name), Module(module_name))
+                for (package_name, module_name) in mappings_for_env(provides_from_venv)
+            )
         src_cfg = PyProjectToml.for_paths(
             file_names or [Path()], include_dev=include_dev
         )

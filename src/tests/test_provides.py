@@ -18,17 +18,39 @@ def test_mappings_for_env() -> None:
     assert res
 
 
+def test_collect_mappings__mocked_python(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test collect_mappings(mappings_for_env(...)) with mocked python."""
+    monkeypatch.setattr(
+        provides, "_get_paths", lambda _: [DATA / "mapping" / "site-packages"]
+    )
+    mappings = provides.collect_mappings(provides.mappings_for_env(Path("some-python")))
+    assert mappings == {
+        "mapped_package": ["_mapped_import_file", "mapped_import"],
+        "pillow": ["PIL"],
+    }
+
+
 def test_mappings_for_env__mocked_python(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test mappings_for_env with mocked python."""
     monkeypatch.setattr(
         provides, "_get_paths", lambda _: [DATA / "mapping" / "site-packages"]
     )
     mappings = provides.mappings_for_env(Path("some-python"))
+    assert mappings == [
+        ("mapped_package", "_mapped_import_file"),
+        ("mapped_package", "mapped_import"),
+        ("pillow", "PIL"),
+    ]
+    assert mappings == sorted(mappings)
+
+
+def test_collect_mappings() -> None:
+    """Test collect_mappings with mocked python."""
+    mappings = provides.collect_mappings([("a", "x"), ("a", "y"), ("b", "z")])
     assert mappings == {
-        "mapped_package": ["_mapped_import_file", "mapped_import"],
-        "pillow": ["PIL"],
+        "a": ["x", "y"],
+        "b": ["z"],
     }
-    assert sorted(mappings.keys()) == list(mappings.keys())
 
 
 def test__get_paths() -> None:

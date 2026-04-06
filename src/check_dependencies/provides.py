@@ -8,9 +8,14 @@ from pathlib import Path
 from typing import Iterable
 
 
-def mappings_for_env(python: Path) -> dict[str, list[str]]:
-    """Get the mappings."""
-    package_mappings = sorted(
+def mappings_for_env(python: Path) -> list[tuple[str, str]]:
+    """Get the mappings.
+
+    :arg python: Path to python executable belonging to the virtual
+        environment, e.g. $VIRTUAL_ENV/bin/python.
+    :return: a list of mappings of package name to module name.
+    """
+    return sorted(
         (package_name, import_name)
         for path in _get_paths(python)
         for record_file in path.glob("*.dist-info/")
@@ -18,6 +23,18 @@ def mappings_for_env(python: Path) -> dict[str, list[str]]:
         for package_name, import_name in _mapping_from_record(record_file)
     )
 
+
+def collect_mappings(
+    package_mappings: Iterable[tuple[str, str]],
+) -> dict[str, list[str]]:
+    """Collect package provides modules mappings directly from an installed environment.
+
+    :param package_mappings: package mappings to collect, as an iterable
+        of (package_name, import_name) tuples.
+        The packages must be sorted.
+
+    :return a mapping of packages to lists of module names.
+    """
     return {
         key: sorted({value for _, value in values})
         for key, values in groupby(package_mappings, lambda x: x[0])

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import sys
 import time
 from pathlib import Path
 from textwrap import dedent
@@ -436,6 +437,17 @@ class TestYieldWrongImports:
         )
         res = self.fn(file_names=[SRC], args=["--include", extra_cfg.as_posix()])
         assert res == []
+
+    def test_provides_from_venv(self) -> None:
+        """Test that provides from the venv are included."""
+        res = self.fn(
+            overwrite_cfg=POETRY,
+            file_names=[SRC],
+            args=["--provides-from-venv", sys.executable, "--verbose"],
+            with_comment=True,
+        )
+        res = [line for line in res if line.startswith("# PROVIDES")]
+        assert "# PROVIDES pytest -> [_pytest, py]" in res
 
 
 @pytest.mark.parametrize(

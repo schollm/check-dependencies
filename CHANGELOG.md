@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- `check-dependencies--verbose` also shows all extras, missing, provides and configurations as comments.
+- `check-dependencies --verbose` also shows all extras, missing, provides and configurations as comments.
 
 ### Added
 

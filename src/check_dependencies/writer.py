@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from check_dependencies.provides import mappings_for_env
+from check_dependencies.provides import collect_mappings, mappings_for_env
 
 EXIT_SUCCESS, EXIT_VALUE_ERROR, EXIT_FAILURE = 0, 1, 2
 try:
@@ -50,7 +50,7 @@ def _get_arg_parser() -> argparse.ArgumentParser:
 
 
 def _update_config(config_file: Path, python: Path) -> None:
-    provides = mappings_for_env(python)
+    provides = collect_mappings(mappings_for_env(python))
     is_stdout = config_file.as_posix() == "-"
 
     cfg = _get_existing_config(config_file, is_stdout=is_stdout)

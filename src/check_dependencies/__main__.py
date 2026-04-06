@@ -57,10 +57,10 @@ def main() -> int:
     )
     parser.add_argument(
         "--provides-from-venv",
-        metavar="PYTHON_ENV",
+        metavar="PYTHON_EXECUTABLE",
         type=Path,
-        help="Path to a virtual environment to include all packages installed in it"
-        " as provides.",
+        help="Path to the virtual environment's Python executable (for example,"
+        " .venv/bin/python) to include all packages installed in it as provides.",
     )
     parser.add_argument(
         "--missing",

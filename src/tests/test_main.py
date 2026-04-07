@@ -94,7 +94,8 @@ def test__main__version(
         cli_main()
 
     assert exc.value.code == 0
-    assert capsys.readouterr().out == "check-dependencies 1.2.3\n"
+    assert capsys.readouterr().out.endswith("check-dependencies 1.2.3\n")
+    # .endswith because on Windows this gets prefixed with "python.exe "
 
 
 def test_get_version_without_package_metadata(monkeypatch: pytest.MonkeyPatch) -> None:

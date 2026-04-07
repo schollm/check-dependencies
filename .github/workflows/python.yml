@@ -41,10 +41,10 @@ jobs:
       - name: Run typing checks
         if: matrix.coverage==true
         run: |
-          make test-typing
+          uv run poe typing
       - name: Run pytest
         run: |
-          make test-pytest
+          uv run poe pytest
       - name: Code Coverage Summary Report
         if: matrix.coverage==true
         uses: irongut/CodeCoverageSummary@v1.3.0

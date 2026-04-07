@@ -55,7 +55,7 @@ a change. Currently, the only dependencies is `toml` to support Python 3.10 and 
 - Preserve strict typing (`ty check` should stay clean).
 - Follow existing style and naming conventions.
 - Use a functional approach where possible, minimizing class usage unless it provides clear benefits.
-- Frozen dataclasses are preferred when a class is necessary, to ensure immutability and simplicity.
+- frozen dataclasses are preferred when a class is necessary, to ensure immutability and simplicity.
 - When in doubt, prioritize simplicity and readability.
 - Avoid mutable state and side effects; prefer pure functions.
 
@@ -68,7 +68,7 @@ a change. Currently, the only dependencies is `toml` to support Python 3.10 and 
 | **Tests**     | `pytest`     |                              |
 | **Typing**    | `ty`         | Type all methods             |
 | **Linting**   | `ruff`       | Also used for formatting     |
-| **CLI**       | `argparse`   | Avoid click/typer to minimize dependencies |
+| **CLI**       | `argparse`   | stdlib; avoid click/typer to minimize dependencies |
 | **Runner**    | `poethepoet` | Use `poe` for task automation |
 
 ## Commit and PR guidelines

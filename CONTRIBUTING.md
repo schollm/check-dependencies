@@ -19,11 +19,10 @@ uv sync
 Run tests:
 
 ```bash
-make test  # Run all tests
-make test-static  # Run static tests
-make test-pytest  # Run pytest tests
-make test-typing  # Run ty type checks
-make test-lint  # Run lint and format checks
+poe check  # Run all checks (lint, typing, and tests)
+poe lint  # Format and lint code
+poe pytest  # Run pytest tests
+poe typing  # Run ty type checks
 ```
 
 ### Performance tests
@@ -41,7 +40,7 @@ uv run pytest -m performance
 Format and auto-fix lint issues:
 
 ```bash
-make format  # Format code and apply ruff fixes
+poe lint  # Format code and apply ruff fixes
 ```
 
 ## Code guidelines

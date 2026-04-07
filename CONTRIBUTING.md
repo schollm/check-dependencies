@@ -47,8 +47,9 @@ poe lint  # Format code and apply ruff fixes
 
 Please make sure to update tests as appropriate. Also with this project, I want
 to keep the dependencies to a minimum, so please keep that in mind when proposing
-a change. Currently, the only dependencies is `toml` to support Python 3.10 and below and
-`tomlkit` as an extra for the `dependency-writer` CLI.
+a change. Currently, the only dependencies is `toml` to support Python 3.10 and below.
+`tomlkit` is only used as an optional extra (`check-dependencies[write]`) for the
+`dependency-writer` CLI.
 
 - Keep changes focused and minimal.
 - Add or adjust tests for behavioral changes.

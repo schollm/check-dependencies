@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Exclude `src/tests/**` from source and wheel build artifacts.
+
 ## [1.3. 0] -- 2026-04-06 - Gets provides from virtual environment
 ### Added
 - `check-dependencies --provides-from-venv` to get the --provides entries from a virtual environment

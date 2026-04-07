@@ -116,6 +116,7 @@ exclude = ["src/tests/data"]
 
 [tool.pdm.build]
 includes = []
+excludes = ["src/tests/**"]
 
 [build-system]
 requires = ["pdm-backend"]

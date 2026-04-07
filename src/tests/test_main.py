@@ -234,7 +234,7 @@ class TestYieldWrongImports:
         res = self.fn(
             overwrite_cfg=PYPROJECT_EMPTY,
             file_names=[py_file.as_posix()],
-            args="--verbose",
+            args=["--verbose", "--extra=extra1"],
         )
 
         assert len(res) == len(expected)
@@ -655,6 +655,15 @@ class TestMultiSepAction:
         parser = argparse.ArgumentParser()
         with pytest.raises(ValueError, match="type: Only"):
             parser.add_argument("--foo", type=int, action=_MultiSepAction)
+
+    def test_invalid_type_arg(self) -> None:
+        """MultiSepAction with invalid type."""
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--foo", action=_MultiSepAction)
+        action = _MultiSepAction([], "foo", None, str)
+
+        with pytest.raises(TypeError, match="expected a string, got"):
+            action(parser, argparse.Namespace(), [])
 
     @pytest.mark.parametrize("nargs", ["*", "?", "+"])
     def test_invalid_nargs(self, nargs: str) -> None:

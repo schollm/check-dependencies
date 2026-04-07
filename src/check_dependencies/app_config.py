@@ -67,15 +67,6 @@ class AppConfig:
         :param includes: Files containing additional configs to include.
         :param provides_from_venv: Path to a python executable of a virtual environment.
         """
-        provides_list: list[tuple[Package, Module]] = []
-        for package_name, _, module in (map1.partition("=") for map1 in provides):
-            if package_name.strip() and module.strip():
-                provides_list.append((Package(package_name), Module(module)))
-        if provides_from_venv:
-            provides_list.extend(
-                (Package(package_name), Module(module_name))
-                for (package_name, module_name) in mappings_for_env(provides_from_venv)
-            )
         src_cfg = PyProjectToml.for_paths(
             file_names or [Path()], include_dev=include_dev
         )
@@ -117,7 +108,9 @@ class AppConfig:
                 for module in (*known_missing, *cfg_of("known_missing"))
                 if module.strip()
             ),
-            provides=Packages([*provides_list, *cfg_of("provides")]),
+            provides=Packages(
+                [*_get_provides(provides, provides_from_venv), *cfg_of("provides")]
+            ),
             dependencies=src_cfg.dependencies,
             pyproject_file=src_cfg.path,
         )
@@ -167,3 +160,16 @@ class AppConfig:
         """
         name = Dependency.EXTRA.name if self.verbose else ""
         yield f"{Dependency.EXTRA.value}{name} {module}"
+
+
+def _get_provides(
+    provides: Iterable[str], provides_from_venv: Path | None
+) -> Iterable[tuple[Package, Module]]:
+    """Parse the provides argument and collect provides from a virtual environment."""
+    for package_name, _, module in (map1.partition("=") for map1 in provides):
+        if package_name.strip() and module.strip():
+            yield Package(package_name), Module(module)
+
+    if provides_from_venv:
+        for package_name, module_name in mappings_for_env(provides_from_venv):
+            yield Package(package_name), Module(module_name)

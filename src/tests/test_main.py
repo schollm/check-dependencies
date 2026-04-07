@@ -6,6 +6,7 @@ import argparse
 import ast
 import sys
 import time
+from importlib.metadata import PackageNotFoundError
 from pathlib import Path
 from textwrap import dedent
 from typing import TYPE_CHECKING
@@ -13,7 +14,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from check_dependencies.__main__ import _MultiSepAction
+from check_dependencies.__main__ import _get_version, _MultiSepAction
 from check_dependencies.__main__ import main as cli_main
 from check_dependencies.app_config import AppConfig
 from check_dependencies.lib import Dependency, Module, Package, Packages
@@ -78,6 +79,34 @@ def test__main__(monkeypatch: pytest.MonkeyPatch) -> None:
     main_module = Path(__file__).parents[1] / "check_dependencies"
     monkeypatch.setattr("sys.argv", ["check-dependencies", main_module.as_posix()])
     assert cli_main() == 0
+
+
+def test__main__version(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Test the CLI version flag."""
+    monkeypatch.setattr(
+        "check_dependencies.__main__.version", lambda _dist_name: "1.2.3"
+    )
+    monkeypatch.setattr("sys.argv", ["check-dependencies", "--version"])
+
+    with pytest.raises(SystemExit) as exc:
+        cli_main()
+
+    assert exc.value.code == 0
+    assert capsys.readouterr().out.endswith("check-dependencies 1.2.3\n")
+    # .endswith because on Windows this gets prefixed with "python.exe "
+
+
+def test_get_version_without_package_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Return `unknown` when package metadata is unavailable."""
+
+    def _raise_package_not_found(_dist_name: str) -> str:
+        raise PackageNotFoundError(_dist_name)
+
+    monkeypatch.setattr("check_dependencies.__main__.version", _raise_package_not_found)
+
+    assert _get_version() == "unknown"
 
 
 @pytest.mark.parametrize(
@@ -206,7 +235,7 @@ class TestYieldWrongImports:
         res = self.fn(
             overwrite_cfg=PYPROJECT_EMPTY,
             file_names=[py_file.as_posix()],
-            args="--verbose",
+            args=["--verbose", "--extra=extra1"],
         )
 
         assert len(res) == len(expected)
@@ -627,6 +656,15 @@ class TestMultiSepAction:
         parser = argparse.ArgumentParser()
         with pytest.raises(ValueError, match="type: Only"):
             parser.add_argument("--foo", type=int, action=_MultiSepAction)
+
+    def test_invalid_type_arg(self) -> None:
+        """MultiSepAction with invalid type."""
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--foo", action=_MultiSepAction)
+        action = _MultiSepAction([], "foo", None, str)
+
+        with pytest.raises(TypeError, match="expected a string, got"):
+            action(parser, argparse.Namespace(), [])
 
     @pytest.mark.parametrize("nargs", ["*", "?", "+"])
     def test_invalid_nargs(self, nargs: str) -> None:

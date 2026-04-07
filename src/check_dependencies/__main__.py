@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -13,6 +14,17 @@ from check_dependencies.main import yield_wrong_imports
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+
+
+_DIST_NAME = "check-dependencies"
+
+
+def _get_version() -> str:
+    """Return the installed package version."""
+    try:
+        return version(_DIST_NAME)
+    except PackageNotFoundError:
+        return "unknown"
 
 
 def main() -> int:
@@ -29,6 +41,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Find undeclared and unused (or all) imports in Python files",
         add_help=True,
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {_get_version()}",
     )
 
     parser.add_argument(

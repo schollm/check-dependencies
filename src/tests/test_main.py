@@ -102,7 +102,7 @@ def test_get_version_without_package_metadata(monkeypatch: pytest.MonkeyPatch) -
     """Return `unknown` when package metadata is unavailable."""
 
     def _raise_package_not_found(_dist_name: str) -> str:
-        raise PackageNotFoundError
+        raise PackageNotFoundError(_dist_name)
 
     monkeypatch.setattr("check_dependencies.__main__.version", _raise_package_not_found)
 

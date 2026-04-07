@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Upcoming
 
+### Added
+
+- `check-dependencies --version` to show the installed package version.
+
 ### Changed
 
 ## [1.3. 0] -- 2026-04-06 - Gets provides from virtual environment

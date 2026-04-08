@@ -1,6 +1,6 @@
-# Check Dependencies
+# 🔎 Check Dependencies
 
-`check-dependencies` scans Python imports and compares them with the dependencies
+`check-dependencies` scans 🐍 Python imports and compares them with the dependencies
 declared in `pyproject.toml`.
 
 It can be used locally or in CI/CD pipelines to find dependencies that are
@@ -16,7 +16,7 @@ The project also ships a secondary CLI, `dependency-writer`, which writes
 package-to-import mappings to a TOML config file. This is useful for creating
 or updating `[tool.check-dependencies.provides]` entries.
 
-## Installation
+## 📦 Installation
 
 Install with `uv`:
 
@@ -40,12 +40,12 @@ pipx run check-dependencies
 ```
 
 
-## `check-dependencies`
+## 🧰 `check-dependencies`
 
 Use `check-dependencies` to scan Python files and compare detected imports with
 the dependencies declared in `pyproject.toml`.
 
-### Usage
+### ▶️ Usage
 
 ```text
 usage: check-dependencies [-h] [--version] [--include-dev] [--verbose] [--all]
@@ -85,7 +85,7 @@ options:
                         check-dependencies.toml.Toml Key: [tool.check-dependencies] includes=[]
 ```
 
-### Output
+### 📄 Output
 
 The output is a list of imports prefixed with their status.
 
@@ -108,7 +108,7 @@ Verbose status prefixes:
 - `!!FILE_ERROR` - Could not parse the file (e.g. syntax error)
 - ` OK` - Correct import (only shown with `--all`)
 
-### Examples
+### 📝 Examples
 
 #### Basic usage
 
@@ -284,7 +284,7 @@ Example output:
 +EXTRA requests
 ```
 
-### Configuration
+### ⚙️ Configuration
 
 Configuration is read from `pyproject.toml`.
 
@@ -311,7 +311,7 @@ includes = [
 ]
 ```
 
-### Exit codes
+### 🚦 Exit codes
 
 - `0`: No missing or superfluous dependencies found
 - `2`: Missing dependencies found (used, but not declared in `pyproject.toml`)
@@ -321,7 +321,7 @@ includes = [
 - `16`: Could not parse source file(s)
 - `1`: Another error occurred
 
-## `dependency-writer`
+## ✍️ `dependency-writer`
 
 Use `dependency-writer` to generate or update
 `[tool.check-dependencies.provides]` mappings from an existing Python
@@ -338,7 +338,7 @@ If you install the package yourself and want to use `dependency-writer`, make
 sure the optional `write` extra is installed because this command depends on
 `tomlkit`.
 
-### Usage
+### ▶️ Usage
 
 ```text
 usage: dependency-writer [-h] --python PYTHON --config CONFIG
@@ -349,7 +349,7 @@ options:
   --config, -c CONFIG  Location of toml config file.
 ```
 
-### Examples
+### 📝 Examples
 
 #### Write to pyproject.toml
 
@@ -380,6 +380,6 @@ included:
 includes = [ "../../check-dependencies.toml" ]
 ```
 
-## Development
+## 🛠️ Development
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.

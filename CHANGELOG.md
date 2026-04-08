@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) but with a condensed list format.
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Checklist for release
@@ -15,142 +15,102 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [ ] Merge the release branch into main
 - [ ] Create a new release on GitHub with the new version and changelog
 
-## Planned
+## Releases
+### Planned
 
-## Upcoming
+### Upcoming
 
-### Added
+### [1.4.0] - 2026-04-08 - Show installed package version
 
-- `check-dependencies --version` to show the installed package version.
+- **ADD:** `check-dependencies --version` to show the installed package version. 
+- **CHANGE:** Exclude `src/tests/**` from source and wheel build artifacts.
 
-### Changed
+### [1.3.0] -- 2026-04-06 - Gets provides from virtual environment
 
-- Exclude `src/tests/**` from source and wheel build artifacts.
+- **ADD:** `check-dependencies --provides-from-venv` to get the --provides entries from a virtual environment
+- **ADD:** `check-dependencies --verbose` also shows all extras, missing, provides and configurations as comments.
 
-## [1.3. 0] -- 2026-04-06 - Gets provides from virtual environment
-### Added
-- `check-dependencies --provides-from-venv` to get the --provides entries from a virtual environment
-- `check-dependencies --verbose` also shows all extras, missing, provides and configurations as comments.
+### [1.2.0] -- 2026-04-05 - New dependency-writer CLI application and support for multiple arguments
 
-## [1.2.0] -- 2026-04-05 - New dependency-writer CLI application and support for multiple arguments
+- **ADD:** New Script dependency-writer to write dependency mappings to config file.
+- **ADD:** Support multiple arguments --extra, --missing, and --provides flags.
 
-### Added
+### [1.1.0] - 2026-04-03 - Support for including additional config files
 
-- New Script dependency-writer to write dependency mappings to config file.
-- Support multiple arguments --extra, --missing, and --provides flags.
+- **ADD:** Add support --include/-I/[tool.check_dependencies.include] to include config.
+- **ADD:** Limited support of __import__ style dynamic imports
 
-## [1.1.0] - 2026-04-03 - Support for including additional config files
+### [1.0.0] - 2026-03-14 - Initial stable release
 
-### Added
+- **ADD:** Add support for Hatch and uv-legacy style dependencies.
+- **ADD:** Add support for Python 3.13 -- 3.15
+- **ADD:** New status (!!) for source files that could not be parsed
+- **ADD:** Add CONTRIBUTING.md with contribution guidelines and coding standards
+- **ADD:** Fix README.md with correct usage of the CLI application
+- **FIX:** Fix PEP621 parsing of development dependencies
+- **FIX:** Handle Python source files that declare a non-UTF8 encoding (PEP 263 encoding cookie or BOM)
 
-- Add support --include/-I/[tool.check_dependencies.include] to include config.
-- Limited support of __import__ style dynamic imports
+### [0.13.0] - 2026-03-06 - Support for package - module mapping in pyproject.toml
 
-## [1.0.0] - 2026-03-14 - Initial stable release
+- **ADD:** Support for package - module mapping in pyproject.toml, to allow for different package and module names.
 
-### Added
+### [0.12.6] - 2025-04-11 - Fix typos and pipelines
 
-- Add support for Hatch and uv-legacy style dependencies.
-- Add support for Python 3.13 -- 3.15
-- New status (!!) for source files that could not be parsed
-- Add CONTRIBUTING.md with contribution guidelines and coding standards
-- Fix README.md with correct usage of the CLI application
+- **CHANGE:** Fix typos in changelog and pipelines
 
-### Bugfix
+### [0.12.5] - 2025-04-11 - Fix typos
 
-- Fix PEP621 parsing of development dependencies
-- Handle Python source files that declare a non-UTF8 encoding (PEP 263 encoding cookie or BOM)
+- **CHANGE:** Fix typos in changelog
 
-## [0.13.0] - 2026-03-06 - Support for package - module mapping in pyproject.toml
+### [0.12.4] - 2025-04-11 - Bugfix: github actions upload artifact overwrite
 
-### Added
+- **FIX:** Use --clobber when uploading signed artifact
 
-- Support for package - module mapping in pyproject.toml, to allow for different package and module names.
+### [0.12.2] - 2025-03-10 - Bugfix: github actions upload artifact
 
-## [0.12.6] - 2025-04-11 - Fix typos and pipelines
+- **FIX:** Use new version 3.0.0 for sigstore/gh-action-sigstore-python for github-release
 
-### Changed
+### [0.12.1] - 2025-03-10 - Bugfix: github actions upload artifact
 
-- Fix typos in changelog and pipelines
+- **FIX:** Use new version 4 for actions/download-artifact for github-release
 
-## [0.12.5] - 2025-04-11 - Fix typos
+### [0.12.0] - 2025-03-10 - Replace poetry with ruff
 
-### Changed
+- **CHANGE:** package manager is now astrals [uv](https://docs.astral.sh/uv/).
 
-- Fix typos in changelog
+### [0.11.1] - 2025-03-10 - Update gitlab action
 
-## [0.12.4] - 2025-04-11 - Bugfix: github actions upload artifact overwrite
+- **CHANGE:** Update gitlab action
+- **CHANGE:** Update poetry.lock
 
-### Bugfix
+### [0.11.0] - 2025-02-28 - Replace flake8, black and isort with ruff
 
-- Use --clobber when uploading signed artifact
+- **CHANGE:** Replace flake8, black and isort with ruff, adapt code accordingly
 
-## [0.12.2] - 2025-03-10 - Bugfix: github actions upload artifact
+### [0.10.2] - 2024-06-26 Add CLI entry point check-depdencies
 
-### Bugfix
+- **ADD:** Add CLI application check-dependencies
+- **ADD:** Add homepage and other links, license, tags and classifieriers to pyproject.toml
 
-- Use new version 3.0.0 for sigstore/gh-action-sigstore-python for github-release
+### [0.10.1] - 2024-06-25 - Describe the project
 
-## [0.12.1] - 2025-03-10 - Bugfix: github actions upload artifact
+- **ADD:** [Minor] tool.poetry.description
 
-### Bugfix
+### [0.10.0] - 2024-06-25 - PEP-631 support
 
-- Use new version 4 for actions/download-artifact for github-release
-
-## [0.12.0] - 2025-03-10 - Replace poetry with ruff
-
-### Changed
-
-package manager is now astrals [uv](https://docs.astral.sh/uv/).
-
-## [0.11.1] - 2025-03-10 - Update gitlab action
-
-### Changed
-
-- Update gitlab action
-- Update poetry.lock
-
-## [0.11.0] - 2025-02-28 - Replace flake8, black and isort with ruff
-
-### Changed
-
-- Replace flake8, black and isort with ruff, adapt code accordingly
-
-## [0.10.2] - 2024-06-26 Add CLI entry point check-depdencies
-
-### Added
-
-- Add CLI application check-dependencies
-- Add homepage and other links, license, tags and classifieriers to pyproject.toml
-
-## [0.10.1] - 2024-06-25 - Describe the project
-
-### Added
-
-- [Minor] tool.poetry.description
-
-## [0.10.0] - 2024-06-25 - PEP-631 support
-
-### Added
-
-- Support PEP-631 style dependencies
-
-### Changes
-
-- Remove `--config-file` option: Always use the `pyprojec.toml` file associated with the source
-- Renames in `pyproject.toml` section `tool.check_dependencies`:
+- **ADD:** Support PEP-631 style dependencies
+- **CHANGE:** Remove `--config-file` option: Always use the `pyprojec.toml` file associated with the source
+- **CHANGE:** Renames in `pyproject.toml` section `tool.check_dependencies`:
     - `ignore-requirements` to `known-missing`
     - `extra-requirements` to `known-extra`
-- Rename CLI options:
+- **CHANGE:** Rename CLI options:
     - `--extra` to `--missing`
     - `--ignore` to `--extra`
 
-## [0.9.1] - 2024-06-24 - Continuous Integration
+### [0.9.1] - 2024-06-24 - Continuous Integration
 
-### Added
+- **ADD:** Github actions for automated testing and publishing
 
-- Github actions for automated testing and publishing
+### [0.9.0] - 2024-06-22 - Hello World!
 
-## [0.9.0] - 2024-06-22 - Hello World!
-
-Initial version of the package
+- **ADD:** Initial version of the package

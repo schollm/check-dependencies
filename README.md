@@ -79,23 +79,22 @@ where it is imported.
 This can be used as a stand-alone application or as part of a CI/CD pipeline.
 In the former case, it can be installed via `uv tool` or `pipx`.
 
-**Using `uv`:**
-```commandline
-uv tool install check-dependencies
-check-dependencies
-```
+- **Using `uv`:**
+    ```commandline
+    uv tool install check-dependencies
+    check-dependencies
+    ```
+- **Using `pipx`:**
+    ```commandline
+    pipx install check-dependencies
+    check-dependencies
+    ```
 
-**Using `pipx`:**
-```commandline
-pipx install check-dependencies
-check-dependencies
-```
-
-Alternatively, to run without installing:
-```commandline
-uvx check-dependencies
-pipx run check-dependencies
-```
+- Alternatively, to run without installing:
+    ```commandline
+    uvx check-dependencies
+    pipx run check-dependencies
+    ```
 
 ### Examples
 
@@ -112,63 +111,59 @@ check-dependencies  project/src/
 #### Add known extra requirements
 Add requirements that are known to be used, but not imported in the codebase (e.g. plugins).
 
-Via CLI:
-```text
-check-dependencies --extra snowflake-sqlalchemy project/src
-```
-
-Via `pyproject.toml`:
-```toml
-[tool.check-dependencies]
-known-extra = [ "snowflake-sqlalchemy" ]
-```
+- **CLI**
+    ```text
+    check-dependencies --extra snowflake-sqlalchemy project/src
+    ```
+- `pyproject.toml`
+    ```toml
+    [tool.check-dependencies]
+    known-extra = [ "snowflake-sqlalchemy" ]
+    ```
 
 #### Translate package names
 Some packages have different names for the package and the import (e.g. Pillow is imported as PIL).
 
-Via CLI:
-```text
-check-dependencies --provides Pillow=PIL --provides PyJWT=jwt project/src
-```
-
-Via `pyproject.toml`:
-```toml
-[tool.check-dependencies.provides]
-Pillow = "PIL"
-PyJWT = "jwt"
-```
+- **CLI**
+    ```text
+    check-dependencies --provides Pillow=PIL --provides PyJWT=jwt project/src
+    ```
+- `pyproject.toml`
+    ```toml
+    [tool.check-dependencies.provides]
+    Pillow = "PIL"
+    PyJWT = "jwt"
+    ```
 
 #### Add known missing requirements
 Add requirements that are known to be missing, but are imported in the codebase.
 
-Via CLI:
-```text
-check-dependencies --missing numpy check-dependencies project/src
-```
-
-Via `pyproject.toml`:
-```toml
-[tool.check-dependencies]
-known-missing = [ "numpy" ]
-```
+- **CLI**
+    ```text
+    check-dependencies --missing numpy check-dependencies project/src
+    ```
+- `pyproject.toml`:
+    ```toml
+    [tool.check-dependencies]
+    known-missing = [ "numpy" ]
+    ```
 
 
 #### Include additional config file
 Use an additional config file to include extra or missing dependencies or provides.
 This is useful for monorepos or similar setups where multiple packages share a common configuration file.
 
-Via CLI:
-```text
-> check-dependencies project/src/
-! snowflake-sqlalchemy
-> check-dependencies --include ../global-check-dependencies.toml project/src/
-```
-
-Via `pyproject.toml`:
-```toml
-[tool.check-dependencies]
-includes = [ "../global-check-dependencies.toml" ]
-```
+- **CLI**
+    ```text
+    > check-dependencies project/src/
+    ! snowflake-sqlalchemy
+    > check-dependencies --include ../global-check-dependencies.toml project/src/
+    ``` 
+- `pyproject.toml`
+    ```toml
+    [tool.check-dependencies]
+    includes = [ "../global-check-dependencies.toml" ]
+    ```
 
 #### Include dev dependencies
 
@@ -187,11 +182,12 @@ check-dependencies --provides-from-venv .venv/bin/python project/src/
 
 Output all dependencies, including the correct ones.
 
+The following output has dependencies `pandas` and `requests`, but uses `pandas` and not `requests`. `numpy` is used in
+the code, but not declared as a dependency.
 ```text
 check-dependencies --all project/src/
   pandas
-! matplotlib
-  numpy
+!  numpy
 + requests
 ```
 

@@ -1,20 +1,51 @@
 # Check Dependencies
 
-Check all imports from python files and compares them against the declared imports of a pyproject dependency list of
-expected imports.
+`check-dependencies` scans Python imports and compares them with the dependencies
+declared in `pyproject.toml`.
 
-It can be used as a stand-alone or as part of a CI/CD to check if an application has all the necessary, but no
-superfluous imports.
+It can be used locally or in CI/CD pipelines to find dependencies that are
+missing from the project configuration or declared but not actually used.
 
-It supports PEP-621, Poetry (v1.2+), UV (0.2+) and Hatch style dependencies.
+It supports PEP 621, Poetry (v1.2+), Hatch, and legacy `tool.uv`
+dependency configuration.
 
-This is a pure-Python zero-dependency (Up until Python 3.11 one, toml) package.
+This is a pure-Python package with no runtime dependencies on Python 3.11+
+(`toml` is only required on older Python versions).
 
-It also provides a secondary CLI application `dependency-writer` to write the mapping of imports to packages to the
-config file. This can be used to generate the initial config file or to update it after changes in the codebase.
+The project also ships a secondary CLI, `dependency-writer`, which writes
+package-to-import mappings to a TOML config file. This is useful for creating
+or updating `[tool.check-dependencies.provides]` entries.
+
+## Installation
+
+Install with `uv`:
+
+```shell
+uv tool install check-dependencies
+check-dependencies
+```
+
+Install with `pipx`:
+
+```shell
+pipx install check-dependencies
+check-dependencies
+```
+
+Run without installing:
+
+```shell
+uvx check-dependencies
+pipx run check-dependencies
+```
 
 
-## check-dependencies
+## `check-dependencies`
+
+Use `check-dependencies` to scan Python files and compare detected imports with
+the dependencies declared in `pyproject.toml`.
+
+### Usage
 
 ```text
 usage: check-dependencies [-h] [--version] [--include-dev] [--verbose] [--all]
@@ -56,52 +87,40 @@ options:
 
 ### Output
 
-The output is a list of imports with a prefix indicating the status of the import.
+The output is a list of imports prefixed with their status.
+
+Default status prefixes:
 
 - `!` - Undeclared import
-- `+` - Extra import, declared in pyproject.toml, but not used in the file
+- `+` - Extra dependency, declared in `pyproject.toml` but not used in the code
 - `?` - Dynamic import that could not be resolved.
 - `!!` - Could not parse the file (e.g. syntax error)
 - ` ` - Correct import (only shown with `--all`)
 
-**In case of `--verbose`**, the output is a list of all imports in the file, prefixed with:
+With `--verbose`, the output includes every matching import together with the
+file name and line number where it appears.
+
+Verbose status prefixes:
 
 - `!NA` - Undeclared import
-- `+EXTRA` - Extra import, declared in pyproject.toml, but not used in the file
+- `+EXTRA` - Extra dependency, declared in `pyproject.toml` but not used in the code
 - `?UNKNOWN` - Dynamic import that could not be resolved.
 - `!!FILE_ERROR` - Could not parse the file (e.g. syntax error)
 - ` OK` - Correct import (only shown with `--all`)
-
-Additionally, each import is prefixed with the file name and line number
-where it is imported.
-
-### Notes
-This can be used as a stand-alone application or as part of a CI/CD pipeline.
-In the former case, it can be installed via `uv tool` or `pipx`.
-
-- **Using `uv`:**
-    ```commandline
-    uv tool install check-dependencies
-    check-dependencies
-    ```
-- **Using `pipx`:**
-    ```commandline
-    pipx install check-dependencies
-    check-dependencies
-    ```
-
-- Alternatively, to run without installing:
-    ```commandline
-    uvx check-dependencies
-    pipx run check-dependencies
-    ```
 
 ### Examples
 
 #### Basic usage
 
+Command:
+
+```shell
+check-dependencies project/src/
+```
+
+Example output:
+
 ```text
-check-dependencies  project/src/
   pandas
 ! matplotlib
   numpy
@@ -109,26 +128,30 @@ check-dependencies  project/src/
 ```
 
 #### Add known extra requirements
-Add requirements that are known to be used, but not imported in the codebase (e.g. plugins).
 
-- **CLI**
-    ```text
+Use this when dependencies affect the application but are not imported
+directly in the codebase, such as plugins.
+
+- Command:
+    ```shell
     check-dependencies --extra snowflake-sqlalchemy project/src
     ```
-- `pyproject.toml`
+- `pyproject.toml`:
     ```toml
     [tool.check-dependencies]
     known-extra = [ "snowflake-sqlalchemy" ]
     ```
 
 #### Translate package names
-Some packages have different names for the package and the import (e.g. Pillow is imported as PIL).
 
-- **CLI**
-    ```text
+Some packages have different distribution and import names, for example
+`Pillow` is imported as `PIL`.
+
+- Command:
+    ```shell
     check-dependencies --provides Pillow=PIL --provides PyJWT=jwt project/src
     ```
-- `pyproject.toml`
+- `pyproject.toml`:
     ```toml
     [tool.check-dependencies.provides]
     Pillow = "PIL"
@@ -136,10 +159,12 @@ Some packages have different names for the package and the import (e.g. Pillow i
     ```
 
 #### Add known missing requirements
-Add requirements that are known to be missing, but are imported in the codebase.
 
-- **CLI**
-    ```text
+Use this when imports are expected to be missing from the dependency list,
+but should not be reported.
+
+- Command:
+    ```shell
     check-dependencies --missing numpy check-dependencies project/src
     ```
 - `pyproject.toml`:
@@ -150,16 +175,18 @@ Add requirements that are known to be missing, but are imported in the codebase.
 
 
 #### Include additional config file
-Use an additional config file to include extra or missing dependencies or provides.
-This is useful for monorepos or similar setups where multiple packages share a common configuration file.
 
-- **CLI**
-    ```text
-    > check-dependencies project/src/
-    ! snowflake-sqlalchemy
-    > check-dependencies --include ../global-check-dependencies.toml project/src/
-    ``` 
-- `pyproject.toml`
+Use an additional config file to provide extra dependencies, missing
+dependencies, or `provides` mappings.
+
+This is especially useful in monorepos where multiple packages share a common
+configuration file.
+
+- Command:
+    ```shell
+    check-dependencies --include ../global-check-dependencies.toml project/src/
+    ```
+- `pyproject.toml`:
     ```toml
     [tool.check-dependencies]
     includes = [ "../global-check-dependencies.toml" ]
@@ -167,36 +194,51 @@ This is useful for monorepos or similar setups where multiple packages share a c
 
 #### Include dev dependencies
 
-```shell
-check-dependencies --include-dev project/tests/
-```
+- Command:
+    ```shell
+    check-dependencies --include-dev project/tests/
+    ```
 
 #### Include provides from virtual environment
 
-Get all provides from the virtual environment and include them in the check.
-```text
-check-dependencies --provides-from-venv .venv/bin/python project/src/
-```
+Read package-to-import mappings from a virtual environment and include them in
+the check.
+
+- Command:
+    ```shell
+    check-dependencies --provides-from-venv .venv/bin/python project/src/
+    ```
 
 #### Output all dependencies
 
-Output all dependencies, including the correct ones.
+Show all detected dependencies, including the correct ones.
 
-The following output has dependencies `pandas` and `requests`, but uses `pandas` and not `requests`. `numpy` is used in
-the code, but not declared as a dependency.
-```text
+In the following example, `pandas` is declared and used, `requests` is declared
+but unused, and `numpy` is used but not declared.
+
+```shell
 check-dependencies --all project/src/
+```
+
+Example output:
+
+```text
   pandas
-!  numpy
+! numpy
 + requests
 ```
 
 #### Verbose output
 
-Output each erroneous import and extra dependency with cause, file name and line number.
+Show each import together with its status, file name, and line number.
+
+```shell
+check-dependencies --verbose project/src/
+```
+
+Example output:
 
 ```text
-check-dependencies --verbose project/src/
 # ALL=False
 # INCLUDE_DEV=False
 # EXTRA pytest
@@ -206,15 +248,23 @@ check-dependencies --verbose project/src/
 # MISSING toml
 # MISSING tomllib
 !NA matplotlib project/src/main.py:4
-+EXTRA project/pyproject.toml requests
+
+### Dependencies in config file not used in application:
+# Config file: project/pyproject.toml
++EXTRA requests
 ```
 
 #### Combine verbose and all
 
-Output all imports, including the correct ones with file name and line number.
+Show all imports, including correct ones, with file names and line numbers.
+
+```shell
+check-dependencies --verbose --all project/src/
+```
+
+Example output:
 
 ```text
-check-dependencies --verbose --all project/src/
 # ALL=True
 # INCLUDE_DEV=False
 # EXTRA pytest
@@ -236,7 +286,7 @@ check-dependencies --verbose --all project/src/
 
 ### Configuration
 
-The configuration is read from `pyproject.toml` file.
+Configuration is read from `pyproject.toml`.
 
 ```toml
 [tool.check-dependencies]
@@ -261,48 +311,69 @@ includes = [
 ]
 ```
 
-#### Exit code
+### Exit codes
 
 - `0`: No missing or superfluous dependencies found
-- `2`: Missing (used, but not declared in pyproject.toml) dependencies found
-- `4`: Extra (declared in pyproject.toml, but unused) dependencies found
+- `2`: Missing dependencies found (used, but not declared in `pyproject.toml`)
+- `4`: Extra dependencies found (declared in `pyproject.toml`, but unused)
 - `6`: Both missing and superfluous dependencies found
 - `8`: Could not find associated pyproject.toml file
 - `16`: Could not parse source file(s)
 - `1`: Another error occurred
 
-## Dependency Writer
+## `dependency-writer`
 
-The `dependency-writer` CLI application can be used to write the mapping of imports to packages to the config file.
-It can be used to generate the initial config file or to update it after changes in the codebase.
+Use `dependency-writer` to generate or update
+`[tool.check-dependencies.provides]` mappings from an existing Python
+environment.
 
-In combination with `[tool.check-dependencies.includes]` it can be also used to generate a global
-`[tool.check-dependencies.provides]` mapping for a monorepo. 
+This is useful for generating the initial config file or refreshing it after
+dependency changes.
+
+Combined with the `includes` setting in `[tool.check-dependencies]`, it can
+also be used to generate a shared `[tool.check-dependencies.provides]` mapping
+for a monorepo.
+
+If you install the package yourself and want to use `dependency-writer`, make
+sure the optional `write` extra is installed because this command depends on
+`tomlkit`.
+
+### Usage
 
 ```text
-usage: dependency-writer [-h] --python PYTHON --config CONFIG                                                                                                                                                                                                                                                                                                                                                                                                           
-options:                                                                                                                                                                                                                            
+usage: dependency-writer [-h] --python PYTHON --config CONFIG
+
+options:
   -h, --help           show this help message and exit
   --python, -p PYTHON  Python executable to check.
   --config, -c CONFIG  Location of toml config file.
 ```
 
 ### Examples
-#### Write to pyproject.toml
-The following command will update the `[tool.check-dependencies.provides]` section of the `pyproject.toml` file
-with all the mappings of packages to imports found in the virtual environment.
 
-```commandline
+#### Write to pyproject.toml
+
+The following command updates the
+`[tool.check-dependencies.provides]` table of `pyproject.toml` with all
+mappings found in the virtual environment.
+
+- Command:
+
+```shell
 dependency-writer -p .venv/bin/python -c pyproject.toml
 ```
 
 #### Write a global provides file for a monorepo
-```commandline
-dependency-writer -p apps/my-app/.venv/bin/python -c ./check-dependencies.toml 
+
+- Command:
+
+```shell
+dependency-writer -p apps/my-app/.venv/bin/python -c ./check-dependencies.toml
 ```
 
-This requires an entry `[tool.check-dependencies.includes]` in the `pyproject.toml` file of the application to 
-include the generated config file:
+This requires an `includes = [...]` entry under `[tool.check-dependencies]` in
+the application's `pyproject.toml` so that the generated config file is
+included:
 
 ```toml
 [tool.check-dependencies]

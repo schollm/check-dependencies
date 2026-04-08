@@ -165,7 +165,7 @@ but should not be reported.
 
 - ▶️ Command:
     ```shell
-    check-dependencies --missing numpy check-dependencies project/src
+    check-dependencies --missing numpy project/src
     ```
 - 📄 `pyproject.toml`:
     ```toml

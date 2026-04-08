@@ -112,7 +112,7 @@ Verbose status prefixes:
 
 #### Basic usage
 
-Command:
+▶️ Command:
 
 ```shell
 check-dependencies project/src/
@@ -132,11 +132,11 @@ Example output:
 Use this when dependencies affect the application but are not imported
 directly in the codebase, such as plugins.
 
-- Command:
+- ▶️ Command:
     ```shell
     check-dependencies --extra snowflake-sqlalchemy project/src
     ```
-- `pyproject.toml`:
+- 📄 `pyproject.toml`:
     ```toml
     [tool.check-dependencies]
     known-extra = [ "snowflake-sqlalchemy" ]
@@ -147,11 +147,11 @@ directly in the codebase, such as plugins.
 Some packages have different distribution and import names, for example
 `Pillow` is imported as `PIL`.
 
-- Command:
+- ▶️ Command:
     ```shell
     check-dependencies --provides Pillow=PIL --provides PyJWT=jwt project/src
     ```
-- `pyproject.toml`:
+- 📄 `pyproject.toml`:
     ```toml
     [tool.check-dependencies.provides]
     Pillow = "PIL"
@@ -163,11 +163,11 @@ Some packages have different distribution and import names, for example
 Use this when imports are expected to be missing from the dependency list,
 but should not be reported.
 
-- Command:
+- ▶️ Command:
     ```shell
     check-dependencies --missing numpy check-dependencies project/src
     ```
-- `pyproject.toml`:
+- 📄 `pyproject.toml`:
     ```toml
     [tool.check-dependencies]
     known-missing = [ "numpy" ]
@@ -182,11 +182,11 @@ dependencies, or `provides` mappings.
 This is especially useful in monorepos where multiple packages share a common
 configuration file.
 
-- Command:
+- ▶️ Command:
     ```shell
     check-dependencies --include ../global-check-dependencies.toml project/src/
     ```
-- `pyproject.toml`:
+- 📄 `pyproject.toml`:
     ```toml
     [tool.check-dependencies]
     includes = [ "../global-check-dependencies.toml" ]
@@ -194,7 +194,7 @@ configuration file.
 
 #### Include dev dependencies
 
-- Command:
+- ▶️ Command:
     ```shell
     check-dependencies --include-dev project/tests/
     ```
@@ -204,7 +204,7 @@ configuration file.
 Read package-to-import mappings from a virtual environment and include them in
 the check.
 
-- Command:
+- ▶️ Command:
     ```shell
     check-dependencies --provides-from-venv .venv/bin/python project/src/
     ```
@@ -357,7 +357,7 @@ The following command updates the
 `[tool.check-dependencies.provides]` table of `pyproject.toml` with all
 mappings found in the virtual environment.
 
-- Command:
+- ▶️ Command:
 
 ```shell
 dependency-writer -p .venv/bin/python -c pyproject.toml
@@ -365,7 +365,7 @@ dependency-writer -p .venv/bin/python -c pyproject.toml
 
 #### Write a global provides file for a monorepo
 
-- Command:
+- ▶️ Command:
 
 ```shell
 dependency-writer -p apps/my-app/.venv/bin/python -c ./check-dependencies.toml

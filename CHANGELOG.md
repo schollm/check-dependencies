@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Planned
 
 ### Upcoming
+- **FIX**: dependency-writer: Fix intermixing tables in config files ([tool.x]...[other]...[tool.y])
 
 ### [1.4.0] - 2026-04-08 - Show installed package version
 

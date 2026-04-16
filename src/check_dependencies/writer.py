@@ -28,6 +28,7 @@ def main() -> int:
     except ValueError as exc:
         print(exc, file=sys.stderr)  # noqa: T201
         return EXIT_VALUE_ERROR
+
     except Exception as exc:  # noqa:BLE001  # pragma: no cover
         print(exc, file=sys.stderr)  # noqa: T201
         return EXIT_FAILURE
@@ -54,7 +55,8 @@ def _update_config(config_file: Path, python: Path) -> None:
     is_stdout = config_file.as_posix() == "-"
 
     cfg = _get_existing_config(config_file, is_stdout=is_stdout)
-    _ensure_key("tool.check-dependencies.provides", cfg)
+
+    _ensure_key(cfg)
     cfg["tool"]["check-dependencies"]["provides"].update(provides)  # type: ignore[not-subscriptable]
     dumps = tomlkit.dumps(cfg)
     if is_stdout:
@@ -76,17 +78,18 @@ def _get_existing_config(config_file: Path, *, is_stdout: bool) -> tomlkit.TOMLD
     return tomlkit.parse(content)
 
 
-def _ensure_key(key: str, doc: MutableMapping) -> None:
+def _ensure_key(cfg: MutableMapping) -> None:
     """Ensure a key exists in a TOML document.
 
     Updates the document in-place!
-    :param key: The key to update in dot-separated format.
-    :param doc: The document to update.
+    :param cfg: The document to update.
     """
-    for key1 in key.split("."):
-        if key1 not in doc:
-            doc[key1] = {}
-        doc = doc[key1]
+    if "tool" not in cfg:
+        cfg["tool"] = {}
+    if "check-dependencies" not in cfg["tool"]:
+        cfg["tool"]["check-dependencies"] = {}
+    if "provides" not in cfg["tool"]["check-dependencies"]:
+        cfg["tool"]["check-dependencies"]["provides"] = {}
 
 
 if __name__ == "__main__":

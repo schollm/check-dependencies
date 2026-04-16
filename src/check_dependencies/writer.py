@@ -79,9 +79,9 @@ def _get_existing_config(config_file: Path, *, is_stdout: bool) -> tomlkit.TOMLD
 
 
 def _ensure_key(cfg: MutableMapping) -> None:
-    """Ensure a key exists in a TOML document.
+    """Ensure ``tool.check-dependencies.provides`` exists in a TOML document.
 
-    Updates the document in-place!
+    Updates the document in-place.
     :param cfg: The document to update.
     """
     if "tool" not in cfg:

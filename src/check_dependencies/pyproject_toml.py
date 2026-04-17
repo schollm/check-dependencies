@@ -12,7 +12,7 @@ from typing import Any, Collection, Mapping, TypeVar
 from check_dependencies.lib import Module, Package
 
 try:
-    import tomllib  # type: ignore[unresolved-import]
+    import tomllib  # ty:ignore[unresolved-import]
 except ImportError:  # pragma: no cover
     import toml as tomllib
 

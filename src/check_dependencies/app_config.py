@@ -2,45 +2,40 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from itertools import chain
 from logging import getLogger
 from pathlib import Path
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Collection,
-    Iterable,
-    Iterator,
-    Sequence,
-)
+from typing import TYPE_CHECKING, Collection, TypeVar
 
+from check_dependencies.builtin_module import BUILTINS
 from check_dependencies.lib import Dependency, Module, Package, Packages
 from check_dependencies.provides import mappings_for_env
 from check_dependencies.pyproject_toml import ConfigToml, PyProjectToml
 
 if TYPE_CHECKING:
     import ast
+    from collections.abc import Callable, Iterable, Iterator, Sequence
 
 
 logger = getLogger(__name__)
 
 
-@dataclass()
+@dataclass(frozen=True)
 class AppConfig:
     """Application config and helper functions."""
 
-    known_extra: Collection[Package]
-    known_missing: Collection[Module]
-    provides: Packages
-    dependencies: Collection[Package]
-    pyproject_file: Path | None = None
+    file_names: Sequence[Path]
+    known_extra: Sequence[Package] = ()
+    known_missing: Sequence[Module] = ()
+    provides: Packages = field(default_factory=Packages)
     include_dev: bool = False
     verbose: bool = False
     show_all: bool = False
+    includes: Sequence[Path] = ()
 
     @classmethod
-    def from_cli_args(  # noqa: PLR0913 (factory method)
+    def from_cli_args(  # noqa: PLR0913
         cls,
         *,
         file_names: Sequence[Path],
@@ -53,72 +48,29 @@ class AppConfig:
         includes: Sequence[Path] = (),
         provides_from_venv: Path | None = None,
     ) -> AppConfig:
-        """Create an AppConfig instance from CLI arguments.
+        """Construct an AppConfig from CLI arguments."""
+        includes_cfg = [ConfigToml.for_path(incl) for incl in includes]
 
-        :param file_names: List of file paths to analyze.
-        :param known_extra: List of known extra dependencies.
-        :param known_missing: List of known missing dependencies.
-        :param provides: Iterable of strings in the format "package=module" to specify
-            provided modules.
-        :param include_dev: Whether to include development dependencies from
-            pyproject.toml.
-        :param verbose: Whether to include detailed information in the output.
-        :param show_all: Whether to show all dependencies, including those that are OK.
-        :param includes: Files containing additional configs to include.
-        :param provides_from_venv: Path to a python executable of a virtual environment.
-        """
-        src_cfg = PyProjectToml.for_paths(
-            file_names or [Path()], include_dev=include_dev
-        )
+        _T = TypeVar("_T")
 
-        def with_includes(
-            current_path: Path, paths: Iterable[Path], seen: set[Path]
-        ) -> Iterable[ConfigToml]:
-            for pth in paths:
-                if (res_pth := (current_path / pth).resolve()) not in seen:
-                    seen.add(res_pth)
-                    cfg = ConfigToml.for_path(res_pth)
-                    yield cfg
-                    yield from with_includes(res_pth.parent, cfg.includes, seen)
-                else:
-                    logger.debug("Already parsed: %s", res_pth)
+        def chained(iter_: Iterable[Iterable[_T]]) -> set[_T]:
+            return set(chain.from_iterable(iter_))
 
-        seen: set[Path] = set()
-        cfgs = [
-            *with_includes(Path(), includes, seen),
-            *with_includes(src_cfg.path.parent, src_cfg.includes, seen),
-        ]
-
-        def cfg_of(key: str) -> Iterable[Any]:
-            yield from getattr(src_cfg, key)
-            for cfg in cfgs:
-                yield from getattr(cfg, key)
-
+        known_extra_incl = chained(inc.known_extra for inc in includes_cfg)
+        known_missing_incl = chained(inc.known_missing for inc in includes_cfg)
+        provides_incl = chained(inc.provides for inc in includes_cfg)
         return cls(
+            file_names=file_names,
+            known_extra=sorted(known_extra_incl.union(map(Package, known_extra))),
+            known_missing=sorted(known_missing_incl.union(map(Module, known_missing))),
+            provides=Packages(
+                provides_incl.union(_get_provides(provides, provides_from_venv))
+            ),
             include_dev=include_dev,
             verbose=verbose,
             show_all=show_all,
-            known_extra=frozenset(
-                pkg
-                for pkg in (*map(Package, known_extra), *cfg_of("known_extra"))
-                if pkg.canonical
-            ),
-            known_missing=frozenset(
-                Module(module)
-                for module in (*known_missing, *cfg_of("known_missing"))
-                if module.strip()
-            ),
-            provides=Packages(
-                [*_get_provides(provides, provides_from_venv), *cfg_of("provides")]
-            ),
-            dependencies=src_cfg.dependencies,
-            pyproject_file=src_cfg.path,
+            includes=includes,
         )
-
-    def __post_init__(self) -> None:
-        """Dataclass post init method to ensure sets are frozen."""
-        self.known_extra = frozenset(filter(None, self.known_extra or ()))
-        self.known_missing = frozenset(filter(None, self.known_missing or ()))
 
     def mk_src_formatter(
         self,
@@ -162,14 +114,55 @@ class AppConfig:
         yield f"{Dependency.EXTRA.value}{name} {module}"
 
 
+@dataclass
+class ProjectConfig:
+    """Project dependencies and related config."""
+
+    known_missing: Collection[Module]
+    defined_dependencies: Collection[Package]
+    allowed_dependencies: Collection[Package]
+    known_extra: Collection[Package]
+    packages: Packages
+    src_formatter: Callable[[str, Dependency, Module, ast.AST | None], Iterator[str]]
+    path: Path
+
+    @classmethod
+    def from_config(cls, app_cfg: AppConfig, pyproject: PyProjectToml) -> ProjectConfig:
+        """Initialize an empty ProjectDependencies instance."""
+        packages = app_cfg.provides | Packages(pyproject.provides)
+
+        allowed_dependencies = chain.from_iterable(
+            [
+                pyproject.dependencies,
+                app_cfg.known_extra,
+                pyproject.known_extra,
+                map(Package, BUILTINS),
+                [Package(m.name) for m in pyproject.known_missing],
+            ]
+        )
+
+        known_missing = frozenset([*app_cfg.known_missing, *pyproject.known_missing])
+
+        return cls(
+            known_missing=known_missing,
+            defined_dependencies=frozenset(pyproject.dependencies),
+            allowed_dependencies=frozenset(allowed_dependencies),
+            known_extra=frozenset({*app_cfg.known_extra, *pyproject.known_extra}),
+            packages=packages,
+            src_formatter=app_cfg.mk_src_formatter(),
+            path=pyproject.path,
+        )
+
+
 def _get_provides(
     provides: Iterable[str], provides_from_venv: Path | None
 ) -> Iterable[tuple[Package, Module]]:
     """Parse the provides argument and collect provides from a virtual environment."""
-    for package_name, _, module in (map1.partition("=") for map1 in provides):
-        if package_name.strip() and module.strip():
-            yield Package(package_name), Module(module)
-
-    if provides_from_venv:
-        for package_name, module_name in mappings_for_env(provides_from_venv):
-            yield Package(package_name), Module(module_name)
+    return [
+        (Package(pkg.strip()), Module(mod.strip()))
+        for pkg, mod in chain(
+            (map(str.strip, map1.split("=")) for map1 in provides),
+            mappings_for_env(provides_from_venv),
+        )
+        if pkg.strip() and mod.strip()
+    ]

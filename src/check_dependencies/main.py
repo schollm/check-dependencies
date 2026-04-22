@@ -4,14 +4,15 @@ from __future__ import annotations
 
 import ast
 import logging
-from pathlib import Path
 from typing import TYPE_CHECKING, Iterable
 
-from check_dependencies.builtin_module import BUILTINS
-from check_dependencies.lib import Dependency, Module, Package, Packages
+from check_dependencies.app_config import ProjectConfig
+from check_dependencies.lib import Dependency, Module, Package
+from check_dependencies.pyproject_toml import PyProjectToml, get_pyproject_toml
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Generator, Iterator
+    from collections.abc import Generator, Iterator
+    from pathlib import Path
 
     from check_dependencies.app_config import AppConfig
 
@@ -22,92 +23,106 @@ ERR_NO_PYPROJECT = 8
 ERR_FILE = 16
 
 
-def yield_wrong_imports(
-    file_names: Collection[str],
-    app_cfg: AppConfig,
-) -> Generator[str, None, int]:
+def yield_wrong_imports(app_cfg: AppConfig) -> Generator[str, None, int]:
     """Yield output lines of missing/unused imports.
 
-    :param file_names: List of file paths to analyze.
-    :param app_cfg: Application configuration containing dependencies and settings.
-        If app_cfg.show_all is True, all imports are shown.
+    :param file_cfg_pairs: Iterable of (source file path, AppConfig) pairs as
+        produced by ``AppConfig.from_cli_args``.  All files that share the same
+        ``AppConfig`` instance are treated as belonging to the same project.
     """
-    used_deps: set[Package] = set()
-    src_fmt = app_cfg.mk_src_formatter()
-
-    allowed_dependencies = {
-        *app_cfg.dependencies,  # dependencies from pyproject.toml
-        *app_cfg.known_extra,
-        *Package.set(BUILTINS),
-        *Package.set(x.name for x in app_cfg.known_missing),
-    }
-    provides = app_cfg.provides
-
+    # Map pyproject path → per-project accumulator.
+    # A regular dict is used because the factory would need the AppConfig; we
+    # initialise on first encounter instead of relying on defaultdict's zero-arg
+    # factory.
+    # One formatter per project — its internal dedup cache spans all files in
+    # the same project.
     exit_status = 0
-    yield from _verbose_info(app_cfg)
-
-    for src_pth in _project_files(file_names):
-        for cause, module, stmt in _missing_imports_iter(
-            src_pth, dependencies=allowed_dependencies, provides=provides
-        ):
+    registry = _ProjectRegistry(app_cfg)
+    for src_pth in (
+        src_pth
+        for root_pth in app_cfg.file_names
+        for src_pth in (root_pth.rglob("*.py") if root_pth.is_dir() else [root_pth])
+    ):
+        project_cfg, used_deps = registry.get(src_pth)
+        for cause, module, stmt in _missing_imports_iter(src_pth, project_cfg):
             if cause not in (Dependency.OK, Dependency.FILE_ERROR, Dependency.UNKNOWN):
                 exit_status |= ERR_MISSING_DEPENDENCY
             if not module.raw:
-                used_deps |= provides.packages(module)
-            yield from src_fmt(src_pth.as_posix(), cause, module, stmt)
+                used_deps |= project_cfg.packages.packages(module)
+            yield from project_cfg.src_formatter(
+                src_pth.as_posix(), cause, module, stmt
+            )
 
-    if superfluous_requirements := [
-        msg
-        for dep in sorted(
-            set(app_cfg.dependencies).difference(used_deps, app_cfg.known_extra),
-        )
-        for msg in app_cfg.unused_fmt(str(dep))
-    ]:
-        exit_status |= ERR_EXTRA_DEPENDENCY
-        if app_cfg.verbose:
-            yield ""
-            yield "### Dependencies in config file not used in application:"
-            yield f"# Config file: {app_cfg.pyproject_file}"
-        yield from superfluous_requirements
+    yield from _verbose_app_info(app_cfg)
+    for pyproject_pth, (project_cfg, used_deps) in registry.registry.items():
+        yield from _verbose_project_info(app_cfg, project_cfg)
+        if superfluous_requirements := [
+            msg
+            for dep in sorted(
+                set(project_cfg.defined_dependencies).difference(
+                    used_deps, project_cfg.known_extra
+                ),
+            )
+            for msg in app_cfg.unused_fmt(str(dep))
+        ]:
+            exit_status |= ERR_EXTRA_DEPENDENCY
+            if app_cfg.verbose:
+                yield ""
+                yield "### Dependencies in config file not used in application:"
+                yield f"# Config file: {pyproject_pth}"
+            yield from superfluous_requirements
+
     return exit_status
 
 
-def _verbose_info(app_cfg: AppConfig) -> Iterable[str]:
-    if app_cfg.verbose:
-        yield f"# ALL={app_cfg.show_all}"
-        yield f"# INCLUDE_DEV={app_cfg.include_dev}"
-        for extra in sorted(app_cfg.known_extra):
-            yield f"# EXTRA {extra}"
-        for missing in sorted(app_cfg.known_missing):
-            yield f"# MISSING {missing.name}"
-        for package in sorted(app_cfg.provides.all_packages()):
-            modules = ", ".join(
-                m.name for m in sorted(app_cfg.provides.modules(package))
-            )
-            yield f"# PROVIDES {package} -> [{modules}]"
+class _ProjectRegistry:
+    """Registry of dependencies for a project, with formatters for output."""
+
+    def __init__(self, app_cfg: AppConfig) -> None:
+        """Initialize ProjectRegistry."""
+        self.app_cfg = app_cfg
+        self.include_dev = app_cfg.include_dev
+        self.registry = {}
+
+    def get(self, path: Path) -> tuple[ProjectConfig, set[Package]]:
+        """Get the set of packages associated with a given path."""
+        if (pyproject_pth := get_pyproject_toml(path.resolve())) not in self.registry:
+            self.registry[pyproject_pth] = (self._new_config(pyproject_pth), set())
+
+        return self.registry[pyproject_pth]
+
+    def _new_config(self, pyproject_pth: Path) -> ProjectConfig:
+        """Get the config associated with a given path."""
+        proj = PyProjectToml.for_path(pyproject_pth, include_dev=self.include_dev)
+        return ProjectConfig.from_config(self.app_cfg, proj)
 
 
-def _project_files(file_names: Collection[str]) -> Iterator[Path]:
-    """Collect all Python files in a list of files or directories.
+def _verbose_app_info(app_cfg: AppConfig) -> Iterable[str]:
+    if not app_cfg.verbose:
+        return
+    yield f"# ALL={app_cfg.show_all}"
+    yield f"# INCLUDE_DEV={app_cfg.include_dev}"
+    for extra in sorted(app_cfg.known_extra):
+        yield f"# EXTRA {extra}"
+    for missing in sorted(app_cfg.known_missing):
+        yield f"# MISSING {missing.name}"
 
-    Ensure no file is visited more than once.
 
-    :param file_names: List of file paths or directories to analyze.
-    """
-    visited = set()
-    for p in map(Path, file_names):
-        for p_sub in p.rglob("*.py") if p.is_dir() else [p]:
-            # resolve to avoid duplicates from symlinks or different relative paths.
-            # Symlink can be pointed outside the project directory.
-            if (p_sub_resolved := p_sub.resolve()) not in visited:
-                visited.add(p_sub_resolved)
-                yield p_sub
+def _verbose_project_info(
+    app_cfg: AppConfig, project_cfg: ProjectConfig
+) -> Iterable[str]:
+    if not app_cfg.verbose:
+        return
+    yield f"# CONFIG: {project_cfg.path}"
+    for package in sorted(project_cfg.packages.all_packages()):
+        modules = ", ".join(
+            m.name for m in sorted(project_cfg.packages.modules(package))
+        )
+        yield f"# PROVIDES {package} -> [{modules}]"
 
 
 def _missing_imports_iter(
-    file: Path,
-    dependencies: Collection[Package],
-    provides: Packages,
+    file: Path, project_cfg: ProjectConfig
 ) -> Iterator[tuple[Dependency, Module, ast.AST]]:
     """Find missing imports in a Python file.
 
@@ -129,8 +144,13 @@ def _missing_imports_iter(
         if module.raw:
             yield Dependency.UNKNOWN, module, stmt
         else:
-            pkg_ = provides.packages(module)
-            status = Dependency.OK if pkg_.intersection(dependencies) else Dependency.NA
+            pkg_ = project_cfg.packages.packages(module)
+            status = (
+                Dependency.OK
+                if module.main in project_cfg.known_missing
+                or pkg_.intersection(project_cfg.allowed_dependencies)
+                else Dependency.NA
+            )
             yield status, module, stmt
 
 

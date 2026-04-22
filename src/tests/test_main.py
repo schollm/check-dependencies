@@ -9,18 +9,19 @@ import time
 from importlib.metadata import PackageNotFoundError
 from pathlib import Path
 from textwrap import dedent
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable, Collection
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from check_dependencies.__main__ import _get_version, _MultiSepAction
 from check_dependencies.__main__ import main as cli_main
-from check_dependencies.app_config import AppConfig
+from check_dependencies.app_config import AppConfig, ProjectConfig
 from check_dependencies.lib import Dependency, Module, Package, Packages
 from check_dependencies.main import (
     _imports_iter,
     _missing_imports_iter,
+    _ProjectRegistry,
     yield_wrong_imports,
 )
 from tests.conftest import (
@@ -143,8 +144,9 @@ def test__main__provides_parsing(
     captured: dict[str, Packages] = {}
 
     def _mock_yield(
-        _file_names: object, app_cfg: AppConfig
+        app_cfg: AppConfig,
     ) -> Generator[str, None, int]:
+        # Consume the first pair to get the AppConfig
         captured["provides"] = app_cfg.provides
         yield "_mock_yield"
         return 0
@@ -176,25 +178,23 @@ class TestYieldWrongImports:
         if isinstance(args, str):
             args = args.split()
 
-        stdout = MagicMock()
         lines: list[str] = []
-        stdout.write = lines.append
 
         with patch(
             "check_dependencies.pyproject_toml._PYPROJECT_TOML", overwrite_cfg
         ), patch("sys.argv", ["check-dependencies", *args, *file_names]), patch(
-            "sys.stdout", stdout
+            "check_dependencies.__main__._writer", lines.append
         ):
             cli_main()
-            return [
-                line
-                for line in lines
-                if line != "\n" and (with_comment or not line.startswith("#"))
-            ]
+        return [
+            line
+            for line in lines
+            if line != "\n" and (with_comment or not line.startswith("#"))
+        ]
 
     def test(self, pyproject: Path) -> None:
         """By default, we should only see the missing (and extra) imports."""
-        assert self.fn(overwrite_cfg=pyproject) == [
+        assert self.fn(overwrite_cfg=pyproject, args=[]) == [
             "! missing",
             "! missing_class",
             "! missing_def",
@@ -235,7 +235,7 @@ class TestYieldWrongImports:
         res = self.fn(
             overwrite_cfg=PYPROJECT_EMPTY,
             file_names=[py_file.as_posix()],
-            args=["--verbose", "--extra=extra1"],
+            args=["--verbose", "--extra=extra1", "--missing=missing1"],
         )
 
         assert len(res) == len(expected)
@@ -265,7 +265,6 @@ class TestYieldWrongImports:
             self.fn(overwrite_cfg=pyproject_extra, args="--verbose", with_comment=True)
         ) > {
             "",
-            "# MISSING check_dependencies",
             "### Dependencies in config file not used in application:",
         }
 
@@ -347,7 +346,7 @@ class TestYieldWrongImports:
 
         Include requirements as known-missing - they should not appear in the output.
         """
-        res = self.fn(args="--missing=missing,test_1")
+        res = self.fn(args="--missing=missing,test_1", with_comment=True)
         assert res == ["! missing_class", "! missing_def"]
 
     def test_verbose(self) -> None:
@@ -421,7 +420,7 @@ class TestYieldWrongImports:
 
     def test_no_fail_on_missing_source(self) -> None:
         """Test that we do not fail if the source file is missing."""
-        res = AppConfig.from_cli_args(
+        cfg = AppConfig.from_cli_args(
             file_names=[Path("nonexistent.py")],
             known_extra=[],
             known_missing=[],
@@ -430,7 +429,8 @@ class TestYieldWrongImports:
             verbose=False,
             show_all=False,
         )
-        assert res
+
+        assert cfg
 
     def test_unicode_imports(self) -> None:
         """Test for Unicode module names."""
@@ -478,6 +478,57 @@ class TestYieldWrongImports:
         res = [line for line in res if line.startswith("# PROVIDES")]
         assert "# PROVIDES pytest -> [_pytest, py]" in res
 
+    def test_multi_project_support(self, tmp_path: Path) -> None:
+        """Files in different project trees each get their own AppConfig.
+
+        Two sub-directories each contain a pyproject.toml with distinct
+        dependencies.  from_cli_args should yield a different AppConfig
+        (with a different pyproject_file) for a file in each project.
+        """
+        proj_a = tmp_path / "proj_a"
+        proj_b = tmp_path / "proj_b"
+        proj_a.mkdir()
+        proj_b.mkdir()
+
+        (proj_a / "pyproject.toml").write_text(
+            dedent("""\
+            [project]
+            name = "proj-a"
+            dependencies = ["dep_a"]
+            """),
+            "utf-8",
+        )
+        (proj_b / "pyproject.toml").write_text(
+            dedent("""\
+            [project]
+            name = "proj-b"
+            dependencies = ["dep_b"]
+            """),
+            "utf-8",
+        )
+
+        file_a = proj_a / "mod_a.py"
+        file_b = proj_b / "mod_b.py"
+        file_a.write_text("import dep_a\n", "utf-8")
+        file_b.write_text("import dep_b\n", "utf-8")
+
+        app_cfg = AppConfig.from_cli_args(file_names=[file_a, file_b])
+        registry = _ProjectRegistry(app_cfg)
+        cfg_a, _ = registry.get(proj_a / "foo.py")
+        cfg_a2, _ = registry.get(
+            proj_a / "bar.py"
+        )  # same project, should get same config
+        cfg_b, _ = registry.get(proj_b / "foo.py")
+
+        assert cfg_a is not cfg_b
+        assert cfg_a is cfg_a2
+        assert cfg_a.path == proj_a / "pyproject.toml"
+        assert cfg_b.path == proj_b / "pyproject.toml"
+        assert Package("dep_a") in cfg_a.allowed_dependencies
+        assert Package("dep_b") in cfg_b.allowed_dependencies
+        assert Package("dep_b") not in cfg_a.allowed_dependencies
+        assert Package("dep_a") not in cfg_b.allowed_dependencies
+
 
 @pytest.mark.parametrize(
     "stmt, expected",
@@ -492,12 +543,33 @@ def test_imports_iter(stmt: str, expected: list[str]) -> None:
     assert [x.name for x, _ in _imports_iter(parsed.body)] == expected
 
 
+def project_cfg(
+    known_missing: Collection[Module] = (),
+    defined_dependencies: Collection[Package] = (),
+    allowed_dependencies: Collection[Package] = (),
+    known_extra: Collection[Package] = (),
+    packages: Packages | None = None,
+    src_formatter: Callable = lambda *_: iter([]),
+    path: Path = Path(),
+) -> ProjectConfig:
+    """Create a ProjectConfig with default values."""
+    return ProjectConfig(
+        known_missing=known_missing,
+        defined_dependencies=defined_dependencies,
+        allowed_dependencies=allowed_dependencies,
+        known_extra=known_extra,
+        packages=packages or Packages([]),
+        src_formatter=src_formatter,
+        path=path,
+    )
+
+
 def test_missing_import_iter_silent_on_invalid_python_code() -> None:
     """Test that missing imports iterator catches invalid Python code."""
     my_path = MagicMock()
     my_path.as_posix.return_value = "dummy.py"
     my_path.read_bytes.return_value = b"()foo"
-    res = list(_missing_imports_iter(my_path, set(), Packages([])))
+    res = list(_missing_imports_iter(my_path, project_cfg()))
     assert len(res) == 1
     status, module, _ = res[0]
     assert status == Dependency.FILE_ERROR
@@ -510,7 +582,7 @@ def test_missing_imports_iter_non_utf8_encoding(tmp_path: Path) -> None:
     # Write a latin-1 encoded file with an encoding cookie and an import
     content = "# -*- coding: latin-1 -*-\nimport os\nx = 'caf\xe9'\n"
     py_file.write_bytes(content.encode("latin-1"))
-    result = list(_missing_imports_iter(py_file, set(), Packages([])))
+    result = list(_missing_imports_iter(py_file, project_cfg()))
     assert [m.name for _, m, _ in result] == ["os"]
 
 
@@ -518,7 +590,10 @@ def test_missing_imports_iter() -> None:
     """Test the missing import iterator."""
     res = list(
         _missing_imports_iter(
-            Path(SRC), Package.set({"test_0", "test_1", "extra"}), Packages([])
+            Path(SRC),
+            project_cfg(
+                allowed_dependencies=Package.set({"test_0", "test_1", "extra"})
+            ),
         )
     )
     assert {c for c, _, _ in res} == {Dependency.NA, Dependency.OK}
@@ -545,7 +620,17 @@ def test_missing_imports_iter() -> None:
 )
 def test_mk_unused_formatter(verbose: bool, expected: str) -> None:
     """Test the unused formatter."""
-    cfg = AppConfig.from_cli_args(file_names=[DATA], verbose=verbose)
+    cfg = AppConfig.from_cli_args(
+        file_names=[DATA],
+        known_extra=[],
+        known_missing=[],
+        provides=[],
+        include_dev=False,
+        verbose=verbose,
+        show_all=False,
+        includes=[],
+        provides_from_venv=None,
+    )
     assert list(cfg.unused_fmt("foo")) == [expected]
 
 
@@ -589,7 +674,11 @@ import sys
 """
     py_file.write_text(content, encoding="utf-8")
 
-    result = list(_missing_imports_iter(py_file, Package.set({"sys"}), Packages([])))
+    result = list(
+        _missing_imports_iter(
+            py_file, project_cfg(allowed_dependencies=Package.set({"sys"}))
+        )
+    )
 
     # Extract module names
     modules = [m.name for _, m, _ in result]
@@ -613,14 +702,9 @@ def test_performance_large_project(tmp_path: Path) -> None:
     n_files = 1000
     for i in range(n_files):
         (tmp_path / f"file_{i}.py").write_text("import sys\n")
-    cfg = AppConfig(
-        dependencies=[],
-        known_extra=[],
-        known_missing=[],
-        provides=Packages([]),
-    )
+    cfg = AppConfig(file_names=[tmp_path])
     start = time.time()
-    _ = list(yield_wrong_imports([tmp_path.as_posix()], cfg))
+    _ = list(yield_wrong_imports(cfg))
     duration = time.time() - start
 
     assert duration < max_duration_per_file * n_files

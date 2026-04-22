@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 from typing import TypeVar
 
@@ -11,8 +10,8 @@ import pytest
 from check_dependencies.lib import Module, Package
 from check_dependencies.pyproject_toml import (
     PyProjectToml,
-    _get_pyproject_path,
     _nested_item,
+    get_pyproject_toml,
 )
 from tests.conftest import (
     HATCH,
@@ -37,6 +36,7 @@ class TestPyProjectToml:
             cfg=tomllib.loads(path.read_text("utf-8")),
             path=path,
             include_dev=include_dev,
+            includes_cfg=[],
         )
 
     @pytest.mark.parametrize(
@@ -65,7 +65,10 @@ class TestPyProjectToml:
     def test_unsupported_dependencies(self) -> None:
         """Test unsupported dependencies in pyproject.toml."""
         cfg = PyProjectToml(
-            cfg={"project": {"name": "test-project"}}, path=Path(), include_dev=False
+            cfg={"project": {"name": "test-project"}},
+            path=Path(),
+            include_dev=False,
+            includes_cfg=[],
         )
         with pytest.raises(ValueError, match="No dependency management found"):
             _ = cfg.dependencies
@@ -73,12 +76,12 @@ class TestPyProjectToml:
     def test_provides_empty(self) -> None:
         """Test that provides returns an empty dict when not configured."""
         cfg = self.cfg(PEP631)
-        assert cfg.provides == []
+        assert cfg.provides == set()
 
     def test_provides(self) -> None:
         """Test that provides returns the correct mapping."""
         cfg = self.cfg(PYPROJECT_PROVIDES)
-        assert cfg.provides == [(Package("test_alias_pkg"), Module("test_1"))]
+        assert cfg.provides == {(Package("test_alias_pkg"), Module("test_1"))}
 
     @pytest.mark.parametrize(
         "raw, expected",
@@ -97,16 +100,9 @@ class TestPyProjectToml:
             cfg={"tool": {"check-dependencies": {"provides": {raw: "some_import"}}}},
             path=Path("dummy"),
             include_dev=False,
+            includes_cfg=[],
         )
-        assert cfg.provides == [(Package(expected), Module("some_import"))]
-
-    @pytest.mark.skipif(sys.platform != "win32", reason="Windows-specific test")
-    def test_fails_on_different_paths(self) -> None:
-        """Test that PyProjectToml raises when initialized with different paths."""
-        with pytest.raises(
-            ValueError, match=r"Error finding common path for.*C:.test.*D:.test"
-        ):
-            PyProjectToml.for_paths([Path("C:/test"), Path("D:/test")])
+        assert cfg.provides == {(Package(expected), Module("some_import"))}
 
 
 class TestNestedItem:
@@ -120,26 +116,28 @@ class TestNestedItem:
     )
     def test_nested_item(self, key: str, type_: type[_T], expected: _T) -> None:
         """Test nested item."""
-        prj = PyProjectToml(cfg={"a": {"b": {"c": 1, "d": 2}}}, path=Path())
+        prj = PyProjectToml(
+            cfg={"a": {"b": {"c": 1, "d": 2}}}, path=Path(), includes_cfg=[]
+        )
         assert _nested_item(prj.cfg, key, type_) == expected
 
     def test_raise_wrong_type(self) -> None:
         """Raise wrong type."""
-        prj = PyProjectToml(cfg={"a": 1}, path=Path())
+        prj = PyProjectToml(cfg={"a": 1}, path=Path(), includes_cfg=[])
         with pytest.raises(TypeError):
             _nested_item(prj.cfg, "a", str)
 
 
-class TestGetPyProjectPath:
-    """Test suite for the get_pyproject_path function."""
+class TestGetPyProjectToml:
+    """Test suite for the get_pyproject_toml function."""
 
     def test_find_pyproject(self, tmp_path: Path) -> None:
-        """Test that get_pyproject_path finds the pyproject.toml file."""
+        """Test that get_pyproject_toml finds the pyproject.toml file."""
         pyproject = tmp_path / "pyproject.toml"
         pyproject.write_text("[tool.check-dependencies]\n", "utf-8")
-        assert _get_pyproject_path(tmp_path) == pyproject
+        assert get_pyproject_toml(tmp_path) == pyproject
 
     def test_no_pyproject(self) -> None:
-        """Test that get_pyproject_path raises without pyproject.toml."""
+        """Test that get_pyproject_toml raises without pyproject.toml."""
         with pytest.raises(FileNotFoundError):
-            _get_pyproject_path(Path("/"))
+            get_pyproject_toml(Path("/"))

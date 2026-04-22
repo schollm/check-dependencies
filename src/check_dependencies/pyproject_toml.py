@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from functools import lru_cache
 from itertools import chain
-from os.path import commonpath
 from pathlib import Path
-from typing import Any, Collection, Mapping, TypeVar
+from typing import Any, Collection, Mapping, Sequence, TypeVar
 
-from check_dependencies.lib import Module, Package
+from check_dependencies.lib import Module, Package, Packages
 
 try:
     import tomllib  # ty:ignore[unresolved-import]
@@ -20,39 +20,43 @@ logger = logging.getLogger(__name__)
 _PYPROJECT_TOML = Path("pyproject.toml")
 _T = TypeVar("_T")
 
+_INCLUDES_KEY = "tool.check-dependencies.includes"
+_KNOWN_MISSING_KEY = "tool.check-dependencies.known-missing"
+_KNOWN_EXTRA_KEY = "tool.check-dependencies.known-extra"
+_PROVIDES_KEY = "tool.check-dependencies.provides"
+
 
 @dataclass(frozen=True)
 class ConfigToml:
     """Additional config for check-dependencies options. Useful for mono-repos."""
 
     cfg: dict[str, Any]
-    path: Path
+    includes_cfg: Sequence[ConfigToml]
 
     @classmethod
-    def for_path(cls, path: Path) -> ConfigToml:
+    def for_path(cls, path: Path, *, _seen: Collection[Path] = ()) -> ConfigToml:
         """Get a config from a path."""
         logger.debug("Parsing %s", path)
+        cfg = tomllib.loads(path.read_text("utf-8"))
         return ConfigToml(
-            cfg=tomllib.loads(path.read_text("utf-8")),
-            path=path,
+            cfg=cfg,
+            includes_cfg=[
+                cls.for_path(path=path / p, _seen={*_seen, path})
+                for p in _nested_item(cfg, _INCLUDES_KEY, list)
+                if path / p not in _seen
+            ],
         )
 
     @property
-    def includes(self) -> frozenset[Path]:
-        """Additional config files to include."""
-        return frozenset(
-            Path(p)
-            for p in _nested_item(self.cfg, "tool.check-dependencies.includes", list)
-        )
-
-    @property
-    def known_missing(self) -> frozenset[str]:
+    def known_missing(self) -> frozenset[Module]:
         """Known to be used in application but not declared in requirements."""
         return frozenset(
-            _nested_item(
-                self.cfg,
-                "tool.check-dependencies.known-missing",
-                list,
+            chain(
+                map(
+                    Module,
+                    _nested_item(self.cfg, _KNOWN_MISSING_KEY, list),
+                ),
+                chain.from_iterable(incl.known_missing for incl in self.includes_cfg),
             )
         )
 
@@ -60,14 +64,17 @@ class ConfigToml:
     def known_extra(self) -> frozenset[Package]:
         """Dependencies that are known to be unused in application."""
         return frozenset(
-            map(
-                Package,
-                _nested_item(self.cfg, "tool.check-dependencies.known-extra", list),
+            chain(
+                map(
+                    Package,
+                    _nested_item(self.cfg, _KNOWN_EXTRA_KEY, list),
+                ),
+                chain.from_iterable(incl.known_extra for incl in self.includes_cfg),
             )
         )
 
     @property
-    def provides(self) -> list[tuple[Package, Module]]:
+    def provides(self) -> frozenset[tuple[Package, Module]]:
         """Mapping from import name to package name.
 
         E.g. ``[
@@ -81,47 +88,46 @@ class ConfigToml:
         hyphen/underscore equivalent), so e.g. ``PyJWT``, ``pyjwt``, and
         ``pyJwt`` resolve to the same package identity.
         """
-        return [
-            (Package(package), Module(module))
-            for package, modules in _nested_item(
-                self.cfg, "tool.check-dependencies.provides", dict
-            ).items()
-            for module in ([modules] if isinstance(modules, str) else modules)
-        ]
+        return frozenset(
+            chain(
+                (
+                    (Package(package), Module(module))
+                    for package, modules in _nested_item(
+                        self.cfg, _PROVIDES_KEY, dict
+                    ).items()
+                    for module in ([modules] if isinstance(modules, str) else modules)
+                ),
+                chain.from_iterable(incl.provides for incl in self.includes_cfg),
+            )
+        )
 
 
 @dataclass(frozen=True)
 class PyProjectToml(ConfigToml):
     """Project specific options (dependencies, config) from a pyproject.toml file."""
 
-    cfg: dict[str, Any]
     path: Path
     include_dev: bool = False
 
     @classmethod
-    def for_paths(
-        cls, paths: Collection[Path], *, include_dev: bool = False
+    def for_path(
+        cls, path: Path, *, include_dev: bool = False, _seen: Collection[Path] = ()
     ) -> PyProjectToml:
-        """Create a PyProjectToml instance from a pyproject.toml file.
+        """Create a PyProjectToml instance from a known pyproject.toml path.
 
-        :param paths: List of file paths to analyze. The common parent directory
-            will be searched for a pyproject.toml file.
-        :param include_dev: Whether to include development dependencies
-            from pyproject.toml.
+        :param path: Absolute path to a pyproject.toml file.
+        :param include_dev: Whether to include development dependencies.
         :returns: A PyProjectToml instance with the parsed configuration.
         """
-        try:
-            pyproject_candidate = Path(
-                commonpath(p.expanduser().resolve() for p in paths),
-            )
-        except ValueError as exc:  # pragma: no cover
-            # Can only be reached in Windows when two different drives are provided.
-            msg = f"Error finding common path for {paths}: {exc}"
-            raise ValueError(msg) from exc
-        path = _get_pyproject_path(pyproject_candidate)
-
+        cfg = tomllib.loads(path.read_text("utf-8"))
+        includes = [] if path in _seen else _nested_item(cfg, _INCLUDES_KEY, list)
+        _seen = {*_seen, path}
         return cls(
-            cfg=tomllib.loads(path.read_text("utf-8")),
+            cfg=cfg,
+            includes_cfg=[
+                cls.for_path(path.parent / p, include_dev=include_dev, _seen=_seen)
+                for p in includes
+            ],
             path=path,
             include_dev=include_dev,
         )
@@ -147,20 +153,43 @@ class PyProjectToml(ConfigToml):
         return frozenset(deps)
 
     @property
-    def known_missing(self) -> frozenset[str]:
+    def known_missing(self) -> frozenset[Module]:
         """Known to be used in application but not declared in requirements.
 
         This includes the project itself.
         """
         # Add project name
+        packages = Packages([])
         pep631_name = Package(_nested_item(self.cfg, "project.name", str) or "")
         poetry_name = Package(_nested_item(self.cfg, "tool.poetry.name", str) or "")
         return frozenset(
             filter(
-                None,
-                (pep631_name.canonical, poetry_name.canonical, *super().known_missing),
+                lambda m: m.name,
+                chain(
+                    super().known_missing,
+                    packages.modules(pep631_name),
+                    packages.modules(poetry_name),
+                ),
             ),
         )
+
+
+@lru_cache(maxsize=None)
+def get_pyproject_toml(path: Path) -> Path:
+    """Return the pyproject.toml path for the given directory, with caching.
+
+    Searches upward from *path* (which should be a directory, typically
+    ``file.parent``) until a ``pyproject.toml`` is found.
+
+    :param path: Directory to start searching from.
+    :returns: Absolute path to the nearest ``pyproject.toml``.
+    :raises FileNotFoundError: When no ``pyproject.toml`` is found in the hierarchy.
+    """
+    for p in chain([path], path.resolve().parents):
+        if (p / _PYPROJECT_TOML).exists():
+            return p / _PYPROJECT_TOML
+    msg = f"Could not find {_PYPROJECT_TOML} file within path hierarchy"
+    raise FileNotFoundError(msg)
 
 
 @dataclass(frozen=True)
@@ -308,15 +337,3 @@ def _nested_item(obj: Mapping[str, Any], key: str, /, class_: type[_T]) -> _T:
         msg = f"Expected {class_} but got {type(obj)}"
         raise TypeError(msg)
     return obj
-
-
-def _get_pyproject_path(path: Path) -> Path:
-    """Get the pyproject.toml file by searching up the directory hierarchy.
-
-    :param path: The starting path to search from.
-    """
-    for p in chain([path], path.resolve().parents):
-        if (p / _PYPROJECT_TOML).exists():
-            return p / _PYPROJECT_TOML
-    msg = f"Could not find {_PYPROJECT_TOML} file within path hierarchy"
-    raise FileNotFoundError(msg)

@@ -128,6 +128,45 @@ class TestNestedItem:
             _nested_item(prj.cfg, "a", str)
 
 
+class TestPyProjectTomlCircularIncludes:
+    """Test that circular includes in PyProjectToml are handled correctly."""
+
+    def test_circular_include_no_duplicate(self, tmp_path: Path) -> None:
+        """Circular includes (A→B→A) must not duplicate config values from A."""
+        a = tmp_path / "a.toml"
+        b = tmp_path / "b.toml"
+        a.write_text(
+            "[tool.check-dependencies]\n"
+            'known-missing = ["mod_a"]\n'
+            'includes = ["b.toml"]\n',
+            "utf-8",
+        )
+        b.write_text(
+            "[tool.check-dependencies]\n"
+            'known-missing = ["mod_b"]\n'
+            'includes = ["a.toml"]\n',
+            "utf-8",
+        )
+        result = PyProjectToml.for_path(a)
+        # mod_a should appear exactly once; mod_b exactly once
+        known = list(result.known_missing)
+        assert known.count(Module("mod_a")) == 1
+        assert known.count(Module("mod_b")) == 1
+
+    def test_self_referential_include(self, tmp_path: Path) -> None:
+        """A self-referential include must not recurse infinitely or duplicate."""
+        a = tmp_path / "a.toml"
+        a.write_text(
+            "[tool.check-dependencies]\n"
+            'known-missing = ["mod_a"]\n'
+            'includes = ["a.toml"]\n',
+            "utf-8",
+        )
+        result = PyProjectToml.for_path(a)
+        known = list(result.known_missing)
+        assert known.count(Module("mod_a")) == 1
+
+
 class TestGetPyProjectToml:
     """Test suite for the get_pyproject_toml function."""
 

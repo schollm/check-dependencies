@@ -120,13 +120,13 @@ class PyProjectToml(ConfigToml):
         :returns: A PyProjectToml instance with the parsed configuration.
         """
         cfg = tomllib.loads(path.read_text("utf-8"))
-        includes = [] if path in _seen else _nested_item(cfg, _INCLUDES_KEY, list)
         _seen = {*_seen, path}
         return cls(
             cfg=cfg,
             includes_cfg=[
                 cls.for_path(path.parent / p, include_dev=include_dev, _seen=_seen)
-                for p in includes
+                for p in _nested_item(cfg, _INCLUDES_KEY, list)
+                if path.parent / p not in _seen
             ],
             path=path,
             include_dev=include_dev,

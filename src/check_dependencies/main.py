@@ -37,11 +37,16 @@ def yield_wrong_imports(app_cfg: AppConfig) -> Generator[str, None, int]:
     # the same project.
     exit_status = 0
     registry = _ProjectRegistry(app_cfg)
+    seen = set()
     for src_pth in (
-        src_pth
+        src_pth.resolve()
         for root_pth in app_cfg.file_names
         for src_pth in (root_pth.rglob("*.py") if root_pth.is_dir() else [root_pth])
     ):
+        if src_pth in seen:
+            continue
+        seen.add(src_pth)
+
         project_cfg, used_deps = registry.get(src_pth)
         for cause, module, stmt in _missing_imports_iter(src_pth, project_cfg):
             if cause not in (Dependency.OK, Dependency.FILE_ERROR, Dependency.UNKNOWN):

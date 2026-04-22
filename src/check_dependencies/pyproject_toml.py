@@ -185,9 +185,11 @@ def get_pyproject_toml(path: Path) -> Path:
     :returns: Absolute path to the nearest ``pyproject.toml``.
     :raises FileNotFoundError: When no ``pyproject.toml`` is found in the hierarchy.
     """
-    for p in chain([path], path.resolve().parents):
-        if (p / _PYPROJECT_TOML).exists():
-            return p / _PYPROJECT_TOML
+    root = path.resolve()
+    for p in chain([root], root.parents):
+        pyproject_toml = p / _PYPROJECT_TOML
+        if pyproject_toml.exists():
+            return pyproject_toml
     msg = f"Could not find {_PYPROJECT_TOML} file within path hierarchy"
     raise FileNotFoundError(msg)
 

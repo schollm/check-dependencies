@@ -26,9 +26,8 @@ ERR_FILE = 16
 def yield_wrong_imports(app_cfg: AppConfig) -> Generator[str, None, int]:
     """Yield output lines of missing/unused imports.
 
-    :param file_cfg_pairs: Iterable of (source file path, AppConfig) pairs as
-        produced by ``AppConfig.from_cli_args``.  All files that share the same
-        ``AppConfig`` instance are treated as belonging to the same project.
+    :param app_cfg: Application configuration used to determine which files to
+        scan and how to resolve and report project dependencies.
     """
     # Map pyproject path → per-project accumulator.
     # A regular dict is used because the factory would need the AppConfig; we
@@ -86,7 +85,7 @@ class _ProjectRegistry:
 
     def get(self, path: Path) -> tuple[ProjectConfig, set[Package]]:
         """Get the set of packages associated with a given path."""
-        if (pyproject_pth := get_pyproject_toml(path.resolve())) not in self.registry:
+        if (pyproject_pth := get_pyproject_toml(path.parent.resolve())) not in self.registry:
             self.registry[pyproject_pth] = (self._new_config(pyproject_pth), set())
 
         return self.registry[pyproject_pth]

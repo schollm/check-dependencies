@@ -176,7 +176,7 @@ class PyProjectToml(ConfigToml):
 class NoPyProjectFile(FileNotFoundError):
     pass
 
-@lru_cache(maxsize=None)
+@lru_cache(maxsize=100_000)
 def get_pyproject_toml(path: Path) -> Path:
     """Return the pyproject.toml path for the given directory, with caching.
 

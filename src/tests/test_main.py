@@ -702,6 +702,7 @@ def test_performance_large_project(tmp_path: Path) -> None:
     n_files = 1000
     for i in range(n_files):
         (tmp_path / f"file_{i}.py").write_text("import sys\n")
+    (tmp_path / "pyproject.toml").write_bytes(PYPROJECT_CFG.read_bytes())
     cfg = AppConfig(file_names=[tmp_path])
     start = time.time()
     _ = list(yield_wrong_imports(cfg))

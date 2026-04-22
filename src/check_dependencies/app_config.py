@@ -114,7 +114,7 @@ class AppConfig:
         yield f"{Dependency.EXTRA.value}{name} {module}"
 
 
-@dataclass
+@dataclass(frozen=True)
 class ProjectConfig:
     """Project dependencies and related config."""
 

@@ -41,9 +41,9 @@ class ConfigToml:
         return ConfigToml(
             cfg=cfg,
             includes_cfg=[
-                cls.for_path(path=path / p, _seen={*_seen, path})
+                cls.for_path(path=path.parent / p, _seen={*_seen, path})
                 for p in _nested_item(cfg, _INCLUDES_KEY, list)
-                if path / p not in _seen
+                if path.parent / p not in _seen
             ],
         )
 

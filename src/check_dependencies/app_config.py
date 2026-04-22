@@ -162,7 +162,10 @@ def _get_provides(
         (Package(pkg.strip()), Module(mod.strip()))
         for pkg, sep, mod in chain(
             (map1.partition("=") for map1 in provides),
-            ((str(pkg), "=", str(mod)) for pkg, mod in mappings_for_env(provides_from_venv)),
+            (
+                (str(pkg), "=", str(mod))
+                for pkg, mod in mappings_for_env(provides_from_venv)
+            ),
         )
         if sep and pkg.strip() and mod.strip()
     ]

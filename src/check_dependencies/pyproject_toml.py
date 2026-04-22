@@ -184,14 +184,17 @@ def get_pyproject_toml(path: Path) -> Path:
     :param path: Directory to start searching from.
     :returns: Absolute path to the nearest ``pyproject.toml``.
     :raises FileNotFoundError: When no ``pyproject.toml`` is found in the hierarchy.
+
+    This uses recursion and LRU caching to allow for efficient caching.
     """
-    root = path.resolve()
-    for p in chain([root], root.parents):
-        pyproject_toml = p / _PYPROJECT_TOML
-        if pyproject_toml.exists():
-            return pyproject_toml
-    msg = f"Could not find {_PYPROJECT_TOML} file within path hierarchy"
-    raise FileNotFoundError(msg)
+    if (result := path / _PYPROJECT_TOML).exists():
+        return result
+
+    if path == path.parent:  # Exit recursion
+        msg = f"Could not find {_PYPROJECT_TOML} file within path hierarchy"
+        raise FileNotFoundError(msg)
+
+    return get_pyproject_toml(path.parent)
 
 
 @dataclass(frozen=True)

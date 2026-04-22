@@ -32,7 +32,6 @@ class AppConfig:
     include_dev: bool = False
     verbose: bool = False
     show_all: bool = False
-    includes: Sequence[Path] = ()
 
     @classmethod
     def from_cli_args(  # noqa: PLR0913
@@ -69,7 +68,6 @@ class AppConfig:
             include_dev=include_dev,
             verbose=verbose,
             show_all=show_all,
-            includes=includes,
         )
 
     def mk_src_formatter(

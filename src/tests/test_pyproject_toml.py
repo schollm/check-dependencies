@@ -11,7 +11,7 @@ from check_dependencies.lib import Module, Package
 from check_dependencies.pyproject_toml import (
     PyProjectToml,
     _nested_item,
-    get_pyproject_toml,
+    get_pyproject_toml, NoPyProjectFile,
 )
 from tests.conftest import (
     HATCH,
@@ -178,5 +178,5 @@ class TestGetPyProjectToml:
 
     def test_no_pyproject(self) -> None:
         """Test that get_pyproject_toml raises without pyproject.toml."""
-        with pytest.raises(FileNotFoundError):
+        with pytest.raises(NoPyProjectFile):
             get_pyproject_toml(Path("/"))

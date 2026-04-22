@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Iterable
 
 from check_dependencies.app_config import ProjectConfig
 from check_dependencies.lib import Dependency, Module, Package
-from check_dependencies.pyproject_toml import PyProjectToml, get_pyproject_toml
+from check_dependencies.pyproject_toml import PyProjectToml, get_pyproject_toml, NoPyProjectFile
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterator
@@ -46,8 +46,12 @@ def yield_wrong_imports(app_cfg: AppConfig) -> Generator[str, None, int]:
         if src_pth in seen:
             continue
         seen.add(src_pth)
+        try:
+            project_cfg, used_deps = registry.get(src_pth)
+        except NoPyProjectFile as exc:
+            logger.error("Could not find pyproject.toml for %s", src_pth, exc_info=False)
+            return exit_status | ERR_NO_PYPROJECT
 
-        project_cfg, used_deps = registry.get(src_pth)
         for cause, module, stmt in _missing_imports_iter(src_pth, project_cfg):
             if cause not in (Dependency.OK, Dependency.FILE_ERROR, Dependency.UNKNOWN):
                 exit_status |= ERR_MISSING_DEPENDENCY

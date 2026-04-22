@@ -94,9 +94,8 @@ class _ProjectRegistry:
 
     def get(self, path: Path) -> tuple[ProjectConfig, set[Package]]:
         """Get the set of packages associated with a given path."""
-        if (
-            pyproject_pth := get_pyproject_toml(path.parent.resolve())
-        ) not in self.registry:
+        pyproject_pth = get_pyproject_toml(path.parent.resolve())
+        if pyproject_pth not in self.registry:
             self.registry[pyproject_pth] = (self._new_config(pyproject_pth), set())
 
         return self.registry[pyproject_pth]

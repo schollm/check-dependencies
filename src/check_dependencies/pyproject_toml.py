@@ -173,8 +173,10 @@ class PyProjectToml(ConfigToml):
             ),
         )
 
-class NoPyProjectFile(FileNotFoundError):
-    pass
+
+class NoPyProjectFileError(FileNotFoundError):
+    """pyproject.toml file not found in the directory hierarchy of the given path."""
+
 
 @lru_cache(maxsize=100_000)
 def get_pyproject_toml(path: Path) -> Path:
@@ -193,11 +195,11 @@ def get_pyproject_toml(path: Path) -> Path:
         return result
 
     if path == path.parent:  # Exit recursion
-        raise NoPyProjectFile(path)
+        raise NoPyProjectFileError(path)
     try:
         return get_pyproject_toml(path.parent)
-    except NoPyProjectFile:
-        raise NoPyProjectFile(path) from None
+    except NoPyProjectFileError:
+        raise NoPyProjectFileError(path) from None
 
 
 @dataclass(frozen=True)

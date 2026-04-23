@@ -143,7 +143,7 @@ class Packages:
 
     _modules: dict[Package, set[Module]]
     _packages: dict[Module, set[Package]]
-    _orig_packages: Collection[tuple[Package, Module]]
+    _orig_packages: tuple[tuple[Package, Module], ...]
 
     def __init__(self, packages: Collection[tuple[Package, Module]] = ()) -> None:
         """Initialize the Packages dataclass.
@@ -151,7 +151,7 @@ class Packages:
         :param packages: List of (package, module) tuples, where package is the
             package name and module is the import name.
         """
-        self._orig_packages = packages
+        self._orig_packages = tuple(packages)
         self._modules = {
             key: {module for _, module in val}
             for key, val in groupby(

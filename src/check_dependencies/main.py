@@ -46,9 +46,8 @@ def yield_wrong_imports(app_cfg: AppConfig) -> Generator[str, None, int]:
         src_pth
         for root_pth in app_cfg.file_names
         for src_pth in (root_pth.rglob("*.py") if root_pth.is_dir() else [root_pth])
+        if src_pth not in seen
     ):
-        if src_pth in seen:
-            continue
         seen.add(src_pth)
         try:
             project_cfg, used_deps = registry.get(src_pth)

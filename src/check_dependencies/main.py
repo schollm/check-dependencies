@@ -56,7 +56,9 @@ def yield_wrong_imports(app_cfg: AppConfig) -> Generator[str, None, int]:
             return exit_status | ERR_NO_PYPROJECT
 
         for cause, module, stmt in _missing_imports_iter(src_pth, project_cfg):
-            if cause not in (Dependency.OK, Dependency.FILE_ERROR, Dependency.UNKNOWN):
+            if cause is Dependency.FILE_ERROR:
+                exit_status |= ERR_FILE
+            elif cause not in (Dependency.OK, Dependency.UNKNOWN):
                 exit_status |= ERR_MISSING_DEPENDENCY
             if not module.raw:
                 used_deps |= project_cfg.packages.packages(module)

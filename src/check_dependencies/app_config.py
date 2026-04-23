@@ -173,12 +173,13 @@ def _get_provides(
     """Parse the provides argument and collect provides from a virtual environment."""
     return [
         (Package(pkg.strip()), Module(mod.strip()))
-        for pkg, sep, mod in chain(
+        for pkg, sep, mods in chain(
             (map1.partition("=") for map1 in provides),
             (
                 (str(pkg), "=", str(mod))
                 for pkg, mod in mappings_for_env(provides_from_venv)
             ),
         )
+        for mod in mods.split(",")
         if sep and pkg.strip() and mod.strip()
     ]

@@ -264,8 +264,8 @@ class TestYieldWrongImports:
         assert set(
             self.fn(overwrite_cfg=pyproject_extra, args="--verbose", with_comment=True)
         ) > {
-            "",
-            "### Dependencies in config file not used in application:",
+            "# INCLUDE_DEV=False",
+            "# Dependencies in config file not used in application:",
         }
 
     def test_extra_requirements_as_cfg(self) -> None:

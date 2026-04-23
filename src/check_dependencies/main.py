@@ -40,6 +40,7 @@ def yield_wrong_imports(app_cfg: AppConfig) -> Generator[str, None, int]:
     # One formatter per project — its internal dedup cache spans all files in
     # the same project.
     exit_status = 0
+    yield from _verbose_app_info(app_cfg)
     registry = _ProjectRegistry(app_cfg)
     seen = set()
     for src_pth in (
@@ -66,26 +67,35 @@ def yield_wrong_imports(app_cfg: AppConfig) -> Generator[str, None, int]:
                 src_pth.as_posix(), cause, module, stmt
             )
 
-    yield from _verbose_app_info(app_cfg)
-    for pyproject_pth, (project_cfg, used_deps) in registry.registry.items():
+    # After processing all files, check for superfluous requirements in each project.
+    for project_cfg, used_deps in registry.registry.values():
         yield from _verbose_project_info(app_cfg, project_cfg)
-        if superfluous_requirements := [
-            msg
-            for dep in sorted(
-                set(project_cfg.defined_dependencies).difference(
-                    used_deps, project_cfg.known_extra
-                ),
-            )
-            for msg in app_cfg.unused_fmt(str(dep))
-        ]:
+        for line in _get_superfluous_requirements(project_cfg, used_deps, app_cfg):
+            yield line
             exit_status |= ERR_EXTRA_DEPENDENCY
-            if app_cfg.verbose:
-                yield ""
-                yield "### Dependencies in config file not used in application:"
-                yield f"# Config file: {pyproject_pth}"
-            yield from superfluous_requirements
 
     return exit_status
+
+
+def _get_superfluous_requirements(
+    project_cfg: ProjectConfig, used_deps: set[Package], app_cfg: AppConfig
+) -> Iterable[str]:
+    if superfluous_requirements := [
+        msg
+        for dep in sorted(
+            set(project_cfg.defined_dependencies).difference(
+                used_deps, project_cfg.known_extra
+            ),
+        )
+        for msg in app_cfg.unused_fmt(str(dep))
+    ]:
+        if app_cfg.verbose:
+            yield "# Dependencies in config file not used in application:"
+        else:
+            yield f"# Project {project_cfg.path}"
+        yield from superfluous_requirements
+        if app_cfg.verbose:
+            yield ""
 
 
 class _ProjectRegistry:
@@ -127,7 +137,7 @@ def _verbose_project_info(
 ) -> Iterable[str]:
     if not app_cfg.verbose:
         return
-    yield f"# CONFIG: {project_cfg.path}"
+    yield f"##### {project_cfg.path} ###"
     for package in sorted(project_cfg.packages.all_packages()):
         modules = ", ".join(
             m.name for m in sorted(project_cfg.packages.modules(package))

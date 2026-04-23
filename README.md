@@ -252,6 +252,7 @@ Example output:
 !NA matplotlib project/src/main.py:4
 
 ##### project/pyproject.toml ###
+# Dependencies in config file not used in application:
 +EXTRA requests
 ```
 

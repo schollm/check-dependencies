@@ -151,7 +151,7 @@ def _missing_imports_iter(
     """Find missing imports in a Python file.
 
     :param file: Python file to analyze
-    :param dependencies: Declared dependencies from pyproject file
+    :param project_cfg: Project specific configuration.
     :yields: Tuple of status, module and import statement
     """
     try:

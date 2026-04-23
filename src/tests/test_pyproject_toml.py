@@ -14,13 +14,7 @@ from check_dependencies.pyproject_toml import (
     _nested_item,
     get_pyproject_toml,
 )
-from tests.conftest import (
-    HATCH,
-    PEP631,
-    POETRY,
-    PYPROJECT_PROVIDES,
-    UV_LEGACY,
-)
+from tests.conftest import HATCH, PEP631, POETRY, PYPROJECT_PROVIDES, UV_LEGACY
 
 try:
     import tomllib  # ty:ignore[unresolved-import]
@@ -104,6 +98,53 @@ class TestPyProjectToml:
             includes_cfg=[],
         )
         assert cfg.provides == {(Package(expected), Module("some_import"))}
+
+    def test_includes(self, tmp_path: Path) -> None:
+        """Test that includes are processed correctly."""
+        a = tmp_path / "a.toml"
+        b = tmp_path / "b.toml"
+        a.write_text(
+            "[tool.check-dependencies]\n"
+            'known-missing = ["mod_a"]\n'
+            'known-extra = ["extra_a"]\n'
+            'includes = ["b.toml"]\n'
+            'provides = {extra_a = "mod_a"}\n',
+            "utf-8",
+        )
+        b.write_text(
+            "[tool.check-dependencies]\n"
+            'known-missing = ["mod_b"]\n'
+            'known-extra = ["extra_b"]\n'
+            'includes = ["c.toml"]\n'
+            'provides = {extra_b = "mod_b"}\n',
+            "utf-8",
+        )
+        (tmp_path / "c.toml").write_text(
+            "[tool.check-dependencies]\n"
+            'known-missing = ["mod_c"]\n'
+            'known-extra = ["extra_c"]\n'
+            "[tool.check-dependencies.provides]\n"
+            'extra_c = "mod_c"\n'
+            'extra_a = "mod_ac"\n',
+            "utf-8",
+        )
+        result = PyProjectToml.for_path(a)
+        assert set(result.known_missing) == {
+            Module("mod_a"),
+            Module("mod_b"),
+            Module("mod_c"),
+        }
+        assert set(result.known_extra) == {
+            Package("extra_a"),
+            Package("extra_b"),
+            Package("extra_c"),
+        }
+        assert set(result.provides) == {
+            (Package("extra_a"), Module("mod_a")),
+            (Package("extra_a"), Module("mod_ac")),
+            (Package("extra_b"), Module("mod_b")),
+            (Package("extra_c"), Module("mod_c")),
+        }
 
 
 class TestNestedItem:

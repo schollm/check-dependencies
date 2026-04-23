@@ -43,7 +43,7 @@ def yield_wrong_imports(app_cfg: AppConfig) -> Generator[str, None, int]:
     registry = _ProjectRegistry(app_cfg)
     seen = set()
     for src_pth in (
-        src_pth.resolve()
+        src_pth
         for root_pth in app_cfg.file_names
         for src_pth in (root_pth.rglob("*.py") if root_pth.is_dir() else [root_pth])
     ):
@@ -98,7 +98,7 @@ class _ProjectRegistry:
 
     def get(self, path: Path) -> tuple[ProjectConfig, set[Package]]:
         """Get the set of packages associated with a given path."""
-        pyproject_pth = get_pyproject_toml(path.parent.resolve())
+        pyproject_pth = get_pyproject_toml(path.parent)
         if pyproject_pth not in self.registry:
             self.registry[pyproject_pth] = (self._new_config(pyproject_pth), set())
 

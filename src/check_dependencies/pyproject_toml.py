@@ -186,8 +186,8 @@ def get_pyproject_toml(path: Path) -> Path:
     ``file.parent``) until a ``pyproject.toml`` is found.
 
     :param path: Directory to start searching from.
-    :returns: Absolute path to the nearest ``pyproject.toml``.
-    :raises FileNotFoundError: When no ``pyproject.toml`` is found in the hierarchy.
+    :returns: Path to the nearest ``pyproject.toml``.
+    :raises NoPyProjectFileError: When no ``pyproject.toml`` is found in the hierarchy.
 
     This uses recursion and LRU caching to allow for efficient caching.
     """
@@ -199,6 +199,7 @@ def get_pyproject_toml(path: Path) -> Path:
     try:
         return get_pyproject_toml(path.parent)
     except NoPyProjectFileError:
+        # Get original path for error message, not the resolved and recursed path
         raise NoPyProjectFileError(path) from None
 
 

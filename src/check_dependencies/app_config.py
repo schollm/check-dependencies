@@ -142,26 +142,22 @@ class ProjectConfig:
     @classmethod
     def from_config(cls, app_cfg: AppConfig, pyproject: PyProjectToml) -> ProjectConfig:
         """Initialize an empty ProjectDependencies instance."""
-        packages = app_cfg.provides | Packages(pyproject.provides)
-
-        allowed_dependencies = chain.from_iterable(
-            [
-                pyproject.dependencies,
-                app_cfg.known_extra,
-                pyproject.known_extra,
-                map(Package, BUILTINS),
-                [Package(m.name) for m in pyproject.known_missing],
-            ]
-        )
-
-        known_missing = frozenset([*app_cfg.known_missing, *pyproject.known_missing])
-
         return cls(
-            known_missing=known_missing,
+            known_missing=frozenset([*app_cfg.known_missing, *pyproject.known_missing]),
             defined_dependencies=frozenset(pyproject.dependencies),
-            allowed_dependencies=frozenset(allowed_dependencies),
+            allowed_dependencies=frozenset(
+                chain.from_iterable(
+                    [
+                        pyproject.dependencies,
+                        app_cfg.known_extra,
+                        pyproject.known_extra,
+                        map(Package, BUILTINS),
+                        (Package(m.name) for m in pyproject.known_missing),
+                    ]
+                )
+            ),
             known_extra=frozenset({*app_cfg.known_extra, *pyproject.known_extra}),
-            packages=packages,
+            packages=app_cfg.provides | Packages(pyproject.provides),
             src_formatter=app_cfg.mk_src_formatter(),
             path=pyproject.path,
         )

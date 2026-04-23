@@ -40,11 +40,11 @@ class ConfigToml:
         cfg = tomllib.loads(path.read_text("utf-8"))
         return ConfigToml(
             cfg=cfg,
-            includes_cfg=[
+            includes_cfg=tuple(
                 cls.for_path(path=path.parent / p, _seen={*_seen, path})
                 for p in _nested_item(cfg, _INCLUDES_KEY, list)
                 if path.parent / p not in _seen
-            ],
+            ),
         )
 
     @property
@@ -123,11 +123,11 @@ class PyProjectToml(ConfigToml):
         _seen = {*_seen, path}
         return cls(
             cfg=cfg,
-            includes_cfg=[
+            includes_cfg=tuple(
                 cls.for_path(path.parent / p, include_dev=include_dev, _seen=_seen)
                 for p in _nested_item(cfg, _INCLUDES_KEY, list)
                 if path.parent / p not in _seen
-            ],
+            ),
             path=path,
             include_dev=include_dev,
         )

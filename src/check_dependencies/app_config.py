@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 
 
 logger = getLogger(__name__)
+_T = TypeVar("_T")
 
 
 @dataclass(frozen=True)
@@ -50,20 +51,34 @@ class AppConfig:
         """Construct an AppConfig from CLI arguments."""
         includes_cfg = [ConfigToml.for_path(incl) for incl in includes]
 
-        _T = TypeVar("_T")
+        def chained(
+            iter_: Iterable[Iterable[_T]], additional: Iterable[_T] = ()
+        ) -> list[_T]:
+            return sorted({x for sub_iter in iter_ for x in sub_iter}.union(additional))
 
-        def chained(iter_: Iterable[Iterable[_T]]) -> set[_T]:
-            return set(chain.from_iterable(iter_))
-
-        known_extra_incl = chained(inc.known_extra for inc in includes_cfg)
-        known_missing_incl = chained(inc.known_missing for inc in includes_cfg)
-        provides_incl = chained(inc.provides for inc in includes_cfg)
         return cls(
             file_names=file_names,
-            known_extra=sorted(known_extra_incl.union(map(Package, known_extra))),
-            known_missing=sorted(known_missing_incl.union(map(Module, known_missing))),
+            known_extra=chained(
+                (inc.known_extra for inc in includes_cfg),
+                (
+                    pkg
+                    for name in known_extra
+                    if (pkg := Package(name.strip())).canonical
+                ),
+            ),
+            known_missing=chained(
+                (inc.known_missing for inc in includes_cfg),
+                (
+                    module
+                    for name in known_missing
+                    if (module := Module(name.strip())).name
+                ),
+            ),
             provides=Packages(
-                provides_incl.union(_get_provides(provides, provides_from_venv))
+                chained(
+                    (inc.provides for inc in includes_cfg),
+                    _get_provides(provides, provides_from_venv),
+                )
             ),
             include_dev=include_dev,
             verbose=verbose,

@@ -124,6 +124,7 @@ Example output:
   pandas
 ! matplotlib
   numpy
+# Project project/pyproject.toml
 + requests
 ```
 
@@ -247,10 +248,10 @@ Example output:
 # MISSING check_dependencies
 # MISSING toml
 # MISSING tomllib
+!!FILE_ERROR project/src/broken.py
 !NA matplotlib project/src/main.py:4
 
-### Dependencies in config file not used in application:
-# Config file: project/pyproject.toml
+##### project/pyproject.toml ###
 +EXTRA requests
 ```
 

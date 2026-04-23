@@ -82,7 +82,7 @@ options:
                         [tool.check-dependencies.provides]
   --include, -I INCLUDE
                         Additional config files to include. Can be specified multiple times. E.g. --include
-                        check-dependencies.toml.Toml Key: [tool.check-dependencies] includes=[]
+                        check-dependencies.toml. Toml Key: [tool.check-dependencies] includes=[]
 ```
 
 ### 📄 Output

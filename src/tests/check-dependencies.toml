@@ -18,3 +18,4 @@
     "tests_main",
  ]
  "includes" = ["./check-dependencies.toml"]
+ provides = {"pytest" = "_pytest"}

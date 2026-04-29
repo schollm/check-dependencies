@@ -42,14 +42,16 @@ def yield_wrong_imports(app_cfg: AppConfig) -> Generator[str, None, int]:
     exit_status = 0
     yield from _verbose_app_info(app_cfg)
     registry = _ProjectRegistry(app_cfg)
-    seen = set()
+    for src_pth in app_cfg.file_names:
+        registry.get(src_pth)  # Ensure all projects are registered, even if no python files are found.
+
+    seen: set[Path] = set()
     for src_pth in (
         src_pth
         for root_pth in app_cfg.file_names
         for src_pth in (root_pth.rglob("*.py") if root_pth.is_dir() else [root_pth])
-        if src_pth not in seen
+        if src_pth not in seen or seen.add(src_pth)
     ):
-        seen.add(src_pth)
         try:
             project_cfg, used_deps = registry.get(src_pth)
         except NoPyProjectFileError as exc:

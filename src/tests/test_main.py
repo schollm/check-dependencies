@@ -19,6 +19,7 @@ from check_dependencies.__main__ import main as cli_main
 from check_dependencies.app_config import AppConfig, ProjectConfig
 from check_dependencies.lib import Dependency, Module, Package, Packages
 from check_dependencies.main import (
+    ERR_NO_PYPROJECT,
     _imports_iter,
     _missing_imports_iter,
     _ProjectRegistry,
@@ -168,12 +169,12 @@ class TestYieldWrongImports:
     """Test collection for the yield wrong imports function."""
 
     @staticmethod
-    def fn(  # pylint: disable=too-many-arguments
+    def fn_ret(  # pylint: disable=too-many-arguments
         overwrite_cfg: Path = POETRY,
         args: Sequence[str] | str = (),
         file_names: Sequence[str] = (SRC,),
         with_comment: bool = False,
-    ) -> list[str]:
+    ) -> tuple[list[str], int]:
         """Call the yield wrong imports function with patched pyproject.toml."""
         if isinstance(args, str):
             args = args.split()
@@ -185,12 +186,29 @@ class TestYieldWrongImports:
         ), patch("sys.argv", ["check-dependencies", *args, *file_names]), patch(
             "check_dependencies.__main__._writer", lines.append
         ):
-            cli_main()
+            exit_status = cli_main()
+
         return [
             line
             for line in lines
             if line != "\n" and (with_comment or not line.startswith("#"))
-        ]
+        ], exit_status
+
+    @classmethod
+    def fn(
+        cls,
+        overwrite_cfg: Path = POETRY,
+        args: Sequence[str] | str = (),
+        file_names: Sequence[str] = (SRC,),
+        with_comment: bool = False,
+    ) -> list[str]:
+        """Call the yield wrong imports function with patched pyproject.toml."""
+        return cls.fn_ret(
+            overwrite_cfg=overwrite_cfg,
+            args=args,
+            file_names=file_names,
+            with_comment=with_comment,
+        )[0]
 
     def test(self, pyproject: Path) -> None:
         """By default, we should only see the missing (and extra) imports."""
@@ -528,6 +546,17 @@ class TestYieldWrongImports:
         assert Package("dep_b") in cfg_b.allowed_dependencies
         assert Package("dep_b") not in cfg_a.allowed_dependencies
         assert Package("dep_a") not in cfg_b.allowed_dependencies
+
+    def test_no_pyproject(self) -> None:
+        """Test that get_pyproject_toml raises without pyproject.toml."""
+        lines, ret_code = self.fn_ret(
+            overwrite_cfg=Path("pyproject.toml"),
+            args=["--verbose"],
+            file_names=["/"],
+            with_comment=True,
+        )
+        assert lines == ["# ALL=False", "# INCLUDE_DEV=False"]
+        assert ret_code == ERR_NO_PYPROJECT
 
 
 @pytest.mark.parametrize(

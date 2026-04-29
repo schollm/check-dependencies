@@ -41,11 +41,12 @@ def yield_wrong_imports(app_cfg: AppConfig) -> Generator[str, None, int]:
     # the same project.
     exit_status = 0
     yield from _verbose_app_info(app_cfg)
-    registry = _ProjectRegistry(app_cfg)
-    for src_pth in app_cfg.file_names:
-        registry.get(
-            src_pth
-        )  # Ensure all projects are registered, even if no python files are found.
+
+    try:
+        registry = _ProjectRegistry(app_cfg)
+    except NoPyProjectFileError as exc:
+        logger.error("Could not find pyproject.toml for %s", exc)  # noqa: TRY400
+        return exit_status | ERR_NO_PYPROJECT
 
     seen: set[Path] = set()
     for src_pth in (
@@ -110,6 +111,10 @@ class _ProjectRegistry:
         self.app_cfg = app_cfg
         self.include_dev = app_cfg.include_dev
         self.registry = {}
+
+        # Pre-populate registry to fail fast if pyproject.toml files are missing.
+        for path in app_cfg.file_names:
+            self.get(path)
 
     def get(self, path: Path) -> tuple[ProjectConfig, set[Package]]:
         """Get the set of packages associated with a given path."""

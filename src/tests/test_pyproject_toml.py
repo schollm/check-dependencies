@@ -218,7 +218,9 @@ class TestGetPyProjectToml:
         pyproject.write_text("[tool.check-dependencies]\n", "utf-8")
         assert get_pyproject_toml(tmp_path) == pyproject
 
-    def test_no_pyproject(self) -> None:
-        """Test that get_pyproject_toml raises without pyproject.toml."""
+    def test_no_pyproject(self, tmp_path: Path) -> None:
+        """Test that get_pyproject_toml raises when no pyproject.toml exists."""
+        subdir = tmp_path / "no_project"
+        subdir.mkdir()
         with pytest.raises(NoPyProjectFileError):
-            get_pyproject_toml(Path("/"))
+            get_pyproject_toml(subdir)

@@ -43,7 +43,9 @@ def yield_wrong_imports(app_cfg: AppConfig) -> Generator[str, None, int]:
     yield from _verbose_app_info(app_cfg)
     registry = _ProjectRegistry(app_cfg)
     for src_pth in app_cfg.file_names:
-        registry.get(src_pth)  # Ensure all projects are registered, even if no python files are found.
+        registry.get(
+            src_pth
+        )  # Ensure all projects are registered, even if no python files are found.
 
     seen: set[Path] = set()
     for src_pth in (

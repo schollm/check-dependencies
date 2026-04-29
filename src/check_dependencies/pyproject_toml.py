@@ -115,7 +115,7 @@ class PyProjectToml(ConfigToml):
     ) -> PyProjectToml:
         """Create a PyProjectToml instance from a known pyproject.toml path.
 
-        :param path: Absolute path to a pyproject.toml file.
+        :param path: Path to a pyproject.toml file.
         :param include_dev: Whether to include development dependencies.
         :returns: A PyProjectToml instance with the parsed configuration.
         """

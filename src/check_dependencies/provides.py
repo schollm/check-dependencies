@@ -8,13 +8,15 @@ from pathlib import Path
 from typing import Iterable
 
 
-def mappings_for_env(python: Path) -> list[tuple[str, str]]:
+def mappings_for_env(python: Path | None) -> list[tuple[str, str]]:
     """Get the mappings.
 
     :arg python: Path to python executable belonging to the virtual
         environment, e.g. $VIRTUAL_ENV/bin/python.
     :return: a list of mappings of package name to module name.
     """
+    if not python:
+        return []
     return sorted(
         (package_name, import_name)
         for path in _get_paths(python)

@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Planned
 
 ### Upcoming
+- **Fix:** Use appropriate pyproject.toml file (depending on the location of the analyzed source file)
 - **CHANGE:** Mark application as production/stable.
 
 ### [1.4.1]

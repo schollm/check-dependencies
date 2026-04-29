@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 
 
 _DIST_NAME = "check-dependencies"
+_writer = sys.stdout.write
 
 
 def _get_version() -> str:
@@ -128,7 +129,7 @@ def main() -> int:
 
     args = parser.parse_args()
 
-    cfg = AppConfig.from_cli_args(
+    app_cfg = AppConfig.from_cli_args(
         file_names=args.file_name,
         known_extra=args.extra,
         known_missing=args.missing,
@@ -139,11 +140,12 @@ def main() -> int:
         includes=args.include,
         provides_from_venv=args.provides_from_venv,
     )
-    wrong_import_lines = yield_wrong_imports(args.file_name, cfg)
+
+    wrong_import_lines = yield_wrong_imports(app_cfg)
     try:
         while True:
-            sys.stdout.write(next(wrong_import_lines))
-            sys.stdout.write("\n")
+            _writer(next(wrong_import_lines))
+            _writer("\n")
     except StopIteration as ex:  # Return value is the exit status
         return ex.value
 

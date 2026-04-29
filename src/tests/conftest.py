@@ -4,6 +4,8 @@ from pathlib import Path
 
 import pytest
 
+from check_dependencies.pyproject_toml import get_pyproject_toml
+
 DATA = (Path(__file__).parent / "data").resolve()
 SRC_MODULE = DATA / "src"
 SRC = (SRC_MODULE / "src.py").as_posix()
@@ -20,6 +22,16 @@ UV_LEGACY_EXTRA = DATA / "pyproject_uv_legacy_extra.toml"
 PYPROJECT_CFG = DATA / "pyproject_cfg.toml"
 PYPROJECT_EMPTY = DATA / "pyproject_empty.toml"
 PYPROJECT_PROVIDES = DATA / "pyproject_pep631_provides.toml"
+
+
+@pytest.fixture(autouse=True)
+def clear_pyproject_cache() -> None:
+    """Clear the get_pyproject_toml LRU cache before each test.
+
+    Prevents stale cache entries from tests that patch ``_PYPROJECT_TOML``
+    from polluting subsequent tests.
+    """
+    get_pyproject_toml.cache_clear()
 
 
 @pytest.fixture(params=[PEP631, POETRY, HATCH, UV_LEGACY])

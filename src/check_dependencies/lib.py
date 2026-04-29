@@ -8,7 +8,7 @@ from enum import Enum
 from functools import total_ordering
 from itertools import groupby, takewhile
 from operator import itemgetter
-from typing import Iterable
+from typing import Collection, Iterable
 
 logger = logging.getLogger("check_dependencies.lib")
 
@@ -143,13 +143,15 @@ class Packages:
 
     _modules: dict[Package, set[Module]]
     _packages: dict[Module, set[Package]]
+    _orig_packages: tuple[tuple[Package, Module], ...]
 
-    def __init__(self, packages: list[tuple[Package, Module]]) -> None:
+    def __init__(self, packages: Collection[tuple[Package, Module]] = ()) -> None:
         """Initialize the Packages dataclass.
 
         :param packages: List of (package, module) tuples, where package is the
             package name and module is the import name.
         """
+        self._orig_packages = tuple(packages)
         self._modules = {
             key: {module for _, module in val}
             for key, val in groupby(
@@ -163,6 +165,11 @@ class Packages:
                 sorted(packages, key=itemgetter(1)), key=itemgetter(1)
             )
         }
+
+    def __or__(self, other: Packages) -> Packages:
+        """Combine two Packages instances."""
+        combined_packages = sorted(set(self._orig_packages) | set(other._orig_packages))
+        return Packages(combined_packages)
 
     def all_packages(self) -> Iterable[Package]:
         """Get all packages in the mapping."""

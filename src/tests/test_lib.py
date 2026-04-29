@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+from pathlib import Path
 
 import pytest
 
@@ -217,8 +218,13 @@ class TestMkSrcFormatter:
     @pytest.mark.parametrize("verbose", [True, False])
     def test_no_show_all_on_status_ok(self, stmt: ast.stmt, verbose: bool) -> None:
         """If the import is expected, we do not show it."""
-        cfg = AppConfig.from_cli_args(
-            file_names=(), verbose=verbose, show_all=False, known_extra=["foo"]
+        cfg = AppConfig(
+            file_names=[Path()],
+            known_extra=[Package("foo")],
+            known_missing=[],
+            provides=Packages([]),
+            verbose=verbose,
+            show_all=False,
         )
         fn = cfg.mk_src_formatter()
         assert not list(fn("src.py", Dependency.OK, Module("foo"), stmt))
@@ -243,13 +249,20 @@ class TestMkSrcFormatter:
         expected: str,
     ) -> None:
         """MkSrcFormatter generic tests."""
-        cfg = AppConfig.from_cli_args(file_names=(), verbose=verbose, show_all=show_all)
+        cfg = AppConfig(
+            file_names=[Path()],
+            known_extra=[],
+            known_missing=[],
+            provides=Packages([]),
+            verbose=verbose,
+            show_all=show_all,
+        )
         fn = cfg.mk_src_formatter()
         assert next(fn("src.py", Dependency(cause), Module("foo"), stmt)) == expected
 
     def test_cache(self, stmt: ast.stmt) -> None:
         """Test the cache mechanism for the formatter."""
-        cfg = AppConfig.from_cli_args(file_names=(), verbose=False)
+        cfg = AppConfig(file_names=[Path()])
         fn = cfg.mk_src_formatter()
         assert list(fn("src.py", Dependency.NA, Module("foo"), stmt))
         assert not list(fn("src.py", Dependency.NA, Module("foo"), stmt))

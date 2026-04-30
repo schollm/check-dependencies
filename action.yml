@@ -1,5 +1,5 @@
 name: check-dependencies
-description: Run check-dependencies with AppConfig-derived parameters.
+description: "Check Python source dependencies against pyproject.toml."
 
 branding:
   icon: check-circle

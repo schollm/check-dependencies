@@ -1,6 +1,10 @@
 name: check-dependencies
 description: Run check-dependencies with AppConfig-derived parameters.
 
+branding:
+  icon: check-circle
+  color: green
+
 inputs:
   file-names:
     description: |

@@ -7,6 +7,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6.0.2
+      - name: check-dependencies
+        uses: ./
+        with:
+          file-names: |
+            src/check_dependencies/
+          include-dev: "false"
+          verbose: "true"
+          show-all: "false"
       - uses: astral-sh/ruff-action@v3.6.1
         with:
           src: "./src"

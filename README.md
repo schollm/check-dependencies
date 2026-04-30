@@ -39,6 +39,47 @@ uvx check-dependencies
 pipx run check-dependencies
 ```
 
+## GitHub Action
+
+Use this repository as a reusable GitHub Action in third-party workflows.
+
+The action inputs are derived from `AppConfig.from_cli_args(...)`.
+
+### Usage
+
+```yaml
+name: Check dependencies
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  check-dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: schollm/check-dependencies@v1
+        with:
+          file-names: |
+            src/
+          include-dev: "false"
+          verbose: "false"
+          show-all: "false"
+```
+
+### Inputs
+
+- `file-names` (required): newline-separated paths to files/directories
+- `known-extra`: comma-separated package list
+- `known-missing`: comma-separated module list
+- `provides`: comma-separated `PACKAGE=MODULE` mappings
+- `include-dev`: `true` or `false`
+- `verbose`: `true` or `false`
+- `show-all`: `true` or `false` (maps to CLI `--all`)
+- `includes`: newline-separated list of additional config files
+- `provides-from-venv`: path to venv Python executable
+
 
 ## 🧰 `check-dependencies`
 

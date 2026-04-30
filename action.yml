@@ -1,0 +1,108 @@
+name: check-dependencies
+description: Run check-dependencies with AppConfig-derived parameters.
+
+inputs:
+  file-names:
+    description: |
+      Newline-separated file and/or directory paths to analyze.
+      Maps to AppConfig.from_cli_args(file_names=...).
+    required: true
+  known-extra:
+    description: |
+      Comma-separated package names known to be extra.
+      Maps to AppConfig.from_cli_args(known_extra=...).
+    required: false
+    default: ""
+  known-missing:
+    description: |
+      Comma-separated module names known to be missing.
+      Maps to AppConfig.from_cli_args(known_missing=...).
+    required: false
+    default: ""
+  provides:
+    description: |
+      Comma-separated mappings PACKAGE=MODULE.
+      Maps to AppConfig.from_cli_args(provides=...).
+    required: false
+    default: ""
+  include-dev:
+    description: |
+      Include development dependencies from pyproject.toml.
+      Maps to AppConfig.from_cli_args(include_dev=...).
+    required: false
+    default: "false"
+  verbose:
+    description: |
+      Enable verbose output.
+      Maps to AppConfig.from_cli_args(verbose=...).
+    required: false
+    default: "false"
+  show-all:
+    description: |
+      Show all dependencies including correct ones.
+      Maps to AppConfig.from_cli_args(show_all=...).
+    required: false
+    default: "false"
+  includes:
+    description: |
+      Newline-separated config files to include.
+      Maps to AppConfig.from_cli_args(includes=...).
+    required: false
+    default: ""
+  provides-from-venv:
+    description: |
+      Path to Python executable of a virtual environment.
+      Maps to AppConfig.from_cli_args(provides_from_venv=...).
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Install check-dependencies
+      shell: bash
+      run: python -m pip install --disable-pip-version-check "${GITHUB_ACTION_PATH}"
+
+    - name: Run check-dependencies
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        cmd=(check-dependencies)
+
+        if [[ "${{ inputs.include-dev }}" == "true" ]]; then
+          cmd+=(--include-dev)
+        fi
+        if [[ "${{ inputs.verbose }}" == "true" ]]; then
+          cmd+=(--verbose)
+        fi
+        if [[ "${{ inputs.show-all }}" == "true" ]]; then
+          cmd+=(--all)
+        fi
+
+        if [[ -n "${{ inputs.known-extra }}" ]]; then
+          cmd+=(--extra "${{ inputs.known-extra }}")
+        fi
+        if [[ -n "${{ inputs.known-missing }}" ]]; then
+          cmd+=(--missing "${{ inputs.known-missing }}")
+        fi
+        if [[ -n "${{ inputs.provides }}" ]]; then
+          cmd+=(--provides "${{ inputs.provides }}")
+        fi
+        if [[ -n "${{ inputs.provides-from-venv }}" ]]; then
+          cmd+=(--provides-from-venv "${{ inputs.provides-from-venv }}")
+        fi
+
+        while IFS= read -r include_file; do
+          if [[ -n "$include_file" ]]; then
+            cmd+=(--include "$include_file")
+          fi
+        done <<< "${{ inputs.includes }}"
+
+        while IFS= read -r file_name; do
+          if [[ -n "$file_name" ]]; then
+            cmd+=("$file_name")
+          fi
+        done <<< "${{ inputs.file-names }}"
+
+        "${cmd[@]}"

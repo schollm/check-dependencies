@@ -7,6 +7,7 @@ from typing import TypeVar
 
 import pytest
 
+from check_dependencies import pyproject_toml
 from check_dependencies.lib import Module, Package
 from check_dependencies.pyproject_toml import (
     NoPyProjectFileError,
@@ -14,7 +15,13 @@ from check_dependencies.pyproject_toml import (
     _nested_item,
     get_pyproject_toml,
 )
-from tests.conftest import HATCH, PEP631, POETRY, PYPROJECT_PROVIDES, UV_LEGACY
+from tests.conftest import (
+    HATCH,
+    PEP631,
+    POETRY,
+    PYPROJECT_PROVIDES,
+    UV_LEGACY,
+)
 
 try:
     import tomllib  # ty:ignore[unresolved-import]
@@ -218,9 +225,16 @@ class TestGetPyProjectToml:
         pyproject.write_text("[tool.check-dependencies]\n", "utf-8")
         assert get_pyproject_toml(tmp_path) == pyproject
 
-    def test_no_pyproject(self, tmp_path: Path) -> None:
+    def test_no_pyproject(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test that get_pyproject_toml raises when no pyproject.toml exists."""
         subdir = tmp_path / "no_project"
         subdir.mkdir()
+        monkeypatch.setattr(
+            pyproject_toml,
+            "_PYPROJECT_TOML",
+            Path(subdir / "/non-existent-pyproject.toml"),
+        )
         with pytest.raises(NoPyProjectFileError):
             get_pyproject_toml(subdir)

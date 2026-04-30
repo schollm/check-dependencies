@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import ast
 import sys
+import textwrap
 import time
 from importlib.metadata import PackageNotFoundError
 from pathlib import Path
@@ -14,6 +15,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+import check_dependencies.pyproject_toml
 from check_dependencies.__main__ import _get_version, _MultiSepAction
 from check_dependencies.__main__ import main as cli_main
 from check_dependencies.app_config import AppConfig, ProjectConfig
@@ -547,8 +549,17 @@ class TestYieldWrongImports:
         assert Package("dep_b") not in cfg_a.allowed_dependencies
         assert Package("dep_a") not in cfg_b.allowed_dependencies
 
-    def test_no_pyproject(self) -> None:
+    def test_no_pyproject(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test that get_pyproject_toml raises without pyproject.toml."""
+        subdir = tmp_path / "no_project"
+        subdir.mkdir()
+        monkeypatch.setattr(
+            check_dependencies.pyproject_toml,
+            "_PYPROJECT_TOML",
+            Path(subdir / "/non-existent-pyproject.toml"),
+        )
         lines, ret_code = self.fn_ret(
             overwrite_cfg=Path("pyproject.toml"),
             args=["--verbose"],
@@ -676,6 +687,7 @@ def test_mk_unused_formatter(verbose: bool, expected: str) -> None:
         ("import os\nö = 1", ["os"]),
         # Mixed ASCII and Unicode
         ("import foo_ö", ["foo_ö"]),
+        ("import ä, ö, café, 日本語, Москва", ["ä", "ö", "café", "日本語", "Москва"]),
     ],
 )
 def test_imports_iter_unicode(stmt: str, expected: list[str]) -> None:
@@ -696,11 +708,12 @@ def test_missing_imports_iter_unicode_file(tmp_path: Path) -> None:
     (even though such imports would fail at runtime).
     """
     py_file = tmp_path / "unicode_imports.py"
-    content = """# -*- coding: utf-8 -*-
-import ö
-from café import something
-import sys
-"""
+    content = textwrap.dedent("""\
+        # -*- coding: utf-8 -*-
+        import ö
+        from café import something
+        import sys
+        """)
     py_file.write_text(content, encoding="utf-8")
 
     result = list(

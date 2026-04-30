@@ -8,7 +8,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6.0.2
       - name: check-dependencies
-        uses: schollm/check-dependencies@github-actions
+        uses: ./
         with:
           file-names: |
             src/check_dependencies/

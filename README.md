@@ -58,7 +58,10 @@ jobs:
   check-dependencies:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"  # can be anything that check-dependencies support..
       - uses: schollm/check-dependencies@v1
         with:
           file-names: |

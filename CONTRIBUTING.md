@@ -52,11 +52,12 @@ a change. Currently, the only dependencies is `toml` to support Python 3.10 and 
 `dependency-writer` CLI.
 
 - Keep changes focused and minimal.
+- But: Ensure clean code - this might require some global changes when required.
 - Add or adjust tests for behavioral changes.
 - Preserve strict typing (`ty check` should stay clean).
 - Follow existing style and naming conventions.
 - Use a functional approach where possible, minimizing class usage unless it provides clear benefits.
-- frozen dataclasses are preferred when a class is necessary, to ensure immutability and simplicity.
+- Frozen dataclasses are preferred when a class is necessary, to ensure immutability and simplicity.
 - When in doubt, prioritize simplicity and readability.
 - Avoid mutable state and side effects; prefer pure functions.
 

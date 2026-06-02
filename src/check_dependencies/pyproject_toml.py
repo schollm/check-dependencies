@@ -20,10 +20,11 @@ logger = logging.getLogger(__name__)
 _PYPROJECT_TOML = Path("pyproject.toml")
 _T = TypeVar("_T")
 
-_INCLUDES_KEY = "tool.check-dependencies.includes"
-_KNOWN_MISSING_KEY = "tool.check-dependencies.known-missing"
-_KNOWN_EXTRA_KEY = "tool.check-dependencies.known-extra"
-_PROVIDES_KEY = "tool.check-dependencies.provides"
+_TOOL_KEY = "tool.check-dependencies"
+_INCLUDES_KEY = f"{_TOOL_KEY}.includes"
+_KNOWN_MISSING_KEY = f"{_TOOL_KEY}.known-missing"
+_KNOWN_EXTRA_KEY = f"{_TOOL_KEY}.known-extra"
+_PROVIDES_KEY = f"{_TOOL_KEY}.provides"
 
 
 @dataclass(frozen=True)
@@ -121,12 +122,13 @@ class PyProjectToml(ConfigToml):
         """
         cfg = tomllib.loads(path.read_text("utf-8"))
         _seen = {*_seen, path}
+        parent = path.parent
         return cls(
             cfg=cfg,
             includes_cfg=tuple(
-                cls.for_path(path.parent / p, include_dev=include_dev, _seen=_seen)
+                cls.for_path(parent / p, include_dev=include_dev, _seen=_seen)
                 for p in _nested_item(cfg, _INCLUDES_KEY, list)
-                if path.parent / p not in _seen
+                if parent / p not in _seen
             ),
             path=path,
             include_dev=include_dev,

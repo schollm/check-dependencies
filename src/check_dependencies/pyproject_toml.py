@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import lru_cache
 from itertools import chain
@@ -209,14 +210,14 @@ def get_pyproject_toml(path: Path) -> Path:
 
 
 @dataclass(frozen=True)
-class _BaseDependency:
+class _BaseDependency(ABC):
     """Base class for different dependency providers."""
 
     cfg: Mapping[str, Any]
 
+    @abstractmethod
     def is_used(self) -> bool:
         """Check if the pyproject.toml file contains this style of dependencies."""
-        raise NotImplementedError  # pragma: no cover
 
     def dependencies(self, *, include_dev: bool) -> set[Package]:
         """Get all dependencies.
@@ -228,13 +229,13 @@ class _BaseDependency:
             deps.update(self._dev_dependencies())
         return deps
 
+    @abstractmethod
     def _dev_dependencies(self) -> set[Package]:
         """Get development dependencies."""
-        raise NotImplementedError  # pragma: no cover
 
+    @abstractmethod
     def _dependencies(self) -> set[Package]:
         """Get production dependencies, with extras, but no development dependencies."""
-        raise NotImplementedError  # pragma: no cover
 
 
 @dataclass(frozen=True)

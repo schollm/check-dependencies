@@ -31,11 +31,10 @@ def main() -> int:
     try:
         _update_config(Path(args.config), Path(args.python))
     except ValueError as exc:
-        print(exc, file=sys.stderr)  # noqa: T201
+        sys.stderr.write(f"{exc}\n")
         return EXIT_VALUE_ERROR
-
     except Exception as exc:  # noqa:BLE001  # pragma: no cover
-        print(exc, file=sys.stderr)  # noqa: T201
+        sys.stderr.write(f"{exc}\n")
         return EXIT_FAILURE
     return EXIT_SUCCESS
 

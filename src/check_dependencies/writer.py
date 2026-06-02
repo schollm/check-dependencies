@@ -57,7 +57,7 @@ def _update_config(config_file: Path, python: Path) -> None:
     cfg = _get_existing_config(config_file, is_stdout=is_stdout)
 
     _ensure_key(cfg)
-    cfg["tool"]["check-dependencies"]["provides"].update(provides)  # ty:ignore[not-subscriptable, unresolved-attribute]
+    cfg["tool"]["check-dependencies"]["provides"].update(provides)
     dumps = tomlkit.dumps(cfg)
     if is_stdout:
         print(dumps)  # noqa: T201

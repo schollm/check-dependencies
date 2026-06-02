@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import builtins
 import sys
 import textwrap
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 import tomlkit
@@ -161,3 +162,31 @@ def test__ensure_key2() -> None:
         [fox]
         [tool.check-dependencies.b]
     """)
+
+
+def test_no_writer_extra_installed(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture,
+) -> None:
+    """Test that writer fails if tomlkit is not installed."""
+    # Remove tomlkit and check_dependencies.writer from sys.modules
+    monkeypatch.delitem(sys.modules, "tomlkit", raising=False)
+    monkeypatch.delitem(sys.modules, "check_dependencies.writer", raising=False)
+
+    original_import = builtins.__import__
+
+    # Make only `import tomlkit` fail, while delegating all other imports.
+    def fake_import(name: str, *args: Any, **kwargs: Any) -> object:  # noqa: ANN401
+        if name == "tomlkit":
+            raise ImportError(name)
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", fake_import)
+
+    with pytest.raises(SystemExit) as exc:
+        __import__("check_dependencies.writer")
+
+    assert exc.value.code == 1
+    output = capsys.readouterr()
+    assert "Require group [write] to be installed." in output.err
+    assert "tomlkit" in output.err

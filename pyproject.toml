@@ -68,7 +68,11 @@ includes = ["src/tests/check-dependencies.toml"]
 typing = "ty check src/"
 pytest = "pytest src/tests"
 lint = [{cmd="ruff format src/"}, {cmd="ruff check --fix src/"}]
-check = ["lint", "typing", "pytest"]
+tests = ["check"]
+
+[tool.poe.tasks.check]
+sequence = ["lint", "typing", "pytest $POE_EXTRA_ARGS"]
+ignore_fail = "return_non_zero"
 
 [tool.ruff]
 exclude = ["src/tests/data"]

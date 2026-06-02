@@ -10,9 +10,13 @@ from typing import TYPE_CHECKING
 from check_dependencies.provides import collect_mappings, mappings_for_env
 
 try:
+    # tomlkit is used for writing because it preserves formatting and comments,
+    #  but it is not a strict requirement for check_dependencies main function.
     import tomlkit
-except ImportError as _exc:  # pragma: no cover
-    print(f"{_exc}: Require group [write] to be installed.")  # noqa: T201
+except ImportError as _exc:
+    # Emit a warning and exit with a non-zero status code if tomlkit is not installed,
+    # since it's required for the writer functionality.
+    sys.stderr.write(f"{_exc}: Require group [write] to be installed.\n")
     raise SystemExit(1) from _exc
 
 if TYPE_CHECKING:

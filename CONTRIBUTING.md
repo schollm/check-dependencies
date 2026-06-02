@@ -52,7 +52,7 @@ a change. Currently, the only dependencies is `toml` to support Python 3.10 and 
 `dependency-writer` CLI.
 
 - Keep changes focused and minimal.
-- But: Ensure clean code - this might require some global changes when required.
+- Ensure clean code - this might require some global changes.
 - Add or adjust tests for behavioral changes.
 - Preserve strict typing (`ty check` should stay clean).
 - Follow existing style and naming conventions.

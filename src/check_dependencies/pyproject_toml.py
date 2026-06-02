@@ -7,9 +7,12 @@ from dataclasses import dataclass
 from functools import lru_cache
 from itertools import chain
 from pathlib import Path
-from typing import Any, Collection, Mapping, Sequence, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from check_dependencies.lib import Module, Package, Packages
+
+if TYPE_CHECKING:
+    from collections.abc import Collection, Mapping, Sequence
 
 try:
     import tomllib  # ty:ignore[unresolved-import]

@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Planned
 
 ### Upcoming
+- **FIX:** Do not emit the same package multiple times when providing multiple source paths.
 
 ### [1.5.1]
 - **FIX:** Do not try to create a release artifact on GitHub pipeline if it already exists (dev).

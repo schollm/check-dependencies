@@ -39,15 +39,15 @@ write = [
 
 [dependency-groups]
 dev = [
-    "pytest>=6.2",
-    "ruff>=0.9.6",
-    "types-toml>=0.10.8.20240310",
+    "poethepoet>=0.30.0",
+    "pytest>=8.3",
     "pytest-cov>=5.0.0",
+    "ruff>=0.9.6",
+    "tomlkit>=0.13.3",
+    "types-toml>=0.10.8.20240310",
     "types-pygments>=2.19.0.20250107",
     "types-pexpect>=4.9.0.20241208",
     "ty>=0.0.22",
-    "tomlkit>=0.13.3",
-    "poethepoet>=0.30.0",
 ]
 [project.scripts]
 check-dependencies = "check_dependencies.__main__:main"
@@ -103,7 +103,7 @@ addopts = """
   --cov=check_dependencies
   --cov-report=xml:.out/coverage.xml
   --cov-report=html:.out/coverage-html
-  --cov-report term-missing
+  --cov-report term-missing:skip-covered
   --cov-branch
   -m "not performance"
 """

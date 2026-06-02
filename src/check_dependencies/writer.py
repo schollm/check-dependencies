@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING
 
 from check_dependencies.provides import collect_mappings, mappings_for_env
 
-EXIT_SUCCESS, EXIT_VALUE_ERROR, EXIT_FAILURE = 0, 1, 2
 try:
     import tomlkit
 except ImportError as _exc:  # pragma: no cover
@@ -18,6 +17,8 @@ except ImportError as _exc:  # pragma: no cover
 
 if TYPE_CHECKING:
     from collections.abc import MutableMapping
+
+EXIT_SUCCESS, EXIT_VALUE_ERROR, EXIT_FAILURE = 0, 1, 2
 
 
 def main() -> int:

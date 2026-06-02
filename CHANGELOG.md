@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Planned
 
 ### Upcoming
+### [1.5.1]
+- **FIX:** Do not try to create a release artifact on Github pipeline if it already exist (dev).
+- **CHANGE:** Add icon and color to github action,  update action description.
 
 ### [1.5.0]
 - **ADD:** Add a reusable GitHub Action exposing `check-dependencies` with AppConfig-derived inputs for third-party workflows.

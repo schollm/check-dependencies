@@ -170,3 +170,38 @@ jobs:
           gh release upload --clobber
           '${{ github.ref_name }}' dist/**
           --repo '${{ github.repository }}'
+
+  update-version-tags:
+    name: Update major and minor tags
+    needs:
+      - publish-to-pypi
+      - github-release
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'v')
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Move major and minor tags
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          tag_name='${{ github.event.release.tag_name }}'
+          if [[ ! "$tag_name" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "Release tag '$tag_name' is not in the expected form vMAJOR.MINOR.PATCH"
+            exit 1
+          fi
+
+          major_tag="v${BASH_REMATCH[1]}"
+          minor_tag="v${BASH_REMATCH[1]}.${BASH_REMATCH[2]}"
+
+          git fetch --force --tags origin
+          target_sha="$(git rev-list -n 1 "$tag_name")"
+
+          git tag -fa "$major_tag" -m "Update $major_tag to $tag_name" "$target_sha"
+          git tag -fa "$minor_tag" -m "Update $minor_tag to $tag_name" "$target_sha"
+
+          git push --force origin "refs/tags/$major_tag" "refs/tags/$minor_tag"

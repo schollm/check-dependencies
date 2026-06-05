@@ -9,15 +9,20 @@ from typing import TYPE_CHECKING
 
 from check_dependencies.provides import collect_mappings, mappings_for_env
 
-EXIT_SUCCESS, EXIT_VALUE_ERROR, EXIT_FAILURE = 0, 1, 2
 try:
+    # tomlkit is used for writing because it preserves formatting and comments,
+    #  but it is not a strict requirement for check_dependencies main function.
     import tomlkit
-except ImportError as _exc:  # pragma: no cover
-    print(f"{_exc}: Require group [write] to be installed.")  # noqa: T201
+except ImportError as _exc:
+    # Emit a warning and exit with a non-zero status code if tomlkit is not installed,
+    # since it's required for the writer functionality.
+    sys.stderr.write(f"{_exc}: Require group [write] to be installed.\n")
     raise SystemExit(1) from _exc
 
 if TYPE_CHECKING:
     from collections.abc import MutableMapping
+
+EXIT_SUCCESS, EXIT_VALUE_ERROR, EXIT_FAILURE = 0, 1, 2
 
 
 def main() -> int:
@@ -26,11 +31,10 @@ def main() -> int:
     try:
         _update_config(Path(args.config), Path(args.python))
     except ValueError as exc:
-        print(exc, file=sys.stderr)  # noqa: T201
+        sys.stderr.write(f"{exc}\n")
         return EXIT_VALUE_ERROR
-
     except Exception as exc:  # noqa:BLE001  # pragma: no cover
-        print(exc, file=sys.stderr)  # noqa: T201
+        sys.stderr.write(f"{exc}\n")
         return EXIT_FAILURE
     return EXIT_SUCCESS
 
@@ -57,7 +61,7 @@ def _update_config(config_file: Path, python: Path) -> None:
     cfg = _get_existing_config(config_file, is_stdout=is_stdout)
 
     _ensure_key(cfg)
-    cfg["tool"]["check-dependencies"]["provides"].update(provides)  # ty:ignore[not-subscriptable, unresolved-attribute]
+    cfg["tool"]["check-dependencies"]["provides"].update(provides)
     dumps = tomlkit.dumps(cfg)
     if is_stdout:
         print(dumps)  # noqa: T201

@@ -55,12 +55,7 @@ def yield_wrong_imports(app_cfg: AppConfig) -> Generator[str, None, int]:
         for src_pth in (root_pth.rglob("*.py") if root_pth.is_dir() else [root_pth])
         if src_pth not in seen or seen.add(src_pth)
     ):
-        try:
-            project_cfg, used_deps = registry.get(src_pth)
-        except NoPyProjectFileError as exc:
-            logger.error("Could not find pyproject.toml for %s", exc)  # noqa: TRY400
-            return exit_status | ERR_NO_PYPROJECT
-
+        project_cfg, used_deps = registry.get(src_pth)
         for cause, module, stmt in _missing_imports_iter(src_pth, project_cfg):
             if cause is Dependency.FILE_ERROR:
                 exit_status |= ERR_FILE

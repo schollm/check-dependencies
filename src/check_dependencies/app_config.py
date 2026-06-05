@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from functools import partial
 from itertools import chain
 from logging import getLogger
 from pathlib import Path
@@ -89,34 +90,53 @@ class AppConfig:
         self,
     ) -> Callable[[str, Dependency, Module, ast.AST | None], Iterator[str]]:
         """Formatter for missing or used dependencies."""
-        cache: set[Module] = set()
+        return (
+            self._src_verbose_formatter
+            if self.verbose
+            else partial(self._src_cause_formatter, cache=set())
+        )
 
-        def src_cause_formatter(
-            src_pth: str,
-            cause: Dependency,
-            module: Module,
-            stmt: ast.AST | None,
-        ) -> Iterator[str]:
-            if self.verbose:
-                if (
-                    cause in (Dependency.NA, Dependency.FILE_ERROR, Dependency.UNKNOWN)
-                    or self.show_all
-                ):
-                    location = (
-                        f"{Path(src_pth).as_posix()}:{getattr(stmt, 'lineno', -1)}"
-                    )
-                    yield f"{cause.value}{cause.name} {location} {module.name}"
-            elif cause == Dependency.FILE_ERROR:
-                yield f"{cause.value} {src_pth}"
-            elif module.raw:
-                if cause in (Dependency.NA, Dependency.UNKNOWN) or self.show_all:
-                    yield f"{cause.value} {module.name}"
-            elif (pkg_ := module.main) not in cache:
-                cache.add(pkg_)
-                if cause == Dependency.NA or self.show_all:
-                    yield f"{cause.value} {pkg_.name}"
+    def _src_verbose_formatter(
+        self,
+        src_pth: str,
+        cause: Dependency,
+        module: Module,
+        stmt: ast.AST | None,
+    ) -> Iterator[str]:
+        """Verbose formatter for missing or used dependencies, showing all dependencies.
 
-        return src_cause_formatter
+        :param src_pth: The path of the source file where the dependency was found.
+        :param cause: The cause of the dependency being reported (e.g., missing, extra).
+        :param module: The module associated with the dependency.
+        :param stmt: The AST statement where the dependency was found, if applicable.
+        """
+        if self.show_all or cause in (
+            Dependency.NA,
+            Dependency.FILE_ERROR,
+            Dependency.UNKNOWN,
+        ):
+            location = f"{Path(src_pth).as_posix()}:{getattr(stmt, 'lineno', -1)}"
+            yield f"{cause.value}{cause.name} {location} {module.name}"
+
+    def _src_cause_formatter(
+        self,
+        src_pth: str,
+        cause: Dependency,
+        module: Module,
+        stmt: ast.AST | None,
+        cache: set[tuple[Dependency, Module]],
+    ) -> Iterator[str]:
+        del stmt
+        if cause == Dependency.FILE_ERROR:
+            yield f"{cause.value} {src_pth}"
+        elif self.show_all:
+            if (cause, module.main) not in cache:
+                cache.add((cause, module.main))
+                yield f"{cause.value} {module.main.name}"
+        elif (cause, pkg_ := module.main) not in cache:
+            cache.add((cause, pkg_))
+            if cause in (Dependency.NA, Dependency.UNKNOWN):
+                yield f"{cause.value} {pkg_.name}"
 
     def unused_fmt(self, module: str) -> Iterator[str]:
         """Formatter for unused but declared dependencies.

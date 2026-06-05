@@ -25,7 +25,7 @@ from tests.conftest import (
 
 try:
     import tomllib  # ty:ignore[unresolved-import]
-except ImportError:  # pragma: no cover
+except ImportError:
     import toml as tomllib
 
 

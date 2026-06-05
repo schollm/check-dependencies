@@ -417,11 +417,13 @@ class TestYieldWrongImports:
             "  check_dependencies",
             "  test_1",
             "  test_main",
+            "! fox",
             "! missing",
             "! missing_class",
             "! missing_def",
             "! missing_src2",
             "! tests_main",
+            "? __import__(...)",
         }
 
     def test_doublette_entries(self) -> None:
@@ -431,11 +433,13 @@ class TestYieldWrongImports:
             "  check_dependencies",
             "  test_1",
             "  test_main",
+            "! fox",
             "! missing",
             "! missing_class",
             "! missing_def",
             "! missing_src2",
             "! tests_main",
+            "? __import__(...)",
         ]
 
     def test_no_fail_on_missing_source(self) -> None:

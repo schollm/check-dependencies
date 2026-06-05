@@ -2,6 +2,8 @@ name: Python Application
 
 on:
   push:
+    branches:
+      - "**"
   release:
     types: [published]
 

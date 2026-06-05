@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Planned
 
 ### Upcoming
+### [1.5.3]
+- **SCOUT:** Change Github Release Pipeline (internal change).
 
 ### [1.5.2]
 - **FIX:** Do not emit the same package multiple times when providing multiple source paths.

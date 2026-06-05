@@ -11,6 +11,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
+      - run: echo "github.event_name=${{ github.event_name }}"
       - uses: actions/checkout@v6
       - name: check-dependencies
         uses: ./

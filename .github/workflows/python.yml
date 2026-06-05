@@ -1,6 +1,11 @@
 name: Python Application
 
-on: [push]
+on:
+  push:
+    tags-ignore:
+      - "*"
+  release:
+    types: [published]
 
 jobs:
   lint:
@@ -99,7 +104,7 @@ jobs:
       - build
       - lint
       - test
-    if: success() && startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'v')
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -125,7 +130,7 @@ jobs:
       - lint
       - test
     runs-on: ubuntu-latest
-    if: success() && startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'v')
     permissions:
       contents: write # IMPORTANT: mandatory for making GitHub Releases
       id-token: write # IMPORTANT: mandatory for sigstore

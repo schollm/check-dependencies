@@ -9,8 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [ ] Create a new branch release/v<x.y.z> from main
 - [ ] Update the changelog with the new version and changes
-- [ ] Update the version in pyproject.toml
-- [ ] Run uv lock to update the lock file
+- [ ] Run uv version --bump patch|minor|major
 - [ ] Update the README.md if necessary
 - [ ] Merge the release branch into main
 - [ ] Create a new release on GitHub with the new version and changelog
@@ -19,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Planned
 
 ### Upcoming
+
+## [1.5.4]
+- **FIX:** Set Author and Email for release version tag pipeline
+
 ### [1.5.3]
 - **SCOUT:** Change Github Release Pipeline (internal change).
 

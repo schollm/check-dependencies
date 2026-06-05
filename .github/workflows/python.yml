@@ -104,7 +104,7 @@ jobs:
       - build
       - lint
       - test
-    if: github.event_name == 'release'
+    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'v')
     runs-on: ubuntu-latest
     environment:
       name: pypi

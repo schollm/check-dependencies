@@ -338,7 +338,10 @@ class TestYieldWrongImports:
         assert "+ test_main" not in result
 
     def test_explicit_namespace_packages_from_config(self, tmp_path: Path) -> None:
-        """Provides mappings for dotted imports should resolve to declared dependencies."""
+        """Provides mappings for dotted imports.
+
+        They should resolve to declared dependencies.
+        """
         pyproject = tmp_path / "pyproject.toml"
         pyproject.write_text(
             textwrap.dedent("""\
@@ -365,7 +368,7 @@ class TestYieldWrongImports:
         ]
 
     def test_implicit_namespace_packages_from_config(self, tmp_path: Path) -> None:
-        """Dotted dependency names (e.g. `company.test_main`) should match dotted imports."""
+        """Dotted dependency names (`a.b`) should match dotted imports."""
         pyproject = tmp_path / "pyproject.toml"
         pyproject.write_text(
             textwrap.dedent("""\
@@ -388,7 +391,7 @@ class TestYieldWrongImports:
         ]
 
     def test_indirect_namespace_packages_from_config(self, tmp_path: Path) -> None:
-        """`from company import test_main` should resolve like `import company.test_main`."""
+        """`from company import test_main` should resolve as `company.test_main`."""
         pyproject = tmp_path / "pyproject.toml"
         pyproject.write_text(
             textwrap.dedent("""\

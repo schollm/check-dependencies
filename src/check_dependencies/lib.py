@@ -150,15 +150,14 @@ class Packages:
     ) -> None:
         """Initialize the Packages dataclass.
 
-        :param packages: List of (package, module) tuples, where package is the
-            package name and module is the import name.
+        :param known_packages: Declared dependencies that implicitly provide a module
+            of the same canonical name.
+        :param packages: Explicit (package, module) tuples, where package is the
+            distribution name and module is the import name.
         """
         combined = {
             *packages,
-            *(
-                (Package(pkg.canonical), Module(pkg.canonical))
-                for pkg in known_packages
-            ),
+            *((pkg, Module(pkg.canonical)) for pkg in known_packages),
         }
         self._orig_packages = tuple(sorted(combined))
         self._modules = {

@@ -206,11 +206,17 @@ Some packages have different distribution and import names, for example
 #### Support for namespaces
 
  Supports PEP 420-style namespace-package imports where imports look like
- `company.package_name`, but the declared dependency is `package_name` (or the import is
- covered via a `[tool.check-dependencies.provides]` mapping).
+ `company.package_name`, with a declared dependency like `company.package_name`
+ (or the import is covered via a `[tool.check-dependencies.provides]` mapping).
 
 - 📄 `pyproject.toml`:
     ```toml
+    [project]
+    dependencies = [ "company.package_name" ]
+    ```
+- 📄 `pyproject.toml`:
+    ```toml
+    dependencies = [ "package_name" ]
     [tool.check-dependencies.provides]
     package_name = ["company.package_name"]
     ```

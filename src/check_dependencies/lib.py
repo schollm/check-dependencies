@@ -210,6 +210,10 @@ def _canonical(name: str) -> str:
     E.g. ``scikit-learn``, ``scikit_learn``, and ``SciKit-Learn`` all normalize
     to ``scikit_learn``.
 
+    However, it does, contrary to PEP 503, keep dots in the name, so that subpackages
+    are preserved. This is important for namespace packages, where a package may
+    define submodules that are imported with dotted names (e.g., ``company.module``).
+
     :param name: The package name to normalize.
     :returns: Normalized package name.
     """

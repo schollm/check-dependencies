@@ -60,22 +60,23 @@ class Module:
         return f"Module({self.name!r})"
 
     @property
-    def main(self) -> Module:
-        """Extract the top-level module name from a module import.
+    def parents(self) -> list[Module]:
+        """Get the parent modules of the current module.
 
         **Examples:**
-        >>> Module("numpy.linalg").main
-        Module("numpy")
-        >>> Module("sklearn").main
-        Module("sklearn")
-        >>> Module("PIL.Image").main
-        Module("PIL")
+        >>> Module("numpy.linalg").parents
+        [Module("numpy.linalg"), Module("numpy")]
+        >>> Module("sklearn").parents
+        [Module("sklearn")]
+        >>> Module("PIL.Image").parents
+        [Module("PIL.Image"), Module("PIL")]
 
-        :returns: The top-level module name.
+        :returns: A list of parent modules.
         """
         if self.raw:
-            return self
-        return Module(self.name.split(".", 1)[0].strip())
+            return [self]
+        parts = self.name.split(".")
+        return [Module(".".join(parts[:i])) for i in range(len(parts), 0, -1)]
 
 
 @dataclass(frozen=True)
@@ -86,9 +87,6 @@ class Package:
     The original name is preserved for display purposes, while the canonical name is
     used for hashing and comparison, ensuring that different representations of the
     same package are treated as equal.
-
-    Added advantage is that we now have a clear distinction between a module
-    and a package - they used to be both strings.
     """
 
     __slots__ = ("_original", "canonical")
@@ -145,31 +143,41 @@ class Packages:
     _packages: dict[Module, set[Package]]
     _orig_packages: tuple[tuple[Package, Module], ...]
 
-    def __init__(self, packages: Collection[tuple[Package, Module]] = ()) -> None:
+    def __init__(
+        self,
+        known_packages: Collection[Package] = (),
+        packages: Collection[tuple[Package, Module]] = (),
+    ) -> None:
         """Initialize the Packages dataclass.
 
-        :param packages: List of (package, module) tuples, where package is the
-            package name and module is the import name.
+        :param known_packages: Declared dependencies that implicitly provide a module
+            of the same canonical name.
+        :param packages: Explicit (package, module) tuples, where package is the
+            distribution name and module is the import name.
         """
-        self._orig_packages = tuple(packages)
+        combined = {
+            *packages,
+            *((pkg, Module(pkg.canonical)) for pkg in known_packages),
+        }
+        self._orig_packages = tuple(sorted(combined))
         self._modules = {
             key: {module for _, module in val}
             for key, val in groupby(
-                sorted(packages, key=itemgetter(0)), key=itemgetter(0)
+                sorted(self._orig_packages, key=itemgetter(0)), key=itemgetter(0)
             )
         }
 
         self._packages = {
             key: {pkg_ for pkg_, _ in val}
             for key, val in groupby(
-                sorted(packages, key=itemgetter(1)), key=itemgetter(1)
+                sorted(self._orig_packages, key=itemgetter(1)), key=itemgetter(1)
             )
         }
 
     def __or__(self, other: Packages) -> Packages:
         """Combine two Packages instances."""
         combined_packages = sorted(set(self._orig_packages) | set(other._orig_packages))
-        return Packages(combined_packages)
+        return Packages((), combined_packages)
 
     def all_packages(self) -> Iterable[Package]:
         """Get all packages in the mapping."""
@@ -187,20 +195,28 @@ class Packages:
 
         :param module: The module (import name) to look up.
         """
-        return self._packages.get(module.main, {Package(module.main.name)})
+        parent = module
+        for parent in module.parents:
+            if parent in self._packages:
+                return self._packages[parent]
+        return {Package(parent.name)}
 
 
 def _canonical(name: str) -> str:
-    """Normalize a package name: lowercase and replace special chars with underscores.
+    """Normalize a package name: lowercase and replace hyphens with underscores.
 
     This makes package name comparison case-insensitive and treats hyphens and
     underscores as equivalent, consistent with PEP 503 / PyPI conventions.
     E.g. ``scikit-learn``, ``scikit_learn``, and ``SciKit-Learn`` all normalize
     to ``scikit_learn``.
 
+    However, it does, contrary to PEP 503, keep dots in the name, so that subpackages
+    are preserved. This is important for namespace packages, where a package may
+    define submodules that are imported with dotted names (e.g., ``company.module``).
+
     :param name: The package name to normalize.
     :returns: Normalized package name.
     """
     pkg_name_iter = takewhile(lambda x: x.isalnum() or x in "-_.", name.strip())
     package_name = "".join(pkg_name_iter)
-    return package_name.lower().strip().replace("-", "_").replace(".", "_")
+    return package_name.lower().strip().replace("-", "_")

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import textwrap
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -80,13 +81,15 @@ def project_cfg(
 def test_project_cfg(tmp_path: Path) -> None:
     """Test ProjectConfig dataclass."""
     (pyproject_path := tmp_path / "pyproject.toml").write_text(
-        "[project]\n"
-        'dependencies=["dep1=*"]\n'
-        "[tool.check-dependencies]\n"
-        'known-missing = ["missing"]\n'
-        'known-extra = ["extra"]\n'
-        'dependencies = ["dep1", "dep2"]\n'
-        'provides = {dep1 = "mod1", dep2 = "mod2"}\n',
+        textwrap.dedent("""\
+            [project]
+            dependencies=["dep1=*"]
+            [tool.check-dependencies]
+            known-missing = ["missing"]
+            known-extra = ["extra"]
+            dependencies = ["dep1", "dep2"]
+            provides = {dep1 = "mod1", dep2 = "mod2"}
+            """),
         "utf-8",
     )
     pyproject_cfg = PyProjectToml.for_path(pyproject_path)
@@ -96,6 +99,7 @@ def test_project_cfg(tmp_path: Path) -> None:
     assert set(cfg.allowed_dependencies) >= {Package("dep1"), Package("extra")}
     assert cfg.packages._orig_packages == (
         (Package("app1"), Module("mod1")),
+        (Package("dep1"), Module("dep1")),
         (Package("dep1"), Module("mod1")),
         (Package("dep2"), Module("mod2")),
     )

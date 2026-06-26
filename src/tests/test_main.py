@@ -46,9 +46,11 @@ if TYPE_CHECKING:
 TEST_IMPORTS = [
     ("import foo", ["foo"]),
     ("import foo as bar", ["foo"]),
-    ("from foo import bar", ["foo"]),
-    ("from foo import bar as baz", ["foo"]),
-    ("from foo import bar, baz", ["foo"]),
+    ("from foo import bar", ["foo.bar"]),
+    ("from foo import *", ["foo"]),
+    ("from foo.bar import *", ["foo.bar"]),
+    ("from foo import bar as baz", ["foo.bar"]),
+    ("from foo import bar, baz", ["foo.bar", "foo.baz"]),
     ("from . import bar", []),
     ("from .internal import bar", []),
     ("import foo\nimport bar", ["foo", "bar"]),
@@ -215,8 +217,11 @@ class TestYieldWrongImports:
     def test(self, pyproject: Path) -> None:
         """By default, we should only see the missing (and extra) imports."""
         assert self.fn(overwrite_cfg=pyproject, args=[]) == [
-            "! missing",
+            "! missing.bar",
+            "! missing.foo",
+            "! missing.baz",
             "! missing_class",
+            "! missing",
             "! missing_def",
         ]
 
@@ -224,7 +229,7 @@ class TestYieldWrongImports:
         "stmt, expected",
         [
             *TEST_IMPORTS,
-            ("import foo.bar", ["foo"]),
+            ("import foo.bar", ["foo.bar"]),
         ],
     )
     def test_import_statement(
@@ -273,8 +278,11 @@ class TestYieldWrongImports:
         res = self.fn(overwrite_cfg=pyproject_extra)
         spec = "= '> 0'" if pyproject_extra == POETRY_EXTRA else "> 0"
         assert res == [
-            "! missing",
+            "! missing.bar",
+            "! missing.foo",
+            "! missing.baz",
             "! missing_class",
+            "! missing",
             "! missing_def",
             f"+ test_extra {spec}",
         ]
@@ -302,7 +310,14 @@ class TestYieldWrongImports:
         result = self.fn(overwrite_cfg=PYPROJECT_PROVIDES)
         assert "! test_1" not in result
         assert "+ test_alias_pkg" not in result
-        assert result == ["! missing", "! missing_class", "! missing_def"]
+        assert result == [
+            "! missing.bar",
+            "! missing.foo",
+            "! missing.baz",
+            "! missing_class",
+            "! missing",
+            "! missing_def",
+        ]
 
     def test_provides_from_app_cfg(self) -> None:
         """AppConfig.provides (CLI --provides) resolves false positives like config."""
@@ -322,11 +337,89 @@ class TestYieldWrongImports:
         assert "! test_1" not in result
         assert "+ test_main" not in result
 
+    def test_explicit_namespace_packages_from_config(self, tmp_path: Path) -> None:
+        """Provides mappings for dotted imports.
+
+        They should resolve to declared dependencies.
+        """
+        pyproject = tmp_path / "pyproject.toml"
+        pyproject.write_text(
+            textwrap.dedent("""\
+                [project]
+                name = "example"
+                dependencies = ["test_1", "test_main"]
+                [tool.check-dependencies.provides]
+                test_1 = ["company.test_1"]
+                test_main = ["company.test_main"]
+                """),
+            "utf-8",
+        )
+        source = tmp_path / "module.py"
+        source.write_text(
+            textwrap.dedent("""\
+                from company.test_1 import value
+                import company.test_main
+                import company.missing
+                """),
+            "utf-8",
+        )
+        assert self.fn(overwrite_cfg=pyproject, file_names=[source.as_posix()]) == [
+            "! company.missing"
+        ]
+
+    def test_implicit_namespace_packages_from_config(self, tmp_path: Path) -> None:
+        """Dotted dependency names (`a.b`) should match dotted imports."""
+        pyproject = tmp_path / "pyproject.toml"
+        pyproject.write_text(
+            textwrap.dedent("""\
+                [project]
+                name = "example"
+                dependencies = ["company.test_main"]
+                """),
+            "utf-8",
+        )
+        source = tmp_path / "module.py"
+        source.write_text(
+            textwrap.dedent("""\
+                import company.test_main
+                import company.missing
+                """),
+            "utf-8",
+        )
+        assert self.fn(overwrite_cfg=pyproject, file_names=[source.as_posix()]) == [
+            "! company.missing"
+        ]
+
+    def test_indirect_namespace_packages_from_config(self, tmp_path: Path) -> None:
+        """`from company import test_main` should resolve as `company.test_main`."""
+        pyproject = tmp_path / "pyproject.toml"
+        pyproject.write_text(
+            textwrap.dedent("""\
+                [project]
+                name = "example"
+                dependencies = ["company.test_main"]
+                """),
+            "utf-8",
+        )
+        source = tmp_path / "module.py"
+        source.write_text(
+            textwrap.dedent("""\
+                from company import test_main, missing
+                """),
+            "utf-8",
+        )
+        assert self.fn(overwrite_cfg=pyproject, file_names=[source.as_posix()]) == [
+            "! company.missing"
+        ]
+
     def test_ignore_requirements(self, pyproject_extra: Path) -> None:
         """Ensure ignored requirements are not printed."""
         assert self.fn(overwrite_cfg=pyproject_extra, args="--extra test_extra") == [
-            "! missing",
+            "! missing.bar",
+            "! missing.foo",
+            "! missing.baz",
             "! missing_class",
+            "! missing",
             "! missing_def",
         ]
 
@@ -334,19 +427,25 @@ class TestYieldWrongImports:
         """Ensure ignored requirements are not flagged even if they come up in src."""
         assert "  test_1" in self.fn(overwrite_cfg=POETRY, args="--all")
         assert self.fn(overwrite_cfg=POETRY, args="--extra=test_1") == [
-            "! missing",
+            "! missing.bar",
+            "! missing.foo",
+            "! missing.baz",
             "! missing_class",
+            "! missing",
             "! missing_def",
         ]
 
     def test_show_all(self) -> None:
         """Show all imports, including correct ones."""
         assert self.fn(args="--all") == [
-            "! missing",
+            "! missing.bar",
+            "! missing.foo",
             "  test_1",
             "  test_main",
+            "! missing.baz",
             "  check_dependencies",
             "! missing_class",
+            "! missing",
             "! missing_def",
         ]
 
@@ -354,8 +453,11 @@ class TestYieldWrongImports:
         """Include development dependencies in the check."""
         res = self.fn(args="--include-dev")
         assert [part.split("=", 1)[0].strip() for part in res] == [
-            "! missing",
+            "! missing.bar",
+            "! missing.foo",
+            "! missing.baz",
             "! missing_class",
+            "! missing",
             "! missing_def",
             "+ test_dev_1",
             "+ test_dev_2",
@@ -374,7 +476,7 @@ class TestYieldWrongImports:
         assert self.fn(args="--verbose") == [
             f"!NA {SRC}:1 missing.bar",
             f"!NA {SRC}:2 missing.foo",
-            f"!NA {SRC}:5 missing",
+            f"!NA {SRC}:5 missing.baz",
             f"!NA {SRC}:11 missing_class",
             f"!NA {SRC}:15 missing",
             f"!NA {SRC}:16 missing_def",
@@ -387,7 +489,7 @@ class TestYieldWrongImports:
             f"!NA {SRC}:2 missing.foo",
             f" OK {SRC}:3 test_1",
             f" OK {SRC}:4 test_main",
-            f"!NA {SRC}:5 missing",
+            f"!NA {SRC}:5 missing.baz",
             f" OK {SRC}:7 check_dependencies",
             f"!NA {SRC}:11 missing_class",
             f"!NA {SRC}:15 missing",
@@ -419,6 +521,9 @@ class TestYieldWrongImports:
             "  test_main",
             "! fox",
             "! missing",
+            "! missing.bar",
+            "! missing.baz",
+            "! missing.foo",
             "! missing_class",
             "! missing_def",
             "! missing_src2",
@@ -435,6 +540,9 @@ class TestYieldWrongImports:
             "  test_main",
             "! fox",
             "! missing",
+            "! missing.bar",
+            "! missing.baz",
+            "! missing.foo",
             "! missing_class",
             "! missing_def",
             "! missing_src2",
@@ -646,7 +754,7 @@ def test_missing_imports_iter() -> None:
         "missing.foo",
         "test_1",
         "test_main",
-        "missing",
+        "missing.baz",
         "check_dependencies",
         "missing_class",
         "missing",
@@ -684,9 +792,9 @@ def test_mk_unused_formatter(verbose: bool, expected: str) -> None:
         # Unicode in module names (valid syntax, but won't work at runtime)
         ("import ö", ["ö"]),
         ("import café", ["café"]),
-        ("from ä import something", ["ä"]),
+        ("from ä import something", ["ä.something"]),
         ("import 日本語", ["日本語"]),
-        ("from Москва import test", ["Москва"]),
+        ("from Москва import test", ["Москва.test"]),
         # Unicode in variable names is valid, but shouldn't be confused with imports
         ("import os\nö = 1", ["os"]),
         # Mixed ASCII and Unicode
@@ -731,14 +839,14 @@ def test_missing_imports_iter_unicode_file(tmp_path: Path) -> None:
 
     # Should have detected all three imports
     assert "ö" in modules
-    assert "café" in modules
+    assert "café.something" in modules
     assert "sys" in modules
 
     # sys should be OK, Unicode modules should be NA
     statuses = {m.name: status for status, m, _ in result}
     assert statuses["sys"] == Dependency.OK
     assert statuses["ö"] == Dependency.NA
-    assert statuses["café"] == Dependency.NA
+    assert statuses["café.something"] == Dependency.NA
 
 
 @pytest.mark.performance

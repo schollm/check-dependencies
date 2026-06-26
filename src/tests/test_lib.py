@@ -47,15 +47,21 @@ class TestModule:
     @pytest.mark.parametrize(
         "module, expected",
         [
-            (Module("numpy.linalg").main, Module("numpy")),
-            (Module("sklearn").main, Module("sklearn")),
-            (Module("PIL.Image").main, Module("PIL")),
-            (Module("foo.bar.baz", raw=True).main, Module("foo.bar.baz", raw=True)),
+            (Module("numpy.linalg"), ["numpy.linalg", "numpy"]),
+            (Module("sklearn"), ["sklearn"]),
+            (Module("PIL.Image"), ["PIL.Image", "PIL"]),
+            (Module("foo.bar.baz"), ["foo.bar.baz", "foo.bar", "foo"]),
         ],
     )
-    def test_main(self, module: Module, expected: Module) -> None:
-        """Test the main property."""
-        assert module.main == expected
+    def test_parents(self, module: Module, expected: list[str]) -> None:
+        """Test the parents property."""
+        assert module.parents == [Module(name) for name in expected]
+
+    def test_parents_raw(self) -> None:
+        """Test the parents property for raw modules."""
+        module = Module("foo.bar.baz", raw=True)
+        assert module.parents == [module]
+        assert module.parents[0] is module
 
 
 class TestPackage:
@@ -166,13 +172,14 @@ class TestPackages:
         mod_b_only = Module("mod_b_only")
         mod_c_only = Module("mod_c_only")
         packages = Packages(
+            [],
             [
                 (pkg_a, mod_common),
                 (pkg_a, mod_a_only),
                 (pkg_b, mod_common),
                 (pkg_b, mod_b_only),
                 (pkg_c, mod_c_only),
-            ]
+            ],
         )
 
         # package -> modules (one package provides multiple modules)

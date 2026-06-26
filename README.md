@@ -203,6 +203,24 @@ Some packages have different distribution and import names, for example
     PyJWT = "jwt"
     ```
 
+#### Support for namespaces
+
+ Supports PEP 420-style namespace-package imports where imports look like
+ `company.package_name`, with a declared dependency like `company.package_name`
+ (or the import is covered via a `[tool.check-dependencies.provides]` mapping).
+
+- 📄 `pyproject.toml`:
+    ```toml
+    [project]
+    dependencies = [ "company.package_name" ]
+    ```
+- 📄 `pyproject.toml`:
+    ```toml
+    dependencies = [ "package_name" ]
+    [tool.check-dependencies.provides]
+    package_name = ["company.package_name"]
+    ```
+
 #### Add known missing requirements
 
 Use this when imports are expected to be missing from the dependency list,
@@ -344,6 +362,7 @@ known-extra = [
     "package_as_extra_for_another_package",
     "yet_another_package"
 ]
+
 [tool.check-dependencies.provides]
 # Maps package name (as declared in dependencies) -> import/module name
 Pillow = "PIL"

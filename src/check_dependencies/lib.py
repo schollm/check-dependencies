@@ -204,7 +204,7 @@ class Packages:
 
 
 def _canonical(name: str) -> str:
-    """Normalize a package name: lowercase and replace special chars with underscores.
+    """Normalize a package name: lowercase and replace hyphens with underscores.
 
     This makes package name comparison case-insensitive and treats hyphens and
     underscores as equivalent, consistent with PEP 503 / PyPI conventions.

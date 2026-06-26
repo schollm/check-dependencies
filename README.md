@@ -203,14 +203,14 @@ Some packages have different distribution and import names, for example
     PyJWT = "jwt"
     ```
 
-#### Strip implicit namespace package prefixes
+#### Support for namespaces
 
-Use `namespaces` for PEP 420-style namespace packages where imports look like
+Support namespaces for PEP 420-style namespace packages where imports look like
 `company.package_name`, but the declared dependency is `package_name`.
 
 - 📄 `pyproject.toml`:
     ```toml
-    [tool.check-dependencies.povides]
+    [tool.check-dependencies.provides]
     company_lib1 = ["company.lib1"]
     ```
 

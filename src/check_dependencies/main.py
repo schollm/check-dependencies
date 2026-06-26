@@ -200,7 +200,10 @@ def _imports(stmt: ast.AST) -> Iterable[tuple[Module, ast.AST]]:
     elif isinstance(stmt, ast.ImportFrom) and stmt.level == 0 and stmt.module:
         # level > 0 means relative import
         for alias in stmt.names:
-            yield Module(f"{stmt.module}.{alias.name}"), stmt
+            if alias.name == "*":
+                yield Module(stmt.module), stmt
+            else:
+                yield Module(f"{stmt.module}.{alias.name}"), stmt
 
 
 def _import_builtin(stmt: ast.AST) -> Iterable[tuple[Module, ast.AST]]:

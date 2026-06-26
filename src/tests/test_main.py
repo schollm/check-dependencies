@@ -47,6 +47,8 @@ TEST_IMPORTS = [
     ("import foo", ["foo"]),
     ("import foo as bar", ["foo"]),
     ("from foo import bar", ["foo.bar"]),
+    ("from foo import *", ["foo"]),
+    ("from foo.bar import *", ["foo.bar"]),
     ("from foo import bar as baz", ["foo.bar"]),
     ("from foo import bar, baz", ["foo.bar", "foo.baz"]),
     ("from . import bar", []),
@@ -358,6 +360,9 @@ class TestYieldWrongImports:
                 """),
             "utf-8",
         )
+        assert self.fn(overwrite_cfg=pyproject, file_names=[source.as_posix()]) == [
+            "! company.missing"
+        ]
 
     def test_implicit_namespace_packages_from_config(self, tmp_path: Path) -> None:
         """Configured namespaces should be stripped before dependency lookup."""

@@ -205,13 +205,14 @@ Some packages have different distribution and import names, for example
 
 #### Support for namespaces
 
-Support namespaces for PEP 420-style namespace packages where imports look like
-`company.package_name`, but the declared dependency is `package_name`.
+ Supports PEP 420-style namespace-package imports where imports look like
+ `company.package_name`, but the declared dependency is `package_name` (or the import is
+ covered via a `[tool.check-dependencies.provides]` mapping).
 
 - 📄 `pyproject.toml`:
     ```toml
     [tool.check-dependencies.provides]
-    company_lib1 = ["company.lib1"]
+    package_name = ["company.package_name"]
     ```
 
 #### Add known missing requirements
@@ -355,9 +356,7 @@ known-extra = [
     "package_as_extra_for_another_package",
     "yet_another_package"
 ]
-namespaces = [
-    "company"
-]
+
 [tool.check-dependencies.provides]
 # Maps package name (as declared in dependencies) -> import/module name
 Pillow = "PIL"

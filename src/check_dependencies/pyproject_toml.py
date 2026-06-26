@@ -165,7 +165,7 @@ class PyProjectToml(ConfigToml):
         This includes the project itself.
         """
         # Add project name
-        packages = Packages([])
+        packages = Packages([], [])
         pep631_name = Package(_nested_item(self.cfg, "project.name", str) or "")
         poetry_name = Package(_nested_item(self.cfg, "tool.poetry.name", str) or "")
         return frozenset(

@@ -76,10 +76,11 @@ class AppConfig:
                 ),
             ),
             provides=Packages(
-                chained(
+                known_packages=(),
+                packages=chained(
                     (inc.provides for inc in includes_cfg),
                     _get_provides(provides, provides_from_venv),
-                )
+                ),
             ),
             include_dev=include_dev,
             verbose=verbose,
@@ -130,10 +131,10 @@ class AppConfig:
         if cause == Dependency.FILE_ERROR:
             yield f"{cause.value} {src_pth}"
         elif self.show_all:
-            if (cause, module.main) not in cache:
-                cache.add((cause, module.main))
-                yield f"{cause.value} {module.main.name}"
-        elif (cause, pkg_ := module.main) not in cache:
+            if (cause, module) not in cache:
+                cache.add((cause, module))
+                yield f"{cause.value} {module.name}"
+        elif (cause, pkg_ := module) not in cache:
             cache.add((cause, pkg_))
             if cause in (Dependency.NA, Dependency.UNKNOWN):
                 yield f"{cause.value} {pkg_.name}"
@@ -177,7 +178,8 @@ class ProjectConfig:
                 )
             ),
             known_extra=frozenset({*app_cfg.known_extra, *pyproject.known_extra}),
-            packages=app_cfg.provides | Packages(pyproject.provides),
+            packages=app_cfg.provides
+            | Packages(pyproject.dependencies, pyproject.provides),
             src_formatter=app_cfg.mk_src_formatter(),
             path=pyproject.path,
         )

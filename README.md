@@ -203,6 +203,17 @@ Some packages have different distribution and import names, for example
     PyJWT = "jwt"
     ```
 
+#### Strip implicit namespace package prefixes
+
+Use `namespaces` for PEP 420-style namespace packages where imports look like
+`company.package_name`, but the declared dependency is `package_name`.
+
+- 📄 `pyproject.toml`:
+    ```toml
+    [tool.check-dependencies.povides]
+    company_lib1 = ["company.lib1"]
+    ```
+
 #### Add known missing requirements
 
 Use this when imports are expected to be missing from the dependency list,
@@ -343,6 +354,9 @@ known-missing = [
 known-extra = [
     "package_as_extra_for_another_package",
     "yet_another_package"
+]
+namespaces = [
+    "company"
 ]
 [tool.check-dependencies.provides]
 # Maps package name (as declared in dependencies) -> import/module name

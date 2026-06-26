@@ -175,7 +175,7 @@ def _missing_imports_iter(
             pkg_ = project_cfg.packages.packages(module)
             status = (
                 Dependency.OK
-                if module.main in project_cfg.known_missing
+                if any(parent in project_cfg.known_missing for parent in module.parents)
                 or pkg_.intersection(project_cfg.allowed_dependencies)
                 else Dependency.NA
             )
@@ -199,7 +199,8 @@ def _imports(stmt: ast.AST) -> Iterable[tuple[Module, ast.AST]]:
             yield Module(alias.name), stmt
     elif isinstance(stmt, ast.ImportFrom) and stmt.level == 0 and stmt.module:
         # level > 0 means relative import
-        yield Module(stmt.module), stmt
+        for alias in stmt.names:
+            yield Module(f"{stmt.module}.{alias.name}"), stmt
 
 
 def _import_builtin(stmt: ast.AST) -> Iterable[tuple[Module, ast.AST]]:

@@ -82,7 +82,8 @@ def test__main__(monkeypatch: pytest.MonkeyPatch) -> None:
 
     This also tests if all dependencies are defined correctly.
     """
-    main_module = Path(__file__).parents[1] / "check_dependencies"
+    main_module = Path(__file__).parents[1] / "src" / "check_dependencies"
+    assert main_module.is_dir()
     monkeypatch.setattr("sys.argv", ["check-dependencies", main_module.as_posix()])
     assert cli_main() == 0
 
@@ -670,7 +671,7 @@ class TestYieldWrongImports:
         monkeypatch.setattr(
             check_dependencies.pyproject_toml,
             "_PYPROJECT_TOML",
-            Path(subdir / "/non-existent-pyproject.toml"),
+            Path(subdir / "non-existent-pyproject.toml"),
         )
         lines, ret_code = self.fn_ret(
             overwrite_cfg=Path("pyproject.toml"),

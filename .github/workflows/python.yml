@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: echo "github.event_name=${{ github.event_name }}"
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: check-dependencies
         uses: ./
         with:
@@ -21,7 +21,7 @@ jobs:
           include-dev: "false"
           verbose: "true"
           show-all: "false"
-      - uses: astral-sh/ruff-action@v3.6.1
+      - uses: astral-sh/ruff-action@v4.0.0
         with:
           src: "./src"
           args: "check"
@@ -42,7 +42,7 @@ jobs:
             coverage: true
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v6
         with:
@@ -73,7 +73,7 @@ jobs:
         if: matrix.coverage==true
         run: cat code-coverage-results.md >> $GITHUB_STEP_SUMMARY
   #    - name: Add Coverage PR Comment
-  #      uses: marocchino/sticky-pull-request-comment@v2.9.4
+  #      uses: marocchino/sticky-pull-request-comment@v3.0.4
   #      if: matrix.coverage==true # && (github.event_name == 'pull_request')
   #      with:
   #        recreate: true
@@ -82,7 +82,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: 3.14
@@ -93,7 +93,7 @@ jobs:
       - name: Build package
         run: uv build
       - name: Upload dist-build
-        uses: actions/upload-artifact@v7.0.0
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: python-package-distributions
           path: dist/
@@ -143,7 +143,7 @@ jobs:
           name: python-package-distributions
           path: dist/
       - name: Sign the dists with Sigstore
-        uses: sigstore/gh-action-sigstore-python@v3.2.0
+        uses: sigstore/gh-action-sigstore-python@v3.4.0
         with:
           inputs: >-
             ./dist/*.tar.gz
@@ -181,7 +181,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Configure git identity

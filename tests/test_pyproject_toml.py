@@ -1,4 +1,4 @@
-"""Test suite for the PyProjectToml class and get_pyproject_path function."""
+"""Test suite for the PyProjectToml class and get_pyproject_toml function."""
 
 from __future__ import annotations
 
@@ -234,7 +234,7 @@ class TestGetPyProjectToml:
         monkeypatch.setattr(
             pyproject_toml,
             "_PYPROJECT_TOML",
-            Path(subdir / "/non-existent-pyproject.toml"),
+            Path(subdir / "non-existent-pyproject.toml"),
         )
         with pytest.raises(NoPyProjectFileError):
             get_pyproject_toml(subdir)

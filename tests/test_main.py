@@ -215,7 +215,7 @@ class TestYieldWrongImports:
             with_comment=with_comment,
         )[0]
 
-    def test_xx(self, pyproject: Path) -> None:
+    def test(self, pyproject: Path) -> None:
         """By default, we should only see the missing (and extra) imports."""
         assert self.fn(overwrite_cfg=pyproject, args=[]) == [
             "! missing.bar",
@@ -671,7 +671,7 @@ class TestYieldWrongImports:
         monkeypatch.setattr(
             check_dependencies.pyproject_toml,
             "_PYPROJECT_TOML",
-            Path(subdir / "/non-existent-pyproject.toml"),
+            Path(subdir / "non-existent-pyproject.toml"),
         )
         lines, ret_code = self.fn_ret(
             overwrite_cfg=Path("pyproject.toml"),

@@ -18,5 +18,4 @@
     "tests_main",
     "fox",
  ]
- "includes" = ["./check-dependencies.toml"]
  provides = {"pytest" = "_pytest"}

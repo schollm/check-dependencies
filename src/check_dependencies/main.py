@@ -41,7 +41,6 @@ def yield_wrong_imports(app_cfg: AppConfig) -> Generator[str, None, int]:
     # the same project.
     exit_status = 0
     yield from _verbose_app_info(app_cfg)
-
     try:
         registry = _ProjectRegistry(app_cfg)
     except NoPyProjectFileError as exc:
@@ -56,6 +55,7 @@ def yield_wrong_imports(app_cfg: AppConfig) -> Generator[str, None, int]:
         if src_pth not in seen or seen.add(src_pth)
     ):
         project_cfg, used_deps = registry.get(src_pth)
+
         for cause, module, stmt in _missing_imports_iter(src_pth, project_cfg):
             if cause is Dependency.FILE_ERROR:
                 exit_status |= ERR_FILE

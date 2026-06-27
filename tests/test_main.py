@@ -82,7 +82,8 @@ def test__main__(monkeypatch: pytest.MonkeyPatch) -> None:
 
     This also tests if all dependencies are defined correctly.
     """
-    main_module = Path(__file__).parents[1] / "check_dependencies"
+    main_module = Path(__file__).parents[1] / "src" / "check_dependencies"
+    assert main_module.is_dir()
     monkeypatch.setattr("sys.argv", ["check-dependencies", main_module.as_posix()])
     assert cli_main() == 0
 
@@ -214,7 +215,7 @@ class TestYieldWrongImports:
             with_comment=with_comment,
         )[0]
 
-    def test(self, pyproject: Path) -> None:
+    def test_xx(self, pyproject: Path) -> None:
         """By default, we should only see the missing (and extra) imports."""
         assert self.fn(overwrite_cfg=pyproject, args=[]) == [
             "! missing.bar",

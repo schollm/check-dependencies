@@ -18,13 +18,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Planned
 
 ### Upcoming
+- **CHANGE:** Bump Python minimum runtime version to 3.9.
 
 ### [1.6.0]
 - **ADD:** Support namespaces for dependency matching.
 - **CHANGE:** Print full module name instead of top level only.
 
 ## [1.5.4]
-- **FIX:** Set Author and Email for release version tag pipeline
+- **FIX:** Set Author and Email for release version tag pipeline.
 
 ### [1.5.3]
 - **SCOUT:** Change Github Release Pipeline (internal change).

@@ -8,7 +8,10 @@ from enum import Enum
 from functools import total_ordering
 from itertools import groupby, takewhile
 from operator import itemgetter
-from typing import Collection, Iterable
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Collection, Iterable
 
 logger = logging.getLogger("check_dependencies.lib")
 

@@ -5,7 +5,10 @@ from __future__ import annotations
 import subprocess
 from itertools import groupby
 from pathlib import Path
-from typing import Iterable
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 
 def mappings_for_env(python: Path | None) -> list[tuple[str, str]]:

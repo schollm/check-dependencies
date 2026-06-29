@@ -5,6 +5,7 @@ from __future__ import annotations
 import sys
 
 BUILTINS: frozenset[str]
+
 if sys.version_info >= (3, 10):
     BUILTINS = frozenset(sys.stdlib_module_names)  # pylint: disable=no-member
 else:
@@ -98,7 +99,6 @@ else:
             "_tkinter",
             "_tracemalloc",
             "_uuid",
-            "_virtualenv",
             "_warnings",
             "_weakref",
             "_weakrefset",
@@ -202,7 +202,6 @@ else:
             "mailcap",
             "marshal",
             "math",
-            "memray",
             "mimetypes",
             "mmap",
             "modulefinder",
@@ -222,9 +221,7 @@ else:
             "pdb",
             "pickle",
             "pickletools",
-            "pip",
             "pipes",
-            "pkg_resources",
             "pkgutil",
             "platform",
             "plistlib",
@@ -254,7 +251,6 @@ else:
             "secrets",
             "select",
             "selectors",
-            "setuptools",
             "shelve",
             "shlex",
             "shutil",
@@ -314,7 +310,6 @@ else:
             "wave",
             "weakref",
             "webbrowser",
-            "wheel",
             "wsgiref",
             "xdrlib",
             "xml",

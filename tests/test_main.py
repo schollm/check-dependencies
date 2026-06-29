@@ -10,7 +10,7 @@ import time
 from importlib.metadata import PackageNotFoundError
 from pathlib import Path
 from textwrap import dedent
-from typing import TYPE_CHECKING, Callable, Collection
+from typing import TYPE_CHECKING, Callable
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -41,7 +41,7 @@ from tests.conftest import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Generator, Sequence
+    from collections.abc import Collection, Generator, Sequence
 
 TEST_IMPORTS = [
     ("import foo", ["foo"]),
@@ -186,10 +186,10 @@ class TestYieldWrongImports:
 
         lines: list[str] = []
 
-        with patch(
-            "check_dependencies.pyproject_toml._PYPROJECT_TOML", overwrite_cfg
-        ), patch("sys.argv", ["check-dependencies", *args, *file_names]), patch(
-            "check_dependencies.__main__._writer", lines.append
+        with (
+            patch("check_dependencies.pyproject_toml._PYPROJECT_TOML", overwrite_cfg),
+            patch("sys.argv", ["check-dependencies", *args, *file_names]),
+            patch("check_dependencies.__main__._writer", lines.append),
         ):
             exit_status = cli_main()
 

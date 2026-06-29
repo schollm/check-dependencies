@@ -7,7 +7,7 @@ from functools import partial
 from itertools import chain
 from logging import getLogger
 from pathlib import Path
-from typing import TYPE_CHECKING, Collection, TypeVar
+from typing import TYPE_CHECKING, TypeVar
 
 from check_dependencies.builtin_module import BUILTINS
 from check_dependencies.lib import Dependency, Module, Package, Packages
@@ -16,7 +16,7 @@ from check_dependencies.pyproject_toml import ConfigToml, PyProjectToml
 
 if TYPE_CHECKING:
     import ast
-    from collections.abc import Callable, Iterable, Iterator, Sequence
+    from collections.abc import Callable, Collection, Iterable, Iterator, Sequence
 
 
 logger = getLogger(__name__)

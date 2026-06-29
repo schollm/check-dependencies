@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import ast
 import logging
-from typing import TYPE_CHECKING, Iterable
+from typing import TYPE_CHECKING
 
 from check_dependencies.app_config import ProjectConfig
 from check_dependencies.lib import Dependency, Module, Package
@@ -15,7 +15,7 @@ from check_dependencies.pyproject_toml import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Generator, Iterator
+    from collections.abc import Generator, Iterable, Iterator
     from pathlib import Path
 
     from check_dependencies.app_config import AppConfig

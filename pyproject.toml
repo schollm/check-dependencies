@@ -89,6 +89,7 @@ ignore = ["COM812", "D213", "D203"]
     "PLR0913", # Too many arguments in function definition (7 > 5)
     "D400", # docstring should end with a period
     "SLF001", # use private member of a module to be tested.
+    "ANN201", # Missing return type statement (tests always return None)
 ]
 
 [tool.ruff.lint.flake8-pytest-style]

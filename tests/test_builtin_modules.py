@@ -28,6 +28,8 @@ def test_contains_future():
 def test_does_not_contain_extra_module(
     module: str, version: tuple[int, int], monkeypatch: pytest.MonkeyPatch
 ):
+    if version >= (3, 10) and sys.version_info < (3, 10):
+        pytest.skip("Python version is too low for this test")
     """Test that a module that is not builtin is not in the set."""
     monkeypatch.setattr("sys.version_info", version)
     monkeypatch.delitem(sys.modules, "check_dependencies.builtin_module", raising=False)

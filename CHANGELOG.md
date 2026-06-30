@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Planned
 
 ### Upcoming
+
+### [1.7.0]
 - **CHANGE:** Bump Python minimum runtime version to 3.9.
 - **FIX:** Remove non-builtin modules from Python 3.9 builtins.
 - **FIX:** Add _typeshed typing only stdlib module to builtin_module.

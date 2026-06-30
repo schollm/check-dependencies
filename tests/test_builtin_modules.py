@@ -15,9 +15,17 @@ def test_is_frozenset():
     assert isinstance(builtin_module.BUILTINS, frozenset)
 
 
-def test_contains_future():
+@pytest.mark.parametrize(
+    "module_name",
+    [
+        "sys",
+        "__future__",
+        "_typeshed",
+    ],
+)
+def test_contains_future(module_name: str):
     """Test a single sample module."""
-    assert "__future__" in builtin_module.BUILTINS
+    assert module_name in builtin_module.BUILTINS
 
 
 @pytest.mark.parametrize(
@@ -28,9 +36,9 @@ def test_contains_future():
 def test_does_not_contain_extra_module(
     module: str, version: tuple[int, int], monkeypatch: pytest.MonkeyPatch
 ):
+    """Test that a module that is not builtin is not in the set."""
     if version >= (3, 10) and sys.version_info < (3, 10):
         pytest.skip("Python version is too low for this test")
-    """Test that a module that is not builtin is not in the set."""
     monkeypatch.setattr("sys.version_info", version)
     monkeypatch.delitem(sys.modules, "check_dependencies.builtin_module", raising=False)
     bmod = import_module("check_dependencies.builtin_module")

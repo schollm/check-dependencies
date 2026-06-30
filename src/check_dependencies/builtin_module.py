@@ -5,13 +5,19 @@ from __future__ import annotations
 import sys
 
 BUILTINS: frozenset[str]
+_EXTRA_MODULES = frozenset(
+    {
+        "_typeshed"  # Part of stdlib, but not available at runtime.
+    }
+)
 
 if sys.version_info >= (3, 10):
-    BUILTINS = frozenset(sys.stdlib_module_names)  # pylint: disable=no-member
+    BUILTINS = frozenset(sys.stdlib_module_names).union(_EXTRA_MODULES)  # pylint: disable=no-member
 else:
     # Use the list of builtins from Python 3.9
     BUILTINS = frozenset(  # pragma: no cover
-        [
+        {
+            *_EXTRA_MODULES,
             "__future__",
             "_abc",
             "_aix_support",
@@ -321,5 +327,5 @@ else:
             "zipimport",
             "zlib",
             "zoneinfo",
-        ],
+        },
     )

@@ -206,7 +206,7 @@ def get_pyproject_toml(path: Path) -> Path:
         return get_pyproject_toml(path.parent)
     except NoPyProjectFileError:
         # Get original path for error message, not the resolved and recursed path
-        raise NoPyProjectFileError(path) from None
+        raise NoPyProjectFileError(path.as_posix()) from None
 
 
 @dataclass(frozen=True)

@@ -7,12 +7,11 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from check_dependencies.app_config import AppConfig, ProjectConfig
-from check_dependencies.lib import Dependency, Module, Package, Packages
+from check_dependencies.lib import Module, Package
 from check_dependencies.pyproject_toml import PyProjectToml
 
 if TYPE_CHECKING:
-    import ast
-    from collections.abc import Callable, Collection, Iterator, Sequence
+    from collections.abc import Sequence
 
 
 def app_cfg(
@@ -52,29 +51,6 @@ def test_empty_provides_cli() -> None:
         (Package("xx"), Module("xx_")),
         (Package("yy"), Module("yy1_")),
         (Package("yy"), Module("yy2_")),
-    )
-
-
-def project_cfg(
-    known_missing: Collection[Module] = (),
-    defined_dependencies: Collection[Package] = (),
-    allowed_dependencies: Collection[Package] = (),
-    known_extra: Collection[Package] = (),
-    packages: Packages | None = None,
-    src_formatter: Callable[
-        [str, Dependency, Module, ast.AST | None], Iterator[str]
-    ] = lambda *_: iter(()),
-    path: Path = Path("pyproject.toml"),
-) -> ProjectConfig:
-    """Create a  ProjectConfig test instance."""
-    return ProjectConfig(
-        known_missing=known_missing,
-        defined_dependencies=defined_dependencies,
-        allowed_dependencies=allowed_dependencies,
-        known_extra=known_extra,
-        packages=packages or Packages(),
-        src_formatter=src_formatter,
-        path=path,
     )
 
 

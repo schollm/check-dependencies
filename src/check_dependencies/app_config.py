@@ -3,21 +3,20 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from functools import partial
 from itertools import chain
 from logging import getLogger
-from pathlib import Path
 from typing import TYPE_CHECKING, TypeVar
 
 from check_dependencies.builtin_module import BUILTINS
-from check_dependencies.lib import Dependency, Module, Package, Packages
+from check_dependencies.lib import Module, Package, Packages
 from check_dependencies.provides import mappings_for_env
 from check_dependencies.pyproject_toml import ConfigToml, PyProjectToml
 
 if TYPE_CHECKING:
-    import ast
     from collections.abc import Callable, Collection, Iterable, Iterator, Sequence
+    from pathlib import Path
 
+    from check_dependencies.outputs import Output, SeenT
 
 logger = getLogger(__name__)
 _T = TypeVar("_T")
@@ -87,65 +86,20 @@ class AppConfig:
             show_all=show_all,
         )
 
-    def mk_src_formatter(
-        self,
-    ) -> Callable[[str, Dependency, Module, ast.AST | None], Iterator[str]]:
-        """Formatter for missing or used dependencies."""
-        return (
-            self._src_verbose_formatter
-            if self.verbose
-            else partial(self._src_cause_formatter, cache=set())
+    def mk_formatter(self) -> Callable[[Output], Iterator[str]]:
+        """Format outputs."""
+        seen = set()
+
+        def formatter(output: Output) -> Iterator[str]:
+            yield from self.text_formatter(output, seen=seen)
+
+        return formatter
+
+    def text_formatter(self, output: Output, seen: SeenT) -> Iterator[str]:
+        """Return a formatter function for the given output type."""
+        yield from output.to_text(
+            verbose=self.verbose, show_all=self.show_all, seen=seen
         )
-
-    def _src_verbose_formatter(
-        self,
-        src_pth: str,
-        cause: Dependency,
-        module: Module,
-        stmt: ast.AST | None,
-    ) -> Iterator[str]:
-        """Verbose formatter for missing or used dependencies, showing all dependencies.
-
-        :param src_pth: The path of the source file where the dependency was found.
-        :param cause: The cause of the dependency being reported (e.g., missing, extra).
-        :param module: The module associated with the dependency.
-        :param stmt: The AST statement where the dependency was found, if applicable.
-        """
-        if self.show_all or cause in (
-            Dependency.NA,
-            Dependency.FILE_ERROR,
-            Dependency.UNKNOWN,
-        ):
-            location = f"{Path(src_pth).as_posix()}:{getattr(stmt, 'lineno', -1)}"
-            yield f"{cause.value}{cause.name} {location} {module.name}"
-
-    def _src_cause_formatter(
-        self,
-        src_pth: str,
-        cause: Dependency,
-        module: Module,
-        stmt: ast.AST | None,
-        cache: set[tuple[Dependency, Module]],
-    ) -> Iterator[str]:
-        del stmt
-        if cause == Dependency.FILE_ERROR:
-            yield f"{cause.value} {src_pth}"
-        elif self.show_all:
-            if (cause, module) not in cache:
-                cache.add((cause, module))
-                yield f"{cause.value} {module.name}"
-        elif (cause, pkg_ := module) not in cache:
-            cache.add((cause, pkg_))
-            if cause in (Dependency.NA, Dependency.UNKNOWN):
-                yield f"{cause.value} {pkg_.name}"
-
-    def unused_fmt(self, module: str) -> Iterator[str]:
-        """Formatter for unused but declared dependencies.
-
-        :param module: The module name of the dependency.
-        """
-        name = Dependency.EXTRA.name if self.verbose else ""
-        yield f"{Dependency.EXTRA.value}{name} {module}"
 
 
 @dataclass(frozen=True)
@@ -157,7 +111,6 @@ class ProjectConfig:
     allowed_dependencies: Collection[Package]
     known_extra: Collection[Package]
     packages: Packages
-    src_formatter: Callable[[str, Dependency, Module, ast.AST | None], Iterator[str]]
     path: Path
 
     @classmethod
@@ -180,7 +133,6 @@ class ProjectConfig:
             known_extra=frozenset({*app_cfg.known_extra, *pyproject.known_extra}),
             packages=app_cfg.provides
             | Packages(pyproject.dependencies, pyproject.provides),
-            src_formatter=app_cfg.mk_src_formatter(),
             path=pyproject.path,
         )
 

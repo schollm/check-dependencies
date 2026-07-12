@@ -50,7 +50,7 @@ Acceptance criteria:
 - Core analyzer can be consumed without string formatting dependencies.
 - Existing CLI output remains backward compatible.
 
-## TODO 5: Expand tests for semantic correctness of builtin set
+## TODO 5: Expand tests for semantic correctness of builtin set DONE
 Severity: Low
 
 Description:

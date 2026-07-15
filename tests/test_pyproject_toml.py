@@ -239,9 +239,14 @@ class TestGetPyProjectToml:
         with pytest.raises(NoPyProjectFileError):
             get_pyproject_toml(subdir)
 
-    def test_os_error(self, caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_os_error(
+        self, caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Test that get_pyproject_toml raises when an OSError occurs."""
         err_msg = "Simulated OS error"
-        monkeypatch.setattr(Path, "is_dir", lambda self: (_ for _ in ()).throw(OSError(err_msg)))
+        monkeypatch.setattr(
+            Path, "is_dir", lambda __: (_ for _ in ()).throw(OSError(err_msg))
+        )
         with pytest.raises(NoPyProjectFileError):
             get_pyproject_toml(Path("/foo/inaccessible").absolute())
         assert err_msg in caplog.messages

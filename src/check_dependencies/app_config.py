@@ -33,6 +33,7 @@ class AppConfig:
     include_dev: bool = False
     verbose: bool = False
     show_all: bool = False
+    output_format: str = "concise"
 
     @classmethod
     def from_cli_args(  # noqa: PLR0913
@@ -47,6 +48,7 @@ class AppConfig:
         show_all: bool = False,
         includes: Sequence[Path] = (),
         provides_from_venv: Path | None = None,
+        output_format: str = "concise",
     ) -> AppConfig:
         """Construct an AppConfig from CLI arguments."""
         includes_cfg = [ConfigToml.for_path(incl) for incl in includes]
@@ -83,11 +85,21 @@ class AppConfig:
             ),
             include_dev=include_dev,
             verbose=verbose,
-            show_all=show_all,
+            show_all=show_all or output_format == "full",
+            output_format=output_format,
         )
 
     def mk_formatter(self) -> Callable[[Output], Iterator[str]]:
         """Format outputs."""
+        if self.output_format == "github":
+
+            def formatter(output: Output) -> Iterator[str]:
+                yield from output.as_github()
+
+            return formatter
+        return self._mk_text_formatter()
+
+    def _mk_text_formatter(self) -> Callable[[Output], Iterator[str]]:
         seen = set()
 
         def formatter(output: Output) -> Iterator[str]:

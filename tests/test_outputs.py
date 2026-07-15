@@ -33,6 +33,47 @@ OUT_MISSING = outputs.MissingModule(PATH, STMT, MODULE)
 OUT_UNKNOWN = outputs.UnknownModule(PATH, STMT, MODULE)
 
 
+@pytest.mark.parametrize(
+    "output, expected",
+    [
+        (OUT_OK, ""),
+        (OUT_NO_PYPROJECT, ""),
+        (
+            OUT_EXTRA,
+            "::error name=check-dependencies (+EXTRA),file={path}/foo/pyproject.toml,"
+            "line=1,col=1,endLine=1,endColumn=1"
+            "::foo/pyproject.toml: +EXTRA: Package MyPackage is not imported in"
+            " the project but is defined as a dependency.",
+        ),
+        (
+            OUT_FILE_ERROR,
+            "::error name=check-dependencies (!!FILE),file={file},"
+            "line=1,col=1,endLine=1,endColumn=1"
+            "::foo.py: !!FILE: File foo.py could not be parsed: Parsing failure",
+        ),
+        (
+            OUT_MISSING,
+            "::error name=check-dependencies (!NA),file={file},"
+            "line=1,col=4,endLine=1,endColumn=8::foo.py: !NA: module my_module",
+        ),
+        (
+            OUT_UNKNOWN,
+            "::warning name=check-dependencies (?UNKNOWN),file={file},"
+            "line=1,col=4,endLine=1,endColumn=8"
+            "::foo.py: ?UNKNOWN: module my_module",
+        ),
+        (OUT_INFO, ""),
+        (OUT_INFO_VERBOSE, ""),
+    ],
+)
+def test_as_github(output: outputs.Output, expected: str) -> None:
+    """Test that the as_github method returns the expected output."""
+    assert "--".join(output.as_github()) == expected.format(
+        file=PATH.absolute().as_posix(),
+        path=PATH.parent.absolute().as_posix(),
+    )
+
+
 class TextResult(NamedTuple):
     """All possible results of an output."""
 

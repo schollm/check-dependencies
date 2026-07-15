@@ -5,6 +5,8 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
+import textwrap
+from argparse import RawTextHelpFormatter
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -42,6 +44,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Find undeclared and unused (or all) imports in Python files",
         add_help=True,
+        formatter_class=RawTextHelpFormatter,
     )
     parser.add_argument(
         "--version",
@@ -77,8 +80,9 @@ def main() -> int:
         "--provides-from-venv",
         metavar="PYTHON_EXECUTABLE",
         type=Path,
-        help="Path to the virtual environment's Python executable (for example,"
-        " .venv/bin/python) to include all packages installed in it as provides.",
+        help="Path to the virtual environment's Python executable\n"
+        "(for example, .venv/bin/python) to include all packages\n"
+        "installed in it as provides.",
     )
     parser.add_argument(
         "--missing",
@@ -88,8 +92,8 @@ def main() -> int:
         default=[],
         help="Comma separated list of requirements known to be missing."
         " Assume they are part of the requirements."
-        " Can be specified multiple times."
-        " Toml Key: [tool.check-dependencies] known-missing=[]",
+        "\n Can be specified multiple times."
+        "\n Toml Key: [tool.check-dependencies] known-missing=[]",
     )
     parser.add_argument(
         "--extra",
@@ -98,10 +102,10 @@ def main() -> int:
         metavar="PACKAGE,...",
         default=[],
         help="Comma separated list of requirements known to not be imported."
-        " Assume they are not part of the requirements. This can be plugins or similar"
-        " that affect the package but are not imported explicitly."
-        " Can be specified multiple times."
-        " Toml Key: [tool.check-dependencies] known-extra=[]",
+        "\nAssume they are not part of the requirements. This can be plugins or similar"
+        "\nthat affect the package but are not imported explicitly."
+        "\nCan be specified multiple times."
+        "\nToml Key: [tool.check-dependencies] known-extra=[]",
     )
     parser.add_argument(
         "--provides",
@@ -110,11 +114,11 @@ def main() -> int:
         default=[],
         metavar="PACKAGE=MODULE,...",
         help="Map a package name to its module (import) name for packages whose import"
-        " name differs from the package name. Can be specified multiple times."
-        " E.g. --provides Pillow=PIL --provides PyJWT=jwt."
-        " The package name is normalized (case-insensitive, hyphens and underscores"
-        " are equivalent), so Pillow=PIL, pillow=PIL and PIL-ow=PIL are all the same."
-        " Toml Key: [tool.check-dependencies.provides]",
+        "\nname differs from the package name. Can be specified multiple times."
+        "\nE.g. --provides Pillow=PIL --provides PyJWT=jwt."
+        "\nThe package name is normalized (case-insensitive, hyphens and underscores"
+        "\nare equivalent), so Pillow=PIL, pillow=PIL and PIL-ow=PIL are all the same."
+        "\nToml Key: [tool.check-dependencies.provides]",
     )
     parser.add_argument(
         "--include",
@@ -123,8 +127,23 @@ def main() -> int:
         action="append",
         default=[],
         help="Additional config files to include."
-        " Can be specified multiple times. E.g. --include check-dependencies.toml."
-        " Toml Key: [tool.check-dependencies] includes=[]",
+        "\nCan be specified multiple times. E.g. --include check-dependencies.toml."
+        "\nToml Key: [tool.check-dependencies] includes=[]",
+    )
+    parser.add_argument(
+        "--output-format",
+        type=str,
+        help=textwrap.dedent("""\
+            The format to use for printing diagnostic messages
+
+            Possible values:
+            - full:     Print all imports, including correct ones (default if --all
+                        is specified)
+            - concise:  Print only problematic imports (missing or extra)
+            - github:   Print only problematic imports in a format suitable for GitHub
+                        Actions annotations
+            """),
+        default="concise",
     )
 
     args = parser.parse_args()
@@ -139,6 +158,7 @@ def main() -> int:
         show_all=args.all,
         includes=args.include,
         provides_from_venv=args.provides_from_venv,
+        output_format=args.output_format,
     )
 
     outputs = yield_outputs(app_cfg)

@@ -58,8 +58,9 @@ def yield_outputs(app_cfg: AppConfig) -> Generator[Output, None, None]:
         src_pth
         for root_pth in app_cfg.file_names
         for src_pth in (root_pth.rglob("*.py") if root_pth.is_dir() else [root_pth])
-        if src_pth not in seen or seen.add(src_pth)
+        if src_pth not in seen
     ):
+        seen.add(src_pth)
         project_cfg, used_deps = registry.get(src_pth)
         for output in _source_imports_iter(src_pth, project_cfg):
             if isinstance(output, (OkDependency, MissingModule)):

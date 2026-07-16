@@ -8,7 +8,8 @@ from pathlib import Path
 import pytest
 
 from check_dependencies.app_config import AppConfig
-from check_dependencies.lib import Dependency, Module, Package, Packages, _canonical
+from check_dependencies.lib import Module, Package, Packages, _canonical
+from check_dependencies.outputs import MissingModule, OkDependency, WithModule
 
 
 class TestModule:
@@ -233,18 +234,21 @@ class TestMkSrcFormatter:
             verbose=verbose,
             show_all=False,
         )
-        fn = cfg.mk_src_formatter()
-        assert not list(fn("src.py", Dependency.OK, Module("foo"), stmt))
+        formatter = cfg.mk_formatter()
+        lines = formatter(
+            OkDependency(path=Path("src.py"), stmt=stmt, module=Module("foo.bar"))
+        )
+        assert list(lines) == []
 
     @pytest.mark.parametrize(
         "verbose, show_all, cause, expected",
         [
-            (True, False, "!", "!NA src.py:1 foo"),
-            (True, True, "!", "!NA src.py:1 foo"),
-            (True, True, " ", " OK src.py:1 foo"),
-            (False, False, "!", "! foo"),
-            (False, True, "!", "! foo"),
-            (False, True, " ", "  foo"),
+            (True, False, MissingModule, "!NA src.py:1 foo"),
+            (True, True, MissingModule, "!NA src.py:1 foo"),
+            (True, True, OkDependency, " OK src.py:1 foo"),
+            (False, False, MissingModule, "! foo"),
+            (False, True, MissingModule, "! foo"),
+            (False, True, OkDependency, "  foo"),
         ],
     )
     def test(  # pylint: disable=too-many-arguments
@@ -252,7 +256,7 @@ class TestMkSrcFormatter:
         stmt: ast.stmt,
         verbose: bool,
         show_all: bool,
-        cause: str,
+        cause: type[WithModule],
         expected: str,
     ) -> None:
         """MkSrcFormatter generic tests."""
@@ -264,12 +268,22 @@ class TestMkSrcFormatter:
             verbose=verbose,
             show_all=show_all,
         )
-        fn = cfg.mk_src_formatter()
-        assert next(fn("src.py", Dependency(cause), Module("foo"), stmt)) == expected
+        formatter = cfg.mk_formatter()
+        lines = formatter(cause(path=Path("src.py"), stmt=stmt, module=Module("foo")))
+        assert next(lines) == expected
+        assert list(lines) == []
 
     def test_cache(self, stmt: ast.stmt) -> None:
         """Test the cache mechanism for the formatter."""
         cfg = AppConfig(file_names=[Path()])
-        fn = cfg.mk_src_formatter()
-        assert list(fn("src.py", Dependency.NA, Module("foo"), stmt))
-        assert not list(fn("src.py", Dependency.NA, Module("foo"), stmt))
+        formatter = cfg.mk_formatter()
+        lines = [
+            *formatter(
+                MissingModule(path=Path("src.py"), stmt=stmt, module=Module("foo"))
+            ),
+            *formatter(
+                MissingModule(path=Path("src.py"), stmt=stmt, module=Module("foo"))
+            ),
+        ]
+
+        assert len(lines) == 1

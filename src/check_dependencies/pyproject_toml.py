@@ -197,8 +197,11 @@ def get_pyproject_toml(path: Path) -> Path:
 
     This uses recursion and LRU caching to allow for efficient caching.
     """
-    if (result := path / _PYPROJECT_TOML).exists():
-        return result
+    try:
+        if path.is_dir() and (result := path / _PYPROJECT_TOML).exists():
+            return result
+    except OSError as exc:
+        logger.error(str(exc))  # noqa: TRY400
 
     if path == path.parent:  # Exit recursion
         raise NoPyProjectFileError(path)
@@ -206,7 +209,7 @@ def get_pyproject_toml(path: Path) -> Path:
         return get_pyproject_toml(path.parent)
     except NoPyProjectFileError:
         # Get original path for error message, not the resolved and recursed path
-        raise NoPyProjectFileError(path) from None
+        raise NoPyProjectFileError(path.as_posix()) from None
 
 
 @dataclass(frozen=True)

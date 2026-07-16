@@ -11,7 +11,6 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "github.event_name=${{ github.event_name }}"
       - uses: actions/checkout@v7
       - name: check-dependencies
         uses: ./
@@ -31,7 +30,7 @@ jobs:
     strategy:
       matrix:
         os: ["ubuntu-latest"]
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
         coverage: [false]
         # Add all systems os versions for 3.14 - and test-coverage as well.
         include:
@@ -52,7 +51,7 @@ jobs:
         with:
           enable-cache: true
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --python ${{ matrix.python-version }}
       - name: Run typing checks
         if: matrix.coverage==true
         run: |

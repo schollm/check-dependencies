@@ -7,7 +7,17 @@ import logging
 from typing import TYPE_CHECKING
 
 from check_dependencies.app_config import ProjectConfig
-from check_dependencies.lib import Dependency, Module, Package
+from check_dependencies.lib import Module, Package
+from check_dependencies.outputs import (
+    ExtraPackage,
+    FileError,
+    InfoMessage,
+    MissingModule,
+    NoPyprojectError,
+    OkDependency,
+    Output,
+    UnknownModule,
+)
 from check_dependencies.pyproject_toml import (
     NoPyProjectFileError,
     PyProjectToml,
@@ -21,81 +31,60 @@ if TYPE_CHECKING:
     from check_dependencies.app_config import AppConfig
 
 logger = logging.getLogger("check_dependencies")
-ERR_MISSING_DEPENDENCY = 2
-ERR_EXTRA_DEPENDENCY = 4
-ERR_NO_PYPROJECT = 8
-ERR_FILE = 16
 
 
-def yield_wrong_imports(app_cfg: AppConfig) -> Generator[str, None, int]:
-    """Yield output lines of missing/unused imports.
+def yield_outputs(app_cfg: AppConfig) -> Generator[Output, None, None]:
+    """Yield output objects of missing/unused imports.
 
     :param app_cfg: Application configuration used to determine which files to
         scan and how to resolve and report project dependencies.
     """
     # Map pyproject path → per-project accumulator.
     # A regular dict is used because the factory would need the AppConfig; we
-    # initialise on first encounter instead of relying on defaultdict's zero-arg
+    # initialize on first encounter instead of relying on defaultdict's zero-arg
     # factory.
     # One formatter per project — its internal dedup cache spans all files in
     # the same project.
-    exit_status = 0
-    yield from _verbose_app_info(app_cfg)
+    yield from InfoMessage.from_iter(_verbose_app_info(app_cfg), verbose=True)
     try:
         registry = _ProjectRegistry(app_cfg)
     except NoPyProjectFileError as exc:
         logger.error("Could not find pyproject.toml for %s", exc)  # noqa: TRY400
-        return exit_status | ERR_NO_PYPROJECT
+        yield NoPyprojectError(str(exc))
+        return
 
     seen: set[Path] = set()
     for src_pth in (
         src_pth
         for root_pth in app_cfg.file_names
         for src_pth in (root_pth.rglob("*.py") if root_pth.is_dir() else [root_pth])
-        if src_pth not in seen or seen.add(src_pth)
+        if src_pth not in seen
     ):
+        seen.add(src_pth)
         project_cfg, used_deps = registry.get(src_pth)
-
-        for cause, module, stmt in _missing_imports_iter(src_pth, project_cfg):
-            if cause is Dependency.FILE_ERROR:
-                exit_status |= ERR_FILE
-            elif cause not in (Dependency.OK, Dependency.UNKNOWN):
-                exit_status |= ERR_MISSING_DEPENDENCY
-            if not module.raw:
-                used_deps |= project_cfg.packages.packages(module)
-            yield from project_cfg.src_formatter(
-                src_pth.as_posix(), cause, module, stmt
-            )
+        for output in _source_imports_iter(src_pth, project_cfg):
+            if isinstance(output, (OkDependency, MissingModule)):
+                used_deps |= project_cfg.packages.packages(output.module)
+            yield output
 
     # After processing all files, check for superfluous requirements in each project.
     for project_cfg, used_deps in registry.registry.values():
-        yield from _verbose_project_info(app_cfg, project_cfg)
-        for line in _get_superfluous_requirements(project_cfg, used_deps, app_cfg):
-            yield line
-            exit_status |= ERR_EXTRA_DEPENDENCY
-
-    return exit_status
+        yield from InfoMessage.from_iter(
+            _verbose_project_info(project_cfg), verbose=False
+        )
+        for output in _get_superfluous_requirements(project_cfg, used_deps):
+            yield output
 
 
 def _get_superfluous_requirements(
-    project_cfg: ProjectConfig, used_deps: set[Package], app_cfg: AppConfig
-) -> Iterable[str]:
-    if superfluous_requirements := [
-        msg
-        for dep in sorted(
-            set(project_cfg.defined_dependencies).difference(
-                used_deps, project_cfg.known_extra
-            ),
-        )
-        for msg in app_cfg.unused_fmt(str(dep))
-    ]:
-        if app_cfg.verbose:
-            yield "# Dependencies in config file not used in application:"
-        else:
-            yield f"# Project {project_cfg.path}"
-        yield from superfluous_requirements
-        if app_cfg.verbose:
-            yield ""
+    project_cfg: ProjectConfig, used_deps: set[Package]
+) -> Iterable[Output]:
+    if extra_dep := sorted(
+        set(project_cfg.defined_dependencies).difference(
+            used_deps, project_cfg.known_extra
+        ),
+    ):
+        yield from (ExtraPackage(project_cfg, dep) for dep in extra_dep)
 
 
 class _ProjectRegistry:
@@ -113,7 +102,11 @@ class _ProjectRegistry:
 
     def get(self, path: Path) -> tuple[ProjectConfig, set[Package]]:
         """Get the set of packages associated with a given path."""
-        pyproject_pth = get_pyproject_toml(path.parent)
+        try:
+            pyproject_pth = get_pyproject_toml(path if path.is_dir() else path.parent)
+        except NoPyProjectFileError:
+            raise NoPyProjectFileError(path.as_posix()) from None
+
         if pyproject_pth not in self.registry:
             self.registry[pyproject_pth] = (self._new_config(pyproject_pth), set())
 
@@ -128,30 +121,24 @@ class _ProjectRegistry:
 def _verbose_app_info(app_cfg: AppConfig) -> Iterable[str]:
     if not app_cfg.verbose:
         return
-    yield f"# ALL={app_cfg.show_all}"
-    yield f"# INCLUDE_DEV={app_cfg.include_dev}"
+    yield f"ALL={app_cfg.show_all}"
+    yield f"INCLUDE_DEV={app_cfg.include_dev}"
     for extra in sorted(app_cfg.known_extra):
-        yield f"# EXTRA {extra}"
+        yield f"EXTRA {extra}"
     for missing in sorted(app_cfg.known_missing):
-        yield f"# MISSING {missing.name}"
+        yield f"MISSING {missing.name}"
 
 
-def _verbose_project_info(
-    app_cfg: AppConfig, project_cfg: ProjectConfig
-) -> Iterable[str]:
-    if not app_cfg.verbose:
-        return
+def _verbose_project_info(project_cfg: ProjectConfig) -> Iterable[str]:
     yield f"##### {project_cfg.path} ###"
     for package in sorted(project_cfg.packages.all_packages()):
         modules = ", ".join(
             m.name for m in sorted(project_cfg.packages.modules(package))
         )
-        yield f"# PROVIDES {package} -> [{modules}]"
+        yield f"PROVIDES {package} -> [{modules}]"
 
 
-def _missing_imports_iter(
-    file: Path, project_cfg: ProjectConfig
-) -> Iterator[tuple[Dependency, Module, ast.AST]]:
+def _source_imports_iter(file: Path, project_cfg: ProjectConfig) -> Iterator[Output]:
     """Find missing imports in a Python file.
 
     :param file: Python file to analyze
@@ -160,26 +147,22 @@ def _missing_imports_iter(
     """
     try:
         parsed = ast.parse(file.read_bytes(), filename=file.as_posix())
-    except (SyntaxError, OSError, PermissionError, FileNotFoundError):
+    except (SyntaxError, OSError, PermissionError, FileNotFoundError) as exc:
         logger.warning("Could not parse %s", file, exc_info=False)
-        yield (
-            Dependency.FILE_ERROR,
-            Module(file.as_posix(), raw=True),
-            ast.Raise(lineno=-1),
-        )
+        yield FileError(file, str(exc))
         return
+
     for module, stmt in _imports_iter(parsed.body):
         if module.raw:
-            yield Dependency.UNKNOWN, module, stmt
+            yield UnknownModule(file, stmt, module)
         else:
             pkg_ = project_cfg.packages.packages(module)
-            status = (
-                Dependency.OK
-                if any(parent in project_cfg.known_missing for parent in module.parents)
-                or pkg_.intersection(project_cfg.allowed_dependencies)
-                else Dependency.NA
-            )
-            yield status, module, stmt
+            if any(
+                parent in project_cfg.known_missing for parent in module.parents
+            ) or pkg_.intersection(project_cfg.allowed_dependencies):
+                yield OkDependency(file, stmt, module)
+            else:
+                yield MissingModule(file, stmt, module)
 
 
 def _imports_iter(body: list[ast.stmt]) -> Iterator[tuple[Module, ast.AST]]:

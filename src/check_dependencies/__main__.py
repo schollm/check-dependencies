@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from check_dependencies.app_config import AppConfig
-from check_dependencies.main import yield_wrong_imports
+from check_dependencies.main import yield_outputs
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -141,13 +141,15 @@ def main() -> int:
         provides_from_venv=args.provides_from_venv,
     )
 
-    wrong_import_lines = yield_wrong_imports(app_cfg)
-    try:
-        while True:
-            _writer(next(wrong_import_lines))
+    outputs = yield_outputs(app_cfg)
+    formatter = app_cfg.mk_formatter()
+    exit_code = 0
+    for output in outputs:
+        for line in formatter(output):
+            _writer(line)
             _writer("\n")
-    except StopIteration as ex:  # Return value is the exit status
-        return ex.value
+        exit_code |= output.exit_code
+    return exit_code
 
 
 class _MultiSepAction(argparse.Action):

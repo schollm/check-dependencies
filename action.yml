@@ -78,7 +78,7 @@ runs:
       run: |
         set -euo pipefail
         venv_python="${GITHUB_ACTION_PATH}/.check-dependencies-venv/bin/python"
-        cmd=("${venv_python}" -m check_dependencies)
+        cmd=("${venv_python}" -m check_dependencies --output-format github)
 
         if [[ "${{ inputs.include-dev }}" == "true" ]]; then
           cmd+=(--include-dev)

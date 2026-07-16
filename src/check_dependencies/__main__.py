@@ -133,6 +133,7 @@ def main() -> int:
     parser.add_argument(
         "--output-format",
         type=str,
+        choices=("full", "concise", "github"),
         help=textwrap.dedent("""\
             The format to use for printing diagnostic messages
 
@@ -145,6 +146,10 @@ def main() -> int:
             """),
         default="concise",
     )
+
+    args = parser.parse_args()
+    if args.all and args.output_format == "concise":
+        args.output_format = "full"
 
     args = parser.parse_args()
 

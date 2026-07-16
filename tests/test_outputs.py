@@ -13,7 +13,7 @@ from check_dependencies.lib import Module, Package, Packages
 PATH = Path("foo.py")
 MODULE = Module("my_module")
 PACKAGE = Package("MyPackage")
-STMT = ast.Pass(lineno=1, col_offset=4, end_lineno=1, end_col_offset=8)
+STMT = ast.Pass(lineno=1, col_offset=3, end_lineno=1, end_col_offset=7)
 PRJ_CFG = ProjectConfig(
     known_missing=(),
     defined_dependencies=(),
@@ -41,14 +41,14 @@ OUT_UNKNOWN = outputs.UnknownModule(PATH, STMT, MODULE)
         (
             OUT_EXTRA,
             "::error name=check-dependencies (+EXTRA),file={path}/foo/pyproject.toml,"
-            "line=1,col=1,endLine=1,endColumn=1"
+            "line=1,col=1,endLine=1,endColumn=2"
             "::foo/pyproject.toml: +EXTRA: Package MyPackage is not imported in"
             " the project but is defined as a dependency.",
         ),
         (
             OUT_FILE_ERROR,
             "::error name=check-dependencies (!!FILE),file={file},"
-            "line=1,col=1,endLine=1,endColumn=1"
+            "line=1,col=1,endLine=1,endColumn=2"
             "::foo.py: !!FILE: File foo.py could not be parsed: Parsing failure",
         ),
         (

@@ -62,11 +62,13 @@ def _github_issue(
     check_name = output.name(verbose=True)
 
     full_msg = f"{path.as_posix()}: {check_name}: {msg}"
+    col_offset = stmt.col_offset + 1
+    end_col_offset = (stmt.end_col_offset or 0) + 1
     return (
         f"::{level} name=check-dependencies ({check_name}),"
         f"file={path.resolve().as_posix()},"
-        f"line={stmt.lineno},col={stmt.col_offset},"
-        f"endLine={stmt.end_lineno},endColumn={stmt.end_col_offset}"
+        f"line={stmt.lineno},col={col_offset},"
+        f"endLine={stmt.end_lineno or stmt.lineno},endColumn={end_col_offset}"
         f"::{full_msg}"
     )
 
@@ -147,7 +149,7 @@ class ExtraPackage(Output):
         yield _github_issue(
             self,
             self.project_cfg.path,
-            stmt=ast.Pass(lineno=1, col_offset=1, end_lineno=1, end_col_offset=1),
+            stmt=ast.Pass(lineno=1, col_offset=0, end_lineno=1, end_col_offset=1),
             msg=f"Package {self.package!s} is not imported in the project"
             " but is defined as a dependency.",
         )
@@ -195,7 +197,7 @@ class FileError(Output):
         yield _github_issue(
             self,
             self.path,
-            stmt=ast.Pass(lineno=1, col_offset=1, end_lineno=1, end_col_offset=1),
+            stmt=ast.Pass(lineno=1, col_offset=0, end_lineno=1, end_col_offset=1),
             msg=f"File {self.path.as_posix()} could not be parsed: {self.message}",
         )
 

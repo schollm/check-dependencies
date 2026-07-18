@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from check_dependencies.app_config import AppConfig
+from check_dependencies.app_config import AppConfig, OutputFormat
 from check_dependencies.lib import Module, Package, Packages, _canonical
 from check_dependencies.outputs import MissingModule, OkDependency, WithModule
 
@@ -232,7 +232,7 @@ class TestMkSrcFormatter:
             known_missing=[],
             provides=Packages([]),
             verbose=verbose,
-            show_all=False,
+            output_format=OutputFormat.CONCISE,
         )
         formatter = cfg.mk_formatter()
         lines = formatter(
@@ -241,21 +241,21 @@ class TestMkSrcFormatter:
         assert list(lines) == []
 
     @pytest.mark.parametrize(
-        "verbose, show_all, cause, expected",
+        "verbose, output_format, cause, expected",
         [
-            (True, False, MissingModule, "!NA src.py:1 foo"),
-            (True, True, MissingModule, "!NA src.py:1 foo"),
-            (True, True, OkDependency, " OK src.py:1 foo"),
-            (False, False, MissingModule, "! foo"),
-            (False, True, MissingModule, "! foo"),
-            (False, True, OkDependency, "  foo"),
+            (True, "concise", MissingModule, "!NA src.py:1 foo"),
+            (True, "full", MissingModule, "!NA src.py:1 foo"),
+            (True, "full", OkDependency, " OK src.py:1 foo"),
+            (False, "concise", MissingModule, "! foo"),
+            (False, "full", MissingModule, "! foo"),
+            (False, "full", OkDependency, "  foo"),
         ],
     )
     def test(  # pylint: disable=too-many-arguments
         self,
         stmt: ast.stmt,
         verbose: bool,
-        show_all: bool,
+        output_format: str,
         cause: type[WithModule],
         expected: str,
     ) -> None:
@@ -266,7 +266,7 @@ class TestMkSrcFormatter:
             known_missing=[],
             provides=Packages([]),
             verbose=verbose,
-            show_all=show_all,
+            output_format=OutputFormat(output_format),
         )
         formatter = cfg.mk_formatter()
         lines = formatter(cause(path=Path("src.py"), stmt=stmt, module=Module("foo")))

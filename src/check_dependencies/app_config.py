@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import enum
 from dataclasses import dataclass, field
 from itertools import chain
 from logging import getLogger
@@ -22,6 +23,14 @@ logger = getLogger(__name__)
 _T = TypeVar("_T")
 
 
+class OutputFormat(enum.Enum):
+    """Output format for check-dependencies."""
+
+    GITHUB = "github"
+    FULL = "full"
+    CONCISE = "concise"
+
+
 @dataclass(frozen=True)
 class AppConfig:
     """Application config and helper functions."""
@@ -32,8 +41,7 @@ class AppConfig:
     provides: Packages = field(default_factory=Packages)
     include_dev: bool = False
     verbose: bool = False
-    show_all: bool = False
-    output_format: str = "concise"
+    output_format: OutputFormat = OutputFormat.CONCISE
 
     @classmethod
     def from_cli_args(  # noqa: PLR0913
@@ -45,10 +53,9 @@ class AppConfig:
         provides: Iterable[str] = (),
         include_dev: bool = False,
         verbose: bool = False,
-        show_all: bool = False,
         includes: Sequence[Path] = (),
         provides_from_venv: Path | None = None,
-        output_format: str = "concise",
+        output_format: OutputFormat = OutputFormat.CONCISE,
     ) -> AppConfig:
         """Construct an AppConfig from CLI arguments."""
         includes_cfg = [ConfigToml.for_path(incl) for incl in includes]
@@ -85,13 +92,12 @@ class AppConfig:
             ),
             include_dev=include_dev,
             verbose=verbose,
-            show_all=show_all or output_format == "full",
             output_format=output_format,
         )
 
     def mk_formatter(self) -> Callable[[Output], Iterator[str]]:
         """Format outputs."""
-        if self.output_format == "github":
+        if self.output_format == OutputFormat.GITHUB:
 
             def formatter(output: Output) -> Iterator[str]:
                 yield from output.as_github()
@@ -110,7 +116,9 @@ class AppConfig:
     def text_formatter(self, output: Output, seen: SeenT) -> Iterator[str]:
         """Return a formatter function for the given output type."""
         yield from output.to_text(
-            verbose=self.verbose, show_all=self.show_all, seen=seen
+            verbose=self.verbose,
+            show_all=self.output_format == OutputFormat.FULL,
+            seen=seen,
         )
 
 

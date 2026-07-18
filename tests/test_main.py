@@ -18,7 +18,7 @@ import pytest
 import check_dependencies.pyproject_toml
 from check_dependencies.__main__ import _get_version, _MultiSepAction
 from check_dependencies.__main__ import main as cli_main
-from check_dependencies.app_config import AppConfig, ProjectConfig
+from check_dependencies.app_config import AppConfig, OutputFormat, ProjectConfig
 from check_dependencies.lib import Module, Package, Packages
 from check_dependencies.main import (
     InfoMessage,
@@ -304,7 +304,7 @@ class TestYieldWrongImports:
         )
         assert set(res) > {
             "# INCLUDE_DEV=False",
-            "# ALL=False",
+            "# OUTPUT_FORMAT=concise",
         }
 
     def test_extra_requirements_as_cfg(self) -> None:
@@ -436,7 +436,7 @@ class TestYieldWrongImports:
 
     def test_ignore_requirements_still_check_in_src(self) -> None:
         """Ensure ignored requirements are not flagged even if they come up in src."""
-        assert "  test_1" in self.fn(overwrite_cfg=POETRY, args="--all")
+        assert "  test_1" in self.fn(overwrite_cfg=POETRY, args="--output-format full")
         assert self.fn(overwrite_cfg=POETRY, args="--extra=test_1") == [
             "! missing.bar",
             "! missing.foo",
@@ -446,9 +446,9 @@ class TestYieldWrongImports:
             "! missing_def",
         ]
 
-    def test_show_all(self) -> None:
+    def test_full_format(self) -> None:
         """Show all imports, including correct ones."""
-        assert self.fn(args="--all") == [
+        assert self.fn(args="--output-format=full") == [
             "! missing.bar",
             "! missing.foo",
             "  test_1",
@@ -493,9 +493,9 @@ class TestYieldWrongImports:
             f"!NA {SRC}:16 missing_def",
         ]
 
-    def test_verbose_show_all(self) -> None:
+    def test_verbose_full_output_format(self) -> None:
         """Test for the most verbose output."""
-        assert self.fn(args="--verbose --all") == [
+        assert self.fn(args="--verbose --output-format full") == [
             f"!NA {SRC}:1 missing.bar",
             f"!NA {SRC}:2 missing.foo",
             f" OK {SRC}:3 test_1",
@@ -507,15 +507,17 @@ class TestYieldWrongImports:
             f"!NA {SRC}:16 missing_def",
         ]
 
-    @pytest.mark.parametrize("show_all", ["--all", ""])
+    @pytest.mark.parametrize("output_format", ["--output-format full"])
     @pytest.mark.parametrize("include_dev", ["--include-dev", ""])
-    def test_directory_only_one_use(self, show_all: str, include_dev: str) -> None:
+    def test_directory_only_one_use(self, output_format: str, include_dev: str) -> None:
         """Print out only one instance of a missing import.
 
         Even for multiple files, make sure we only print out one instance of a
         missing import.
         """
-        res = self.fn(file_names=[DATA.as_posix()], args=f"{show_all} {include_dev}")
+        res = self.fn(
+            file_names=[DATA.as_posix()], args=f"{output_format} {include_dev}"
+        )
         assert len(res) == len(set(res))
 
     def test_directory_both_files(self) -> None:
@@ -524,8 +526,8 @@ class TestYieldWrongImports:
         assert set(res) > {"! missing", "! missing_src2"}
 
     def test_all_imports_all_files(self) -> None:
-        """show_all=True should show all imports in all files."""
-        res = self.fn(file_names=[SRC_MODULE.as_posix()], args="--all")
+        """output-format=full should show all imports in all files."""
+        res = self.fn(file_names=[SRC_MODULE.as_posix()], args="--output-format full")
         assert set(res) == {
             "  check_dependencies",
             "  test_1",
@@ -544,7 +546,9 @@ class TestYieldWrongImports:
 
     def test_doublette_entries(self) -> None:
         """Test that doublette entries are not printed twice."""
-        res = self.fn(file_names=[SRC_MODULE.as_posix()] * 2, args="--all")
+        res = self.fn(
+            file_names=[SRC_MODULE.as_posix()] * 2, args="--output-format full"
+        )
         assert sorted(res) == [
             "  check_dependencies",
             "  test_1",
@@ -570,7 +574,7 @@ class TestYieldWrongImports:
             provides=[],
             include_dev=False,
             verbose=False,
-            show_all=False,
+            output_format=OutputFormat.CONCISE,
         )
 
         assert cfg
@@ -689,7 +693,11 @@ class TestYieldWrongImports:
             file_names=["/foo"],
             with_comment=True,
         )
-        assert lines == ["# ALL=False", "# INCLUDE_DEV=False", "!!NOPYPROJECT /foo"]
+        assert lines == [
+            "# OUTPUT_FORMAT=concise",
+            "# INCLUDE_DEV=False",
+            "!!NOPYPROJECT /foo",
+        ]
         file_err_code = 8
         assert ret_code == file_err_code
 
@@ -790,9 +798,9 @@ def test_mk_unused_formatter(verbose: bool, expected: str) -> None:
         provides=[],
         include_dev=False,
         verbose=verbose,
-        show_all=False,
         includes=[],
         provides_from_venv=None,
+        output_format=OutputFormat.CONCISE,
     )
     cfg = ProjectConfig(
         known_extra=[],

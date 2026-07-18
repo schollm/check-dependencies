@@ -6,7 +6,7 @@ import textwrap
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from check_dependencies.app_config import AppConfig, ProjectConfig
+from check_dependencies.app_config import AppConfig, OutputFormat, ProjectConfig
 from check_dependencies.lib import Module, Package
 from check_dependencies.pyproject_toml import PyProjectToml
 
@@ -28,7 +28,7 @@ def app_cfg(
         provides=provides,
         include_dev=False,
         verbose=False,
-        show_all=False,
+        output_format=OutputFormat.CONCISE,
         includes=includes,
     )
 

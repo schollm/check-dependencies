@@ -11,6 +11,11 @@ inputs:
       Newline-separated file and/or directory paths to analyze.
       Maps to AppConfig.from_cli_args(file_names=...).
     required: true
+  output-format:
+    description: |
+      Output format for the results. One of concise, full or github
+    required: false
+    default: github
   known-extra:
     description: |
       Comma-separated package names known to be extra.
@@ -33,18 +38,6 @@ inputs:
     description: |
       Include development dependencies from pyproject.toml.
       Maps to AppConfig.from_cli_args(include_dev=...).
-    required: false
-    default: "false"
-  verbose:
-    description: |
-      Enable verbose output.
-      Maps to AppConfig.from_cli_args(verbose=...).
-    required: false
-    default: "false"
-  show-all:
-    description: |
-      Show all dependencies including correct ones.
-      Maps to AppConfig.from_cli_args(show_all=...).
     required: false
     default: "false"
   includes:
@@ -78,18 +71,11 @@ runs:
       run: |
         set -euo pipefail
         venv_python="${GITHUB_ACTION_PATH}/.check-dependencies-venv/bin/python"
-        cmd=("${venv_python}" -m check_dependencies --output-format github)
+        cmd=("${venv_python}" -m check_dependencies --output-format=${{ inputs.output-format }})
 
         if [[ "${{ inputs.include-dev }}" == "true" ]]; then
           cmd+=(--include-dev)
         fi
-        if [[ "${{ inputs.verbose }}" == "true" ]]; then
-          cmd+=(--verbose)
-        fi
-        if [[ "${{ inputs.show-all }}" == "true" ]]; then
-          cmd+=(--all)
-        fi
-
         if [[ -n "${{ inputs.known-extra }}" ]]; then
           cmd+=(--extra "${{ inputs.known-extra }}")
         fi

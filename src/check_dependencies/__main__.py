@@ -11,7 +11,7 @@ from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from check_dependencies.app_config import AppConfig
+from check_dependencies.app_config import AppConfig, OutputFormat
 from check_dependencies.main import yield_outputs
 
 if TYPE_CHECKING:
@@ -71,12 +71,6 @@ def main() -> int:
         help="Show every import of a package",
     )
     parser.add_argument(
-        "--all",
-        action="store_true",
-        default=False,
-        help="Show all imports (including correct ones)",
-    )
-    parser.add_argument(
         "--provides-from-venv",
         metavar="PYTHON_EXECUTABLE",
         type=Path,
@@ -132,24 +126,19 @@ def main() -> int:
     )
     parser.add_argument(
         "--output-format",
-        type=str,
-        choices=("full", "concise", "github"),
-        help=textwrap.dedent("""\
+        type=OutputFormat,
+        help=textwrap.dedent(f"""\
             The format to use for printing diagnostic messages
 
             Possible values:
-            - full:     Print all imports, including correct ones (default if --all
-                        is specified)
-            - concise:  Print only problematic imports (missing or extra)
-            - github:   Print only problematic imports in a format suitable for GitHub
-                        Actions annotations
+            - {OutputFormat.FULL.value}:     Print all imports, including correct ones
+            - {OutputFormat.CONCISE.value}:  Print only problematic imports
+                        (missing or extra)
+            - {OutputFormat.GITHUB.value}:   Print only problematic imports in a format
+                        suitable for GitHub Actions annotations
             """),
-        default="concise",
+        default=OutputFormat.CONCISE,
     )
-
-    args = parser.parse_args()
-    if args.all and args.output_format == "concise":
-        args.output_format = "full"
 
     args = parser.parse_args()
 
@@ -160,7 +149,6 @@ def main() -> int:
         provides=args.provides,
         include_dev=args.include_dev,
         verbose=args.verbose,
-        show_all=args.all,
         includes=args.include,
         provides_from_venv=args.provides_from_venv,
         output_format=args.output_format,

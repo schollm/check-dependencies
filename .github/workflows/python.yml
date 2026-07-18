@@ -18,8 +18,6 @@ jobs:
           file-names: |
             src/check_dependencies/
           include-dev: "false"
-          verbose: "true"
-          show-all: "false"
       - uses: astral-sh/ruff-action@v4.0.0
         with:
           src: "./src"

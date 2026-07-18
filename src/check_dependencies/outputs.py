@@ -175,7 +175,7 @@ class NoPyprojectError(Output):
 
     def as_github(self) -> Iterator[str]:
         """NoPyProject does not have a corresponding error in a file."""
-        yield from ()
+        yield f"::error::{self.name(verbose=True)} {self.msg}"
 
     def to_text(self, *, verbose: bool, show_all: bool, seen: SeenT) -> Iterable[str]:
         """Get the string CLI representation of the NoPyprojectError."""

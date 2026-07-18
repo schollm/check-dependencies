@@ -37,7 +37,7 @@ OUT_UNKNOWN = outputs.UnknownModule(PATH, STMT, MODULE)
     "output, expected",
     [
         (OUT_OK, ""),
-        (OUT_NO_PYPROJECT, ""),
+        (OUT_NO_PYPROJECT, "::error::!!NOPYPROJECT /foo/pyproject.toml"),
         (
             OUT_EXTRA,
             "::error name=check-dependencies (+EXTRA),file={path}/foo/pyproject.toml,"

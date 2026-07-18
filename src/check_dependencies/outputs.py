@@ -57,18 +57,20 @@ class Output(abc.ABC):
 
 
 def _github_issue(
-    output: Output, path: Path, stmt: ast.stmt, msg: str, level: str = "error"
+    output: Output, path: Path, stmt: ast.AST, msg: str, level: str = "error"
 ) -> str:
     check_name = output.name(verbose=True)
 
     full_msg = f"{path.as_posix()}: {check_name}: {msg}"
-    col_offset = stmt.col_offset + 1
-    end_col_offset = (stmt.end_col_offset or 0) + 1
+    lineno = getattr(stmt, "lineno", 0)
+    end_lineno = getattr(stmt, "end_lineno", lineno) or lineno
+    col_offset = (getattr(stmt, "col_offset", 0) or 0) + 1
+    end_col_offset = (getattr(stmt, "end_col_offset", 0) or col_offset) + 1
     return (
         f"::{level} name=check-dependencies ({check_name}),"
         f"file={path.resolve().as_posix()},"
-        f"line={stmt.lineno},col={col_offset},"
-        f"endLine={stmt.end_lineno or stmt.lineno},endColumn={end_col_offset}"
+        f"line={lineno},col={col_offset},"
+        f"endLine={end_lineno},endColumn={end_col_offset}"
         f"::{full_msg}"
     )
 
@@ -85,7 +87,7 @@ class WithModule(Output, abc.ABC):
 
     def as_github(self) -> Iterator[str]:
         """Return a GitHub issue body for this output."""
-        if self.show_default and isinstance(self.stmt, ast.stmt):
+        if self.show_default:
             yield _github_issue(
                 self,
                 self.path,
@@ -94,7 +96,7 @@ class WithModule(Output, abc.ABC):
                 level=self.level,
             )
 
-    def lineno(self, default: int = -1) -> int:
+    def lineno(self, default: int = 1) -> int:
         """Get the line number of the statement."""
         return getattr(self.stmt, "lineno", default)
 

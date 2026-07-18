@@ -30,7 +30,9 @@ OUT_FILE_ERROR = outputs.FileError(PATH, "Parsing failure")
 OUT_INFO = outputs.InfoMessage("message", verbose=False)
 OUT_INFO_VERBOSE = outputs.InfoMessage("message", verbose=True)
 OUT_MISSING = outputs.MissingModule(PATH, STMT, MODULE)
-OUT_UNKNOWN = outputs.UnknownModule(PATH, STMT, MODULE)
+OUT_UNKNOWN = outputs.UnknownModule(
+    PATH, ast.Call(ast.Constant("my_module"), [], [], lineno=1, col_offset=3), MODULE
+)
 
 
 @pytest.mark.parametrize(
@@ -59,7 +61,7 @@ OUT_UNKNOWN = outputs.UnknownModule(PATH, STMT, MODULE)
         (
             OUT_UNKNOWN,
             "::warning name=check-dependencies (?UNKNOWN),file={file},"
-            "line=1,col=4,endLine=1,endColumn=8"
+            "line=1,col=4,endLine=1,endColumn=5"
             "::foo.py: ?UNKNOWN: module my_module",
         ),
         (OUT_INFO, ""),

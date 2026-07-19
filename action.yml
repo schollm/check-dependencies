@@ -52,7 +52,18 @@ inputs:
       Maps to AppConfig.from_cli_args(provides_from_venv=...).
     required: false
     default: ""
-
+  verbose:
+    description: |
+      Enable verbose output (when output-format is not github).
+      Maps to AppConfig.from_cli_args(verbose=...).
+    required: false
+    default: "false"
+  show-all:
+    description: |
+      Show all dependencies including correct ones. (Deprecated and unused; use output-format: full.)
+      Maps to AppConfig.from_cli_args(output_format=full).
+    required: false
+    default: "unused"
 runs:
   using: composite
   steps:
@@ -72,9 +83,14 @@ runs:
         set -euo pipefail
         venv_python="${GITHUB_ACTION_PATH}/.check-dependencies-venv/bin/python"
         cmd=("${venv_python}" -m check_dependencies --output-format=${{ inputs.output-format }})
-
         if [[ "${{ inputs.include-dev }}" == "true" ]]; then
           cmd+=(--include-dev)
+        fi
+        if [[ "${{ inputs.verbose }}" == "true" ]]; then
+          cmd+=(--verbose)
+        fi
+        if [[ "${{ inputs.show-all }}" != "unused" ]]; then
+          echo "Warning: 'show-all' input is deprecated and unused; use 'output-format=full' instead." >&2
         fi
         if [[ -n "${{ inputs.known-extra }}" ]]; then
           cmd+=(--extra "${{ inputs.known-extra }}")

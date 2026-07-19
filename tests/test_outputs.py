@@ -39,28 +39,33 @@ OUT_UNKNOWN = outputs.UnknownModule(
     "output, expected",
     [
         (OUT_OK, ""),
-        (OUT_NO_PYPROJECT, "::error::!!NOPYPROJECT /foo/pyproject.toml"),
+        (
+            OUT_NO_PYPROJECT,
+            "::error "
+            "title=check-dependencies (pyproject.toml file not found)::"
+            "!!NOPYPROJECT /foo/pyproject.toml",
+        ),
         (
             OUT_EXTRA,
-            "::error name=check-dependencies (+EXTRA),file={path}/foo/pyproject.toml,"
+            "::error title=check-dependencies (+EXTRA),file={path}/foo/pyproject.toml,"
             "line=1,col=1,endLine=1,endColumn=2"
             "::foo/pyproject.toml: +EXTRA: Package MyPackage is not imported in"
             " the project but is defined as a dependency.",
         ),
         (
             OUT_FILE_ERROR,
-            "::error name=check-dependencies (!!FILE),file={file},"
+            "::error title=check-dependencies (!!FILE),file={file},"
             "line=1,col=1,endLine=1,endColumn=2"
             "::foo.py: !!FILE: File foo.py could not be parsed: Parsing failure",
         ),
         (
             OUT_MISSING,
-            "::error name=check-dependencies (!NA),file={file},"
+            "::error title=check-dependencies (!NA),file={file},"
             "line=1,col=4,endLine=1,endColumn=8::foo.py: !NA: module my_module",
         ),
         (
             OUT_UNKNOWN,
-            "::warning name=check-dependencies (?UNKNOWN),file={file},"
+            "::warning title=check-dependencies (?UNKNOWN),file={file},"
             "line=1,col=4,endLine=1,endColumn=5"
             "::foo.py: ?UNKNOWN: module my_module",
         ),

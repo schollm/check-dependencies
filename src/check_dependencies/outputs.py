@@ -67,7 +67,7 @@ def _github_issue(
     col_offset = (getattr(stmt, "col_offset", 0) or 0) + 1
     end_col_offset = (getattr(stmt, "end_col_offset", 0) or col_offset) + 1
     return (
-        f"::{level} name=check-dependencies ({check_name}),"
+        f"::{level} title=check-dependencies ({check_name}),"
         f"file={path.resolve().as_posix()},"
         f"line={lineno},col={col_offset},"
         f"endLine={end_lineno},endColumn={end_col_offset}"
@@ -177,7 +177,10 @@ class NoPyprojectError(Output):
 
     def as_github(self) -> Iterator[str]:
         """NoPyProject does not have a corresponding error in a file."""
-        yield f"::error  name=check-dependencies (pyproject.toml file not found)::{self.name(verbose=True)} {self.msg}"
+        yield (
+            f"::error title=check-dependencies (pyproject.toml file not found)"
+            f"::{self.name(verbose=True)} {self.msg}"
+        )
 
     def to_text(self, *, verbose: bool, show_all: bool, seen: SeenT) -> Iterable[str]:
         """Get the string CLI representation of the NoPyprojectError."""

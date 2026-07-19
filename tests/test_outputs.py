@@ -49,25 +49,25 @@ OUT_UNKNOWN = outputs.UnknownModule(
             OUT_EXTRA,
             "::error title=check-dependencies (+EXTRA),file={path}/foo/pyproject.toml,"
             "line=1,col=1,endLine=1,endColumn=2"
-            "::foo/pyproject.toml: +EXTRA: Package MyPackage is not imported in"
+            "::foo/pyproject.toml%3A +EXTRA%3A Package MyPackage is not imported in"
             " the project but is defined as a dependency.",
         ),
         (
             OUT_FILE_ERROR,
             "::error title=check-dependencies (!!FILE),file={file},"
             "line=1,col=1,endLine=1,endColumn=2"
-            "::foo.py: !!FILE: File foo.py could not be parsed: Parsing failure",
+            "::foo.py%3A !!FILE%3A File foo.py could not be parsed%3A Parsing failure",
         ),
         (
             OUT_MISSING,
             "::error title=check-dependencies (!NA),file={file},"
-            "line=1,col=4,endLine=1,endColumn=8::foo.py: !NA: module my_module",
+            "line=1,col=4,endLine=1,endColumn=8::foo.py%3A !NA%3A module my_module",
         ),
         (
             OUT_UNKNOWN,
             "::warning title=check-dependencies (?UNKNOWN),file={file},"
             "line=1,col=4,endLine=1,endColumn=5"
-            "::foo.py: ?UNKNOWN: module my_module",
+            "::foo.py%3A ?UNKNOWN%3A module my_module",
         ),
         (OUT_INFO, ""),
         (OUT_INFO_VERBOSE, ""),
@@ -76,8 +76,8 @@ OUT_UNKNOWN = outputs.UnknownModule(
 def test_as_github(output: outputs.Output, expected: str) -> None:
     """Test that the as_github method returns the expected output."""
     assert "--".join(output.as_github()) == expected.format(
-        file=PATH.absolute().as_posix(),
-        path=PATH.parent.absolute().as_posix(),
+        file=PATH.absolute().as_posix().replace(":", "%3A"),
+        path=PATH.parent.absolute().as_posix().replace(":", "%3A"),
     )
 
 

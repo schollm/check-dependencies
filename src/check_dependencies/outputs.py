@@ -61,17 +61,26 @@ def _github_issue(
 ) -> str:
     check_name = output.name(verbose=True)
 
+    def _escape_prop(value: str) -> str:
+        return (
+            value.replace("%", "%25")
+            .replace("\r", "%0D")
+            .replace("\n", "%0A")
+            .replace(":", "%3A")
+            .replace(",", "%2C")
+        )
+
     full_msg = f"{path.as_posix()}: {check_name}: {msg}"
+    title = f"check-dependencies ({_escape_prop(check_name)})"
     lineno = getattr(stmt, "lineno", 0)
     end_lineno = getattr(stmt, "end_lineno", lineno) or lineno
     col_offset = (getattr(stmt, "col_offset", 0) or 0) + 1
     end_col_offset = (getattr(stmt, "end_col_offset", 0) or col_offset) + 1
     return (
-        f"::{level} title=check-dependencies ({check_name}),"
-        f"file={path.resolve().as_posix()},"
+        f"::{level} title={title},file={_escape_prop(path.resolve().as_posix())},"
         f"line={lineno},col={col_offset},"
         f"endLine={end_lineno},endColumn={end_col_offset}"
-        f"::{full_msg}"
+        f"::{_escape_prop(full_msg)}"
     )
 
 

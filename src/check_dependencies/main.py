@@ -121,7 +121,7 @@ class _ProjectRegistry:
 def _verbose_app_info(app_cfg: AppConfig) -> Iterable[str]:
     if not app_cfg.verbose:
         return
-    yield f"ALL={app_cfg.show_all}"
+    yield f"OUTPUT_FORMAT={app_cfg.output_format.value}"
     yield f"INCLUDE_DEV={app_cfg.include_dev}"
     for extra in sorted(app_cfg.known_extra):
         yield f"EXTRA {extra}"

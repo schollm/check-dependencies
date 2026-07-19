@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import abc
+import ast
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -10,8 +11,7 @@ from typing import TYPE_CHECKING
 from check_dependencies.lib import Module, Package
 
 if TYPE_CHECKING:
-    import ast
-    from collections.abc import Generator, Iterable
+    from collections.abc import Generator, Iterable, Iterator
 
     from check_dependencies.app_config import ProjectConfig
 
@@ -31,6 +31,10 @@ class OutputConfig:
 @dataclass(frozen=True)
 class Output(abc.ABC):
     """Output for check_dependencies."""
+
+    @abc.abstractmethod
+    def as_github(self) -> Iterator[str]:
+        """Return a GitHub issue body for this output."""
 
     @property
     @abc.abstractmethod
@@ -52,6 +56,34 @@ class Output(abc.ABC):
         """Get the string representation of the Output."""
 
 
+def _github_issue(
+    output: Output, path: Path, stmt: ast.AST, msg: str, level: str = "error"
+) -> str:
+    check_name = output.name(verbose=True)
+
+    def _escape_prop(value: str) -> str:
+        return (
+            value.replace("%", "%25")
+            .replace("\r", "%0D")
+            .replace("\n", "%0A")
+            .replace(":", "%3A")
+            .replace(",", "%2C")
+        )
+
+    full_msg = f"{path.as_posix()}: {check_name}: {msg}"
+    title = f"check-dependencies ({_escape_prop(check_name)})"
+    lineno = getattr(stmt, "lineno", 0)
+    end_lineno = getattr(stmt, "end_lineno", lineno) or lineno
+    col_offset = (getattr(stmt, "col_offset", 0) or 0) + 1
+    end_col_offset = (getattr(stmt, "end_col_offset", 0) or col_offset) + 1
+    return (
+        f"::{level} title={title},file={_escape_prop(path.resolve().as_posix())},"
+        f"line={lineno},col={col_offset},"
+        f"endLine={end_lineno},endColumn={end_col_offset}"
+        f"::{_escape_prop(full_msg)}"
+    )
+
+
 @dataclass(frozen=True)
 class WithModule(Output, abc.ABC):
     """Defines a module that can be imported."""
@@ -60,8 +92,20 @@ class WithModule(Output, abc.ABC):
     stmt: ast.AST
     module: Module
     show_default: bool = field(init=False, default=True)
+    level: str = field(init=False, default="error")
 
-    def lineno(self, default: int = -1) -> int:
+    def as_github(self) -> Iterator[str]:
+        """Return a GitHub issue body for this output."""
+        if self.show_default:
+            yield _github_issue(
+                self,
+                self.path,
+                self.stmt,
+                msg=f"module {self.module.name}",
+                level=self.level,
+            )
+
+    def lineno(self, default: int = 1) -> int:
         """Get the line number of the statement."""
         return getattr(self.stmt, "lineno", default)
 
@@ -99,6 +143,7 @@ class UnknownModule(WithModule):
     This happens when using importlib with references or calculations within.
     """
 
+    level: str = field(init=False, default="warning")
     config: OutputConfig = field(init=False, default=OutputConfig("?UNKNOWN", "?", 0))
 
 
@@ -109,6 +154,16 @@ class ExtraPackage(Output):
     project_cfg: ProjectConfig
     package: Package
     config: OutputConfig = field(init=False, default=OutputConfig("+EXTRA", "+", 4))
+
+    def as_github(self) -> Iterator[str]:
+        """Return a GitHub issue body for this output."""
+        yield _github_issue(
+            self,
+            self.project_cfg.path,
+            stmt=ast.Pass(lineno=1, col_offset=0, end_lineno=1, end_col_offset=1),
+            msg=f"Package {self.package!s} is not imported in the project"
+            " but is defined as a dependency.",
+        )
 
     def to_text(self, *, verbose: bool, show_all: bool, seen: SeenT) -> Iterable[str]:
         """Get the string representation of the ExtraPackage."""
@@ -129,6 +184,13 @@ class NoPyprojectError(Output):
         init=False, default=OutputConfig("!!NOPYPROJECT", "!!", 8)
     )
 
+    def as_github(self) -> Iterator[str]:
+        """NoPyProject does not have a corresponding error in a file."""
+        yield (
+            f"::error title=check-dependencies (pyproject.toml file not found)"
+            f"::{self.name(verbose=True)} {self.msg}"
+        )
+
     def to_text(self, *, verbose: bool, show_all: bool, seen: SeenT) -> Iterable[str]:
         """Get the string CLI representation of the NoPyprojectError."""
         del show_all, seen
@@ -143,6 +205,19 @@ class FileError(Output):
     path: Path
     message: str
     config: OutputConfig = field(init=False, default=OutputConfig("!!FILE", "!!", 16))
+
+    def as_github(self) -> Iterator[str]:
+        """Return a GitHub issue body for this output."""
+        yield _github_issue(
+            self,
+            self.path,
+            stmt=ast.Pass(lineno=1, col_offset=0, end_lineno=1, end_col_offset=1),
+            msg=f"File {self.path.as_posix()} could not be parsed: {self.message}",
+        )
+
+    def __str__(self) -> str:
+        """Get the string representation of the FileError."""
+        return f"{self.path}: {self.message}"
 
     def to_text(self, *, verbose: bool, show_all: bool, seen: SeenT) -> Iterable[str]:
         """Get the string representation of the FileError."""
@@ -160,6 +235,10 @@ class InfoMessage(Output):
     message: str
     verbose: bool
     config: OutputConfig = field(init=False, default=OutputConfig("#", "#", 0))
+
+    def as_github(self) -> Iterator[str]:
+        """GitHub Issue for info is empty."""
+        yield from ()
 
     def to_text(self, *, verbose: bool, show_all: bool, seen: SeenT) -> Iterable[str]:
         """Get the string representation of the InfoMessage."""

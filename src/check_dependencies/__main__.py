@@ -5,11 +5,13 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
+import textwrap
+from argparse import RawTextHelpFormatter
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from check_dependencies.app_config import AppConfig
+from check_dependencies.app_config import AppConfig, OutputFormat
 from check_dependencies.main import yield_outputs
 
 if TYPE_CHECKING:
@@ -18,6 +20,7 @@ if TYPE_CHECKING:
 
 _DIST_NAME = "check-dependencies"
 _writer = sys.stdout.write
+_logger = logging.getLogger("check_dependencies.__main__")
 
 
 def _get_version() -> str:
@@ -42,6 +45,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Find undeclared and unused (or all) imports in Python files",
         add_help=True,
+        formatter_class=RawTextHelpFormatter,
     )
     parser.add_argument(
         "--version",
@@ -68,17 +72,12 @@ def main() -> int:
         help="Show every import of a package",
     )
     parser.add_argument(
-        "--all",
-        action="store_true",
-        default=False,
-        help="Show all imports (including correct ones)",
-    )
-    parser.add_argument(
         "--provides-from-venv",
         metavar="PYTHON_EXECUTABLE",
         type=Path,
-        help="Path to the virtual environment's Python executable (for example,"
-        " .venv/bin/python) to include all packages installed in it as provides.",
+        help="Path to the virtual environment's Python executable\n"
+        "(for example, .venv/bin/python) to include all packages\n"
+        "installed in it as provides.",
     )
     parser.add_argument(
         "--missing",
@@ -88,8 +87,8 @@ def main() -> int:
         default=[],
         help="Comma separated list of requirements known to be missing."
         " Assume they are part of the requirements."
-        " Can be specified multiple times."
-        " Toml Key: [tool.check-dependencies] known-missing=[]",
+        "\n Can be specified multiple times."
+        "\n Toml Key: [tool.check-dependencies] known-missing=[]",
     )
     parser.add_argument(
         "--extra",
@@ -98,10 +97,10 @@ def main() -> int:
         metavar="PACKAGE,...",
         default=[],
         help="Comma separated list of requirements known to not be imported."
-        " Assume they are not part of the requirements. This can be plugins or similar"
-        " that affect the package but are not imported explicitly."
-        " Can be specified multiple times."
-        " Toml Key: [tool.check-dependencies] known-extra=[]",
+        "\nAssume they are not part of the requirements. This can be plugins or similar"
+        "\nthat affect the package but are not imported explicitly."
+        "\nCan be specified multiple times."
+        "\nToml Key: [tool.check-dependencies] known-extra=[]",
     )
     parser.add_argument(
         "--provides",
@@ -110,11 +109,11 @@ def main() -> int:
         default=[],
         metavar="PACKAGE=MODULE,...",
         help="Map a package name to its module (import) name for packages whose import"
-        " name differs from the package name. Can be specified multiple times."
-        " E.g. --provides Pillow=PIL --provides PyJWT=jwt."
-        " The package name is normalized (case-insensitive, hyphens and underscores"
-        " are equivalent), so Pillow=PIL, pillow=PIL and PIL-ow=PIL are all the same."
-        " Toml Key: [tool.check-dependencies.provides]",
+        "\nname differs from the package name. Can be specified multiple times."
+        "\nE.g. --provides Pillow=PIL --provides PyJWT=jwt."
+        "\nThe package name is normalized (case-insensitive, hyphens and underscores"
+        "\nare equivalent), so Pillow=PIL, pillow=PIL and PIL-ow=PIL are all the same."
+        "\nToml Key: [tool.check-dependencies.provides]",
     )
     parser.add_argument(
         "--include",
@@ -123,11 +122,35 @@ def main() -> int:
         action="append",
         default=[],
         help="Additional config files to include."
-        " Can be specified multiple times. E.g. --include check-dependencies.toml."
-        " Toml Key: [tool.check-dependencies] includes=[]",
+        "\nCan be specified multiple times. E.g. --include check-dependencies.toml."
+        "\nToml Key: [tool.check-dependencies] includes=[]",
+    )
+    parser.add_argument(
+        "--all",
+        action="store_true",
+        help="(Deprecated) Show all imports (including correct ones). "
+        "Use --output-format full.",
+    )
+    parser.add_argument(
+        "--output-format",
+        type=OutputFormat,
+        help=textwrap.dedent(f"""\
+            The format to use for printing diagnostic messages
+
+            Possible values:
+            - {OutputFormat.FULL.value}:     Print all imports, including correct ones
+            - {OutputFormat.CONCISE.value}:  Print only problematic imports
+                        (missing or extra)
+            - {OutputFormat.GITHUB.value}:   Print only problematic imports in a format
+                        suitable for GitHub Actions annotations
+            """),
+        default=OutputFormat.CONCISE,
     )
 
     args = parser.parse_args()
+    if args.all and args.output_format == OutputFormat.CONCISE:
+        _logger.warning("--all is deprecated, use --output-format full instead.")
+        args.output_format = OutputFormat.FULL
 
     app_cfg = AppConfig.from_cli_args(
         file_names=args.file_name,
@@ -136,9 +159,9 @@ def main() -> int:
         provides=args.provides,
         include_dev=args.include_dev,
         verbose=args.verbose,
-        show_all=args.all,
         includes=args.include,
         provides_from_venv=args.provides_from_venv,
+        output_format=args.output_format,
     )
 
     outputs = yield_outputs(app_cfg)

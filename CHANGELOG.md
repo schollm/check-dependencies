@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Upcoming
 - **ADD**: Support GitHub Output Format for GitHub Actions
-- **CHANGE**: Remove `--show-all` option, use `--output-format=full` instead
+- **CHANGE**: Deprecate `--all`; use `--output-format full` instead
 
 ### [1.7.0]
 - **CHANGE:** Bump Python minimum runtime version to 3.9.

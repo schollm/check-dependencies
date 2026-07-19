@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 
 _DIST_NAME = "check-dependencies"
 _writer = sys.stdout.write
+_logger = logging.getLogger("check_dependencies.__main__")
 
 
 def _get_version() -> str:
@@ -125,6 +126,12 @@ def main() -> int:
         "\nToml Key: [tool.check-dependencies] includes=[]",
     )
     parser.add_argument(
+        "--all",
+        action="store_true",
+        help="(Deprecated) Show all imports (including correct ones). "
+        "Use --output-format full.",
+    )
+    parser.add_argument(
         "--output-format",
         type=OutputFormat,
         help=textwrap.dedent(f"""\
@@ -141,6 +148,9 @@ def main() -> int:
     )
 
     args = parser.parse_args()
+    if args.all and args.output_format == OutputFormat.CONCISE:
+        _logger.warning("--all is deprecated, use --output-format full instead.")
+        args.output_format = OutputFormat.FULL
 
     app_cfg = AppConfig.from_cli_args(
         file_names=args.file_name,

@@ -181,7 +181,7 @@ class NoPyprojectError(Output):
 
     msg: str
     config: OutputConfig = field(
-        init=False, default=OutputConfig("!!NOPYPROJECT", "!!", 8)
+        init=False, default=OutputConfig("!!NOPYPROJECT", "!E", 8)
     )
 
     def as_github(self) -> Iterator[str]:

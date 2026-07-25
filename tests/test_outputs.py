@@ -99,7 +99,7 @@ class TextResult(NamedTuple):
         (
             OUT_NO_PYPROJECT,
             TextResult(
-                "!! /foo/pyproject.toml",
+                "!E /foo/pyproject.toml",
                 "!!NOPYPROJECT /foo/pyproject.toml",
                 "<<",
                 "<<",

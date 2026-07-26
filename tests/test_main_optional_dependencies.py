@@ -1,3 +1,5 @@
+"""Test Optional dependencies parts."""
+
 import textwrap
 from pathlib import Path
 
@@ -7,7 +9,7 @@ from tests.run import run
 
 
 def test(tmp_path: Path):
-    """Test tool.check-dependencies.optionals in pyproject.toml"""
+    """Test tool.check-dependencies.optionals in pyproject.toml."""
     pyproject_toml = textwrap.dedent("""\
         [project]
         dependencies = ["foo==*"]

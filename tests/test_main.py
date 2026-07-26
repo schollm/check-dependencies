@@ -11,7 +11,7 @@ from importlib.metadata import PackageNotFoundError
 from pathlib import Path
 from textwrap import dedent
 from typing import TYPE_CHECKING
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -348,9 +348,7 @@ class TestYieldWrongImports:
                 """),
             "utf-8",
         )
-        res = self.fn(
-            overwrite_cfg=pyproject, files=[source.as_posix()]
-        )
+        res = self.fn(overwrite_cfg=pyproject, files=[source.as_posix()])
         assert res == ["! company.missing"]
 
     def test_implicit_namespace_packages_from_config(self, tmp_path: Path) -> None:
@@ -490,9 +488,7 @@ class TestYieldWrongImports:
         Even for multiple files, make sure we only print out one instance of a
         missing import.
         """
-        res = self.fn(
-            files=[DATA.as_posix()], args=f"{output_format} {include_dev}"
-        )
+        res = self.fn(files=[DATA.as_posix()], args=f"{output_format} {include_dev}")
         assert len(res) == len(set(res))
 
     def test_directory_both_files(self) -> None:
@@ -521,9 +517,7 @@ class TestYieldWrongImports:
 
     def test_doublette_entries(self) -> None:
         """Test that doublette entries are not printed twice."""
-        res = self.fn(
-            files=[SRC_MODULE.as_posix()] * 2, args="--output-format full"
-        )
+        res = self.fn(files=[SRC_MODULE.as_posix()] * 2, args="--output-format full")
         assert sorted(res) == [
             "  check_dependencies",
             "  test_1",

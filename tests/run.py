@@ -1,11 +1,19 @@
-from collections.abc import Iterable
+"""Run module to run tests against CLI."""
+
+from collections.abc import Iterable, Sequence
 from pathlib import Path
-from typing import Sequence
 from unittest.mock import patch
 
+from check_dependencies.__main__ import main
+
+
 def run(
-    files: Iterable[Path | str], pyproject_toml: Path, args: str | Sequence[str]= (), comment: bool = False
+    files: Iterable[Path | str],
+    pyproject_toml: Path,
+    args: str | Sequence[str] = (),
+    comment: bool = False,
 ):
+    """Run tests against CLI."""
     lines: list[str] = []
     if isinstance(args, str):
         args = args.split()
@@ -20,11 +28,5 @@ def run(
     ):
         exit_satus = main()
     return [
-        line
-        for line in lines
-        if line != "\n" and (comment or not line.startswith("#"))
+        line for line in lines if line != "\n" and (comment or not line.startswith("#"))
     ], exit_satus
-
-
-
-from check_dependencies.__main__ import main

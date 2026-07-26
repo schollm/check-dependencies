@@ -139,6 +139,7 @@ Default status prefixes:
 - `+` - Extra dependency, declared in `pyproject.toml` but not used in the code
 - `?` - Dynamic import that could not be resolved.
 - `!!` - Could not parse the file (e.g. syntax error)
+- `!E` - Could not find associated pyproject.toml file
 - ` ` - Correct import (only shown with `--all`)
 
 With `--verbose`, the output includes every matching import together with the

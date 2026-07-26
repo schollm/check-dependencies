@@ -77,7 +77,12 @@ exclude = ["tests/data"]
 
 [tool.ruff.lint]
 select = ["ALL"]
-ignore = ["COM812", "D213", "D203"]
+ignore = [
+    "COM812",
+    "D213",
+    "D203",
+    "CPY001",
+]
 
 
 [tool.ruff.lint.per-file-ignores]

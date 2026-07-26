@@ -180,7 +180,7 @@ class _MultiSepAction(argparse.Action):
         self,
         option_strings: list[str],
         dest: str,
-        nargs: None | str = None,
+        nargs: str | None = None,
         type: type | None = None,  # noqa: A002
         **kwargs: Any,  # noqa: ANN401
     ) -> None:

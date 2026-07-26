@@ -47,6 +47,7 @@ from tests.conftest import (
     SRC_MODULE,
     SRC_UNICODE,
 )
+from tests.run import run
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Generator, Sequence
@@ -183,45 +184,18 @@ class TestYieldWrongImports:
     """Test collection for the yield wrong imports function."""
 
     @staticmethod
-    def fn_ret(  # pylint: disable=too-many-arguments
-        overwrite_cfg: Path = POETRY,
-        args: Sequence[str] | str = (),
-        file_names: Sequence[str] = (SRC,),
-        with_comment: bool = False,
-    ) -> tuple[list[str], int]:
-        """Call the yield wrong imports function with patched pyproject.toml."""
-        if isinstance(args, str):
-            args = args.split()
-
-        lines: list[str] = []
-
-        with (
-            patch("check_dependencies.pyproject_toml._PYPROJECT_TOML", overwrite_cfg),
-            patch("sys.argv", ["check-dependencies", *args, *file_names]),
-            patch("check_dependencies.__main__._writer", lines.append),
-        ):
-            exit_status = cli_main()
-
-        return [
-            line
-            for line in lines
-            if line != "\n" and (with_comment or not line.startswith("#"))
-        ], exit_status
-
-    @classmethod
     def fn(
-        cls,
-        overwrite_cfg: Path = POETRY,
-        args: Sequence[str] | str = (),
-        file_names: Sequence[str] = (SRC,),
+        overwrite_cfg: Path | str = POETRY,
+        args: str | Sequence[str] = (),
+        files: Sequence[str] = (SRC,),
         with_comment: bool = False,
     ) -> list[str]:
         """Call the yield wrong imports function with patched pyproject.toml."""
-        return cls.fn_ret(
-            overwrite_cfg=overwrite_cfg,
+        return run(
+            files=files,
+            pyproject_toml=Path(overwrite_cfg),
             args=args,
-            file_names=file_names,
-            with_comment=with_comment,
+            comment=with_comment,
         )[0]
 
     def test(self, pyproject: Path) -> None:
@@ -249,7 +223,7 @@ class TestYieldWrongImports:
         py_file = tmp_path / "test_import_statement.py"
         py_file.write_text(stmt)
 
-        res = self.fn(overwrite_cfg=PYPROJECT_EMPTY, file_names=[py_file.as_posix()])
+        res = self.fn(overwrite_cfg=PYPROJECT_EMPTY, files=[py_file.as_posix()])
 
         assert [r[2:] for r in res] == expected
 
@@ -269,7 +243,7 @@ class TestYieldWrongImports:
 
         res = self.fn(
             overwrite_cfg=PYPROJECT_EMPTY,
-            file_names=[py_file.as_posix()],
+            files=[py_file.as_posix()],
             args=["--verbose", "--extra=extra1", "--missing=missing1"],
         )
 
@@ -374,9 +348,10 @@ class TestYieldWrongImports:
                 """),
             "utf-8",
         )
-        assert self.fn(overwrite_cfg=pyproject, file_names=[source.as_posix()]) == [
-            "! company.missing"
-        ]
+        res = self.fn(
+            overwrite_cfg=pyproject, files=[source.as_posix()]
+        )
+        assert res == ["! company.missing"]
 
     def test_implicit_namespace_packages_from_config(self, tmp_path: Path) -> None:
         """Dotted dependency names (`a.b`) should match dotted imports."""
@@ -397,7 +372,7 @@ class TestYieldWrongImports:
                 """),
             "utf-8",
         )
-        assert self.fn(overwrite_cfg=pyproject, file_names=[source.as_posix()]) == [
+        assert self.fn(overwrite_cfg=pyproject, files=[source.as_posix()]) == [
             "! company.missing"
         ]
 
@@ -419,7 +394,7 @@ class TestYieldWrongImports:
                 """),
             "utf-8",
         )
-        assert self.fn(overwrite_cfg=pyproject, file_names=[source.as_posix()]) == [
+        assert self.fn(overwrite_cfg=pyproject, files=[source.as_posix()]) == [
             "! company.missing"
         ]
 
@@ -516,18 +491,18 @@ class TestYieldWrongImports:
         missing import.
         """
         res = self.fn(
-            file_names=[DATA.as_posix()], args=f"{output_format} {include_dev}"
+            files=[DATA.as_posix()], args=f"{output_format} {include_dev}"
         )
         assert len(res) == len(set(res))
 
     def test_directory_both_files(self) -> None:
         """Given a directory, we should check all files for missing imports."""
-        res = self.fn(file_names=[DATA.as_posix()])
+        res = self.fn(files=[DATA.as_posix()])
         assert set(res) > {"! missing", "! missing_src2"}
 
     def test_all_imports_all_files(self) -> None:
         """output-format=full should show all imports in all files."""
-        res = self.fn(file_names=[SRC_MODULE.as_posix()], args="--output-format full")
+        res = self.fn(files=[SRC_MODULE.as_posix()], args="--output-format full")
         assert set(res) == {
             "  check_dependencies",
             "  test_1",
@@ -547,7 +522,7 @@ class TestYieldWrongImports:
     def test_doublette_entries(self) -> None:
         """Test that doublette entries are not printed twice."""
         res = self.fn(
-            file_names=[SRC_MODULE.as_posix()] * 2, args="--output-format full"
+            files=[SRC_MODULE.as_posix()] * 2, args="--output-format full"
         )
         assert sorted(res) == [
             "  check_dependencies",
@@ -581,14 +556,14 @@ class TestYieldWrongImports:
 
     def test_unicode_imports(self) -> None:
         """Test for Unicode module names."""
-        result = self.fn(overwrite_cfg=PYPROJECT_UNICODE, file_names=[SRC_UNICODE])
+        result = self.fn(overwrite_cfg=PYPROJECT_UNICODE, files=[SRC_UNICODE])
 
         # All Unicode module names should be flagged as missing
         assert result == []
 
     def test_unicode_imports_verbose(self) -> None:
         """Test verbose output with Unicode module names."""
-        result = self.fn(file_names=[SRC_UNICODE], args="--verbose")
+        result = self.fn(files=[SRC_UNICODE], args="--verbose")
 
         # Should show file path and line numbers for Unicode imports
         assert any("ö" in line and SRC_UNICODE in line for line in result)
@@ -597,7 +572,7 @@ class TestYieldWrongImports:
     def test_fail_msg_on_nonexisting_file(self) -> None:
         """Test non-existing files."""
         missing_file = (SRC_MODULE / "non-existing.pyy").as_posix()
-        res = self.fn(file_names=[missing_file])
+        res = self.fn(files=[missing_file])
         assert res[0] == f"!! {missing_file}"
 
     def test_include_switch(self, tmp_path: Path) -> None:
@@ -611,14 +586,14 @@ class TestYieldWrongImports:
         missing = ["missing_class", "missing_def"]
         """)
         )
-        res = self.fn(file_names=[SRC], args=["--include", extra_cfg.as_posix()])
+        res = self.fn(files=[SRC], args=["--include", extra_cfg.as_posix()])
         assert res == []
 
     def test_provides_from_venv(self) -> None:
         """Test that provides from the venv are included."""
         res = self.fn(
             overwrite_cfg=POETRY,
-            file_names=[SRC],
+            files=[SRC],
             args=["--provides-from-venv", sys.executable, "--verbose"],
             with_comment=True,
         )
@@ -687,11 +662,11 @@ class TestYieldWrongImports:
             "_PYPROJECT_TOML",
             Path(subdir / "non-existent-pyproject.toml"),
         )
-        lines, ret_code = self.fn_ret(
-            overwrite_cfg=Path("pyproject.toml"),
+        lines, ret_code = run(
+            pyproject_toml=Path("pyproject.toml"),
             args=["--verbose"],
-            file_names=["/foo"],
-            with_comment=True,
+            files=["/foo"],
+            comment=True,
         )
         assert lines == [
             "# OUTPUT_FORMAT=concise",
@@ -750,7 +725,7 @@ def test_source_imports_iter_non_utf8_encoding(tmp_path: Path) -> None:
     """Test that _source_imports_iter works with a non-UTF8-encoded file."""
     py_file = tmp_path / "latin1_module.py"
     # Write a latin-1 encoded file with an encoding cookie and an import
-    content = "# -*- coding: latin-1 -*-\nimport os\nx = 'caf\xe9'\n"
+    content = "# -*- coding: latin-1 -*-\nimport os\nx = 'café'\n"
     py_file.write_bytes(content.encode("latin-1"))
     outputs = list(_source_imports_iter(py_file, project_cfg()))
     assert [
@@ -861,10 +836,8 @@ def test_source_imports_iter_unicode_file(tmp_path: Path) -> None:
             py_file, project_cfg(allowed_dependencies=Package.set({"sys"}))
         )
     )
-
     # Extract module names
     modules = [out.module.name for out in result if isinstance(out, WithModule)]
-
     # Should have detected all three imports
     assert "ö" in modules
     assert "café.something" in modules
@@ -923,7 +896,7 @@ class TestMultiSepAction:
     def test_invalid_type(self) -> None:
         """MultiSepAction with invalid type."""
         parser = argparse.ArgumentParser()
-        with pytest.raises(ValueError, match="type: Only"):
+        with pytest.raises(ValueError, match="type: Only support str"):
             parser.add_argument("--foo", type=int, action=_MultiSepAction)
 
     def test_invalid_type_arg(self) -> None:

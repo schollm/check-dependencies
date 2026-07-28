@@ -202,13 +202,12 @@ class _MultiSepAction(argparse.Action):
     ) -> None:
         """Set provided argument on namespace."""
         del parser, option_string
-        existing = getattr(namespace, self.dest, None) or []
         if not isinstance(values, str):
             msg = f"expected a string, got {type(values).__name__}"
             raise TypeError(msg)
-        for value in values.split(","):
-            existing.append(value)
-        setattr(namespace, self.dest, existing)
+        # namespace.(dest) is None on first call:
+        existing: list[str] = getattr(namespace, self.dest, None) or []
+        setattr(namespace, self.dest, [*existing, *values.split(",")])
 
 
 if __name__ == "__main__":

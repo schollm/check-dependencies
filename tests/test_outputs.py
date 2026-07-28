@@ -1,6 +1,7 @@
 """Tests for outputs module."""
 
 import ast
+from itertools import chain
 from pathlib import Path
 from typing import NamedTuple
 
@@ -134,3 +135,29 @@ def test_as_text(
             file=PATH.absolute().as_posix(),
             path=PATH.parent.absolute().as_posix(),
         )
+
+
+@pytest.mark.parametrize(
+    "output, expected",
+    [
+        (OUT_EXTRA, [f"+ {OUT_EXTRA.package}"]),
+        (OUT_FILE_ERROR, [f"!! {OUT_FILE_ERROR.path}"]),
+        (OUT_MISSING, [f"! {OUT_MISSING.module.name}"]),
+        (OUT_NO_PYPROJECT, [f"!E {OUT_NO_PYPROJECT.msg}"]),
+    ],
+)
+def test_file_error_to_text(output: outputs.Output, expected: list[str]):
+    """Test that the to_text method returns the expected output."""
+    seen = set()
+    res = list(
+        chain.from_iterable(
+            [
+                output.to_text(verbose=False, show_all=False, seen=seen),
+                output.to_text(verbose=False, show_all=False, seen=seen),
+            ]
+        )
+    )
+    assert (
+        res == expected
+    )  # Only emit once, even if called twice with verbose=show_all=False
+    assert seen

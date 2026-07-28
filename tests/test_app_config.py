@@ -2,11 +2,22 @@
 
 from __future__ import annotations
 
+import argparse
+import logging
 import textwrap
+from importlib.metadata import PackageNotFoundError
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from check_dependencies.app_config import AppConfig, OutputFormat, ProjectConfig
+import pytest
+
+from check_dependencies.app_config import (
+    AppConfig,
+    OutputFormat,
+    ProjectConfig,
+    _get_version,
+    _MultiSepAction,
+)
 from check_dependencies.lib import Module, Package
 from check_dependencies.pyproject_toml import PyProjectToml
 
@@ -79,3 +90,83 @@ def test_project_cfg(tmp_path: Path) -> None:
         (Package("dep1"), Module("mod1")),
         (Package("dep2"), Module("mod2")),
     )
+
+
+def test_app_cfg_from_argv(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test AppConfig.from_argv() with monkeypatching."""
+    monkeypatch.setattr("sys.argv", ["check-dependencies", "src"])
+    cfg = AppConfig.from_argv()
+    assert cfg.file_names == [Path("src")]
+
+
+def test_app_cfg_from_argv_deprecated_all(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Test AppConfig.from_argv() with monkeypatching."""
+    monkeypatch.setattr("sys.argv", ["check-dependencies", "src", "--all"])
+    with caplog.at_level(logging.WARNING):
+        cfg = AppConfig.from_argv()
+    assert cfg.file_names == [Path("src")]
+    assert cfg.output_format == OutputFormat.FULL
+    assert "--all is deprecated, use --output-format full instead." in caplog.text
+
+
+class TestMultiSepAction:
+    """Test _MultiSepAction."""
+
+    @pytest.mark.parametrize(
+        "args, expected",
+        [
+            (["--foo=a,b"], ["a", "b"]),
+            (["--foo", "a,b"], ["a", "b"]),
+            (["--foo=a", "--foo=b"], ["a", "b"]),
+            (["--foo", "a,b", "--foo", "c"], ["a", "b", "c"]),
+            (["-f", "a", "--foo", "b,c", "-f=d"], ["a", "b", "c", "d"]),
+        ],
+    )
+    def test(self, args: list[str], expected: list[str]) -> None:
+        """MultiSepAction with different lists."""
+        parser = argparse.ArgumentParser()
+        parser.add_argument(
+            "--foo",
+            "-f",
+            type=str,
+            action=_MultiSepAction,
+        )
+        res = parser.parse_args(args)
+        assert res.foo == expected
+
+    def test_invalid_type(self) -> None:
+        """MultiSepAction with invalid type."""
+        parser = argparse.ArgumentParser()
+        with pytest.raises(ValueError, match="type: Only support str"):
+            parser.add_argument("--foo", type=int, action=_MultiSepAction)
+
+    def test_invalid_type_arg(self) -> None:
+        """MultiSepAction with invalid type."""
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--foo", action=_MultiSepAction)
+        action = _MultiSepAction([], "foo", None, str)
+
+        with pytest.raises(TypeError, match="expected a string, got"):
+            action(parser, argparse.Namespace(), [])
+
+    @pytest.mark.parametrize("nargs", ["*", "?", "+"])
+    def test_invalid_nargs(self, nargs: str) -> None:
+        """MultiSepAction with invalid nargs."""
+        parser = argparse.ArgumentParser()
+        with pytest.raises(ValueError, match="nargs not allowed"):
+            parser.add_argument("--foo", nargs=nargs, action=_MultiSepAction)
+
+
+def test_get_version_without_package_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Return `unknown` when package metadata is unavailable."""
+
+    def _raise_package_not_found(_dist_name: str) -> str:
+        raise PackageNotFoundError(_dist_name)
+
+    monkeypatch.setattr(
+        "check_dependencies.app_config.version", _raise_package_not_found
+    )
+
+    assert _get_version() == "unknown"

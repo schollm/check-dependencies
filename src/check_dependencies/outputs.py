@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from check_dependencies.app_config import ProjectConfig
 
 
-SeenT = set[tuple[type, Module | Package | Path]]
+SeenT = set[tuple[type, Module | Package | Path | str]]
 
 
 @dataclass(frozen=True)
@@ -193,9 +193,12 @@ class NoPyprojectError(Output):
 
     def to_text(self, *, verbose: bool, show_all: bool, seen: SeenT) -> Iterable[str]:
         """Get the string CLI representation of the NoPyprojectError."""
-        del show_all, seen
         name = self.name(verbose)
-        yield f"{name} {self.msg}"
+        if verbose or show_all:
+            yield f"{name} {self.msg}"
+        elif (key := (NoPyprojectError, self.msg)) not in seen:
+            seen.add(key)
+            yield f"{name} {self.msg}"
 
 
 @dataclass(frozen=True)
@@ -214,10 +217,6 @@ class FileError(Output):
             stmt=ast.Pass(lineno=1, col_offset=0, end_lineno=1, end_col_offset=1),
             msg=f"File {self.path.as_posix()} could not be parsed: {self.message}",
         )
-
-    def __str__(self) -> str:
-        """Get the string representation of the FileError."""
-        return f"{self.path}: {self.message}"
 
     def to_text(self, *, verbose: bool, show_all: bool, seen: SeenT) -> Iterable[str]:
         """Get the string representation of the FileError."""

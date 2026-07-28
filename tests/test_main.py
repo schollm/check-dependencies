@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-import argparse
 import ast
+import re
 import sys
 import textwrap
 import time
-from importlib.metadata import PackageNotFoundError
 from pathlib import Path
 from textwrap import dedent
 from typing import TYPE_CHECKING
@@ -15,10 +14,14 @@ from unittest.mock import MagicMock
 
 import pytest
 
+import check_dependencies.outputs
 import check_dependencies.pyproject_toml
-from check_dependencies.__main__ import _get_version, _MultiSepAction
 from check_dependencies.__main__ import main as cli_main
-from check_dependencies.app_config import AppConfig, OutputFormat, ProjectConfig
+from check_dependencies.app_config import (
+    AppConfig,
+    OutputFormat,
+    ProjectConfig,
+)
 from check_dependencies.lib import Module, Package, Packages
 from check_dependencies.main import (
     InfoMessage,
@@ -87,15 +90,66 @@ TEST_IMPORTS = [
 ]
 
 
-def test__main__(monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize("output_format", OutputFormat)
+def test__main__(monkeypatch: pytest.MonkeyPatch, output_format: OutputFormat) -> None:
     """Test the main module.
 
     This also tests if all dependencies are defined correctly.
     """
     main_module = Path(__file__).parents[1] / "src" / "check_dependencies"
     assert main_module.is_dir()
-    monkeypatch.setattr("sys.argv", ["check-dependencies", main_module.as_posix()])
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "check-dependencies",
+            main_module.as_posix(),
+            "--output-format",
+            output_format.value,
+        ],
+    )
     assert cli_main() == 0
+
+
+@pytest.mark.parametrize(
+    "args, expected",
+    [
+        ("", "! dep_missing"),
+        ("--output-format concise", "! dep_missing"),
+        ("--output-format full", "! dep_missing ##  mod1"),
+        ("--output-format concise --verbose", "!NA .*src.py:1 dep_missing"),
+        ("--output-format full --verbose", "!NA .*src.py:1 dep_missing"),
+        (
+            "--output-format github",
+            r"::error title=check-dependencies \(!NA\),file=.*/src.py.*:"
+            r".*src.py%3A !NA%3A module dep_missing",
+        ),
+    ],
+)
+def test__main__failing(args: str, expected: str, tmp_path: Path) -> None:
+    """Test the main module.
+
+    This also tests if all dependencies are defined correctly.
+    """
+    (tmp_path / "pyproject.toml").write_text(
+        textwrap.dedent("""\
+            [project]
+            dependencies=["dep1=*"]
+            [tool.check-dependencies]
+            known-missing = ["missing"]
+            known-extra = ["extra"]
+            provides = {dep1 = "mod1", dep2 = "mod2"}
+            """),
+        "utf-8",
+    )
+    (src_path := tmp_path / "src.py").write_text(
+        "import mod1, mod2, dep_missing", "utf-8"
+    )
+    out, exit_status = run([src_path], tmp_path / "pyproject.toml", args=args)
+    missing_module_exit_code = 2
+    assert exit_status == missing_module_exit_code
+    lines = "\n".join(out)
+    for line in expected.split(" ## "):
+        assert re.search(line, lines), line
 
 
 def test__main__version(
@@ -103,7 +157,7 @@ def test__main__version(
 ) -> None:
     """Test the CLI version flag."""
     monkeypatch.setattr(
-        "check_dependencies.__main__.version", lambda _dist_name: "1.2.3"
+        "check_dependencies.app_config.version", lambda _dist_name: "1.2.3"
     )
     monkeypatch.setattr("sys.argv", ["check-dependencies", "--version"])
 
@@ -113,17 +167,6 @@ def test__main__version(
     assert exc.value.code == 0
     assert capsys.readouterr().out.endswith("check-dependencies 1.2.3\n")
     # .endswith because on Windows this gets prefixed with "python.exe "
-
-
-def test_get_version_without_package_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Return `unknown` when package metadata is unavailable."""
-
-    def _raise_package_not_found(_dist_name: str) -> str:
-        raise PackageNotFoundError(_dist_name)
-
-    monkeypatch.setattr("check_dependencies.__main__.version", _raise_package_not_found)
-
-    assert _get_version() == "unknown"
 
 
 @pytest.mark.parametrize(
@@ -860,51 +903,3 @@ def test_performance_large_project(tmp_path: Path) -> None:
     duration = time.time() - start
 
     assert duration < max_duration_per_file * n_files
-
-
-class TestMultiSepAction:
-    """Test _MultiSepAction."""
-
-    @pytest.mark.parametrize(
-        "args, expected",
-        [
-            (["--foo=a,b"], ["a", "b"]),
-            (["--foo", "a,b"], ["a", "b"]),
-            (["--foo=a", "--foo=b"], ["a", "b"]),
-            (["--foo", "a,b", "--foo", "c"], ["a", "b", "c"]),
-            (["-f", "a", "--foo", "b,c", "-f=d"], ["a", "b", "c", "d"]),
-        ],
-    )
-    def test(self, args: list[str], expected: list[str]) -> None:
-        """MultiSepAction with different lists."""
-        parser = argparse.ArgumentParser()
-        parser.add_argument(
-            "--foo",
-            "-f",
-            type=str,
-            action=_MultiSepAction,
-        )
-        res = parser.parse_args(args)
-        assert res.foo == expected
-
-    def test_invalid_type(self) -> None:
-        """MultiSepAction with invalid type."""
-        parser = argparse.ArgumentParser()
-        with pytest.raises(ValueError, match="type: Only support str"):
-            parser.add_argument("--foo", type=int, action=_MultiSepAction)
-
-    def test_invalid_type_arg(self) -> None:
-        """MultiSepAction with invalid type."""
-        parser = argparse.ArgumentParser()
-        parser.add_argument("--foo", action=_MultiSepAction)
-        action = _MultiSepAction([], "foo", None, str)
-
-        with pytest.raises(TypeError, match="expected a string, got"):
-            action(parser, argparse.Namespace(), [])
-
-    @pytest.mark.parametrize("nargs", ["*", "?", "+"])
-    def test_invalid_nargs(self, nargs: str) -> None:
-        """MultiSepAction with invalid nargs."""
-        parser = argparse.ArgumentParser()
-        with pytest.raises(ValueError, match="nargs not allowed"):
-            parser.add_argument("--foo", nargs=nargs, action=_MultiSepAction)

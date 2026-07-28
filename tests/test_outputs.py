@@ -140,13 +140,17 @@ def test_as_text(
 @pytest.mark.parametrize(
     "output, expected",
     [
+        (OUT_INFO, []),
+        (OUT_OK, []),
+        (OUT_UNKNOWN, [f"? {OUT_UNKNOWN.module.name}"]),
+        (OUT_INFO_VERBOSE, ['# message'] * 2),
         (OUT_EXTRA, [f"+ {OUT_EXTRA.package}"]),
         (OUT_FILE_ERROR, [f"!! {OUT_FILE_ERROR.path}"]),
         (OUT_MISSING, [f"! {OUT_MISSING.module.name}"]),
         (OUT_NO_PYPROJECT, [f"!E {OUT_NO_PYPROJECT.msg}"]),
     ],
 )
-def test_file_error_to_text(output: outputs.Output, expected: list[str]):
+def test_to_text_no_verbose_nor_show_all(output: outputs.Output, expected: list[str]):
     """Test that the to_text method returns the expected output."""
     seen = set()
     res = list(
@@ -157,7 +161,7 @@ def test_file_error_to_text(output: outputs.Output, expected: list[str]):
             ]
         )
     )
-    assert (
-        res == expected
-    )  # Only emit once, even if called twice with verbose=show_all=False
-    assert seen
+    # Only emit once, even if called twice with verbose=show_all=False
+    assert res == expected
+    if res: 
+        assert seen

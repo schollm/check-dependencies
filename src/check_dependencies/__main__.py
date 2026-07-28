@@ -177,7 +177,7 @@ def main() -> int:
 
 class _MultiSepAction(argparse.Action):
     """Custom argparse action to split comma-separated values into a list.
-    
+
     This action allows the user to specify multiple values for an argument by
     separating them with commas. Each time the argument is encountered,
     the values are split and added to a list in the namespace.

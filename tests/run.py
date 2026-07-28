@@ -12,21 +12,15 @@ def run(
     pyproject_toml: Path,
     args: str | Sequence[str] = (),
     comment: bool = False,
-):
+) -> tuple[list[str], int]:
     """Run tests against CLI."""
     lines: list[str] = []
     if isinstance(args, str):
         args = args.split()
     with (
-        patch(
-            "sys.argv",
-            new=["check-dependencies", *(Path(f).as_posix() for f in files), *args],
-        ),
-        patch("check_dependencies.pyproject_toml._PYPROJECT_TOML", pyproject_toml),
         patch("sys.argv", ["check-dependencies", *args, *map(str, files)]),
-        patch("check_dependencies.__main__._writer", lines.append),
+        patch("check_dependencies.pyproject_toml._PYPROJECT_TOML", pyproject_toml),
+        patch("check_dependencies.__main__._writer", lines.extend),
     ):
-        exit_satus = main()
-    return [
-        line for line in lines if line != "\n" and (comment or not line.startswith("#"))
-    ], exit_satus
+        exit_status = main()
+    return [line for line in lines if comment or not line.startswith("#")], exit_status

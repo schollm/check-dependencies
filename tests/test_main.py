@@ -14,7 +14,6 @@ from unittest.mock import MagicMock
 
 import pytest
 
-import check_dependencies.outputs
 import check_dependencies.pyproject_toml
 from check_dependencies.__main__ import main as cli_main
 from check_dependencies.app_config import (

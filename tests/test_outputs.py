@@ -143,7 +143,7 @@ def test_as_text(
         (OUT_INFO, []),
         (OUT_OK, []),
         (OUT_UNKNOWN, [f"? {OUT_UNKNOWN.module.name}"]),
-        (OUT_INFO_VERBOSE, ['# message'] * 2),
+        (OUT_INFO_VERBOSE, ["# message"] * 2),
         (OUT_EXTRA, [f"+ {OUT_EXTRA.package}"]),
         (OUT_FILE_ERROR, [f"!! {OUT_FILE_ERROR.path}"]),
         (OUT_MISSING, [f"! {OUT_MISSING.module.name}"]),
@@ -163,5 +163,5 @@ def test_to_text_no_verbose_nor_show_all(output: outputs.Output, expected: list[
     )
     # Only emit once, even if called twice with verbose=show_all=False
     assert res == expected
-    if res: 
+    if res:
         assert seen

@@ -217,9 +217,8 @@ class AppConfig:
             - {github}:   Print only problematic imports in a format suitable
                 for GitHub Actions annotations
             """),
-            default=concise,
+            default=OutputFormat.CONCISE,
         )
-
         args = parser.parse_args(sysv)
         if args.all and args.output_format == OutputFormat.CONCISE:
             logger.warning("--all is deprecated, use --output-format full instead.")

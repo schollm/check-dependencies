@@ -241,6 +241,7 @@ class InfoMessage(Output):
 
     def to_text(self, *, verbose: bool, show_all: bool, seen: SeenT) -> Iterable[str]:
         """Get the string representation of the InfoMessage."""
+        del show_all
         if verbose or self.verbose:  # Show info message regardless of seen.
             seen.add((type(self), self.message))
             yield f"{self.name(verbose)} {self.message}"

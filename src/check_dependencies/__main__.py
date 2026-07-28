@@ -4,12 +4,21 @@ from __future__ import annotations
 
 import logging
 import sys
+from typing import TYPE_CHECKING
 
 from check_dependencies.app_config import AppConfig
 from check_dependencies.main import yield_outputs
 
-_writer = sys.stdout.writelines
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
 _logger = logging.getLogger("check_dependencies.__main__")
+
+
+def _writer(lines: Iterable[str]) -> None:
+    for line in lines:
+        sys.stdout.write(line)
+        sys.stdout.write("\n")
 
 
 def main() -> int:

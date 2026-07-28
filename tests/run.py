@@ -18,9 +18,8 @@ def run(
     if isinstance(args, str):
         args = args.split()
     with (
-        patch("sys.argv", new=["check-dependencies", *map(str, files), *args]),
-        patch("check_dependencies.pyproject_toml._PYPROJECT_TOML", pyproject_toml),
         patch("sys.argv", ["check-dependencies", *args, *map(str, files)]),
+        patch("check_dependencies.pyproject_toml._PYPROJECT_TOML", pyproject_toml),
         patch("check_dependencies.__main__._writer", lines.extend),
     ):
         exit_status = main()

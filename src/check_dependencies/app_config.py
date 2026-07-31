@@ -18,7 +18,15 @@ from check_dependencies.provides import mappings_for_env
 from check_dependencies.pyproject_toml import ConfigToml, PyProjectToml
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Collection, Iterable, Iterator, Sequence
+    from collections.abc import (
+        Callable,
+        Collection,
+        Iterable,
+        Iterator,
+        Mapping,
+        Sequence,
+    )
+    from pathlib import Path
 
     from check_dependencies.outputs import Output, SeenT
 
@@ -273,6 +281,9 @@ class ProjectConfig:
     known_extra: Collection[Package]
     packages: Packages
     path: Path
+    optional_dependencies: Mapping[Path, Collection[Package]] = field(
+        default_factory=dict
+    )
 
     @classmethod
     def from_config(cls, app_cfg: AppConfig, pyproject: PyProjectToml) -> ProjectConfig:
@@ -294,8 +305,27 @@ class ProjectConfig:
             known_extra=frozenset({*app_cfg.known_extra, *pyproject.known_extra}),
             packages=app_cfg.provides
             | Packages(pyproject.dependencies, pyproject.provides),
+            optional_dependencies=pyproject.optional_dependencies,
             path=pyproject.path,
         )
+
+    def is_known_module(self, module: Module, file: Path) -> bool:
+        """Check if a module is a known module."""
+        if any(parent in self.known_missing for parent in module.parents):
+            return True
+
+        pkg_ = self.packages.packages(module)
+        if pkg_.intersection(self.allowed_dependencies):
+            return True
+
+        project_path = self.path.parent
+        optional_dependencies = chain.from_iterable(
+            packages
+            for path, packages in self.optional_dependencies.items()
+            if file.is_relative_to(project_path / path)
+        )
+        po = pkg_.intersection(optional_dependencies)
+        return bool(po)
 
 
 def _get_provides(

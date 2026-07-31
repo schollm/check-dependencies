@@ -22,6 +22,7 @@ PRJ_CFG = ProjectConfig(
     known_extra=(),
     packages=Packages(),
     path=Path("foo/pyproject.toml"),
+    optional_dependencies={},
 )
 
 OUT_OK = outputs.OkDependency(PATH, STMT, MODULE)

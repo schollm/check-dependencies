@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import textwrap
 from pathlib import Path
 from typing import TypeVar
 
@@ -250,3 +251,36 @@ class TestGetPyProjectToml:
         with pytest.raises(NoPyProjectFileError):
             get_pyproject_toml(Path("/foo/inaccessible").absolute())
         assert err_msg in caplog.messages
+
+
+class TestOptionalDependencies:
+    """Test that optional dependencies are handled correctly."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self, tmp_path: Path) -> None:
+        """Fixture setup for pyproject.toml."""
+        self.pp = tmp_path / "pyproject.toml"
+
+    def test(self):
+        """Test that the optional dependencies are handled correctly."""
+        pp_io = self.pp
+        pp_io.write_text(
+            textwrap.dedent("""\
+            [project]
+            dependencies = ["lib1"]
+            [project.optional-dependencies]
+            opt1 = ["dep1"]
+            opt2 = ["dep2"]
+            opt12 = ["dep1", "dep3"]
+
+            [tool.check-dependencies.optional-dependencies]
+            opt1 = ["src1.py"]
+            opt2 = ["src2.py"]
+            opt12 = ["src1.py", "src2.py"]
+            """)
+        )
+        pp = PyProjectToml.for_path(pp_io)
+        assert pp.optional_dependencies == {
+            Path("src1.py"): Package.set(["dep1", "dep3"]),
+            Path("src2.py"): Package.set(["dep1", "dep2", "dep3"]),
+        }

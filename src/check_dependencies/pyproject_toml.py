@@ -6,7 +6,8 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import lru_cache
-from itertools import chain
+from itertools import chain, groupby
+from operator import itemgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeVar
 
@@ -29,6 +30,7 @@ _INCLUDES_KEY = f"{_TOOL_KEY}.includes"
 _KNOWN_MISSING_KEY = f"{_TOOL_KEY}.known-missing"
 _KNOWN_EXTRA_KEY = f"{_TOOL_KEY}.known-extra"
 _PROVIDES_KEY = f"{_TOOL_KEY}.provides"
+_EXTRA_PACKAGES_KEY = f"{_TOOL_KEY}.optional-dependencies"
 
 
 @dataclass(frozen=True)
@@ -42,7 +44,8 @@ class ConfigToml:
     def for_path(cls, path: Path, *, _seen: Collection[Path] = ()) -> ConfigToml:
         """Get a config from a path."""
         logger.debug("Parsing %s", path)
-        cfg = tomllib.loads(path.read_text("utf-8"))
+        with path.open() as f:
+            cfg = tomllib.load(f)
         return ConfigToml(
             cfg=cfg,
             includes_cfg=tuple(
@@ -179,6 +182,28 @@ class PyProjectToml(ConfigToml):
             ),
         )
 
+    @property
+    def optional_dependencies(self) -> Mapping[Path, Collection[Package]]:
+        """Get extra packages defined in the pyproject.toml file.
+
+        These are packages that are known to not be imported, but are still
+        defined in the requirements. This can be plugins or similar that affect
+        the package but are not imported explicitly.
+        """
+        dep_groups = _nested_item(self.cfg, "project.optional-dependencies", dict)
+        opt_to_path = sorted(
+            (Path(p), Package(opt_dep))
+            for opt_name, paths in _nested_item(
+                self.cfg, _EXTRA_PACKAGES_KEY, dict
+            ).items()
+            for opt_dep in dep_groups.get(opt_name, [])
+            for p in paths
+        )
+        return {
+            path: {pp1[1] for pp1 in pp}
+            for path, pp in groupby(opt_to_path, key=itemgetter(0))
+        }
+
 
 class NoPyProjectFileError(FileNotFoundError):
     """pyproject.toml file not found in the directory hierarchy of the given path."""
@@ -253,10 +278,10 @@ class _Pep621Dependencies(_BaseDependency):
         """Get dependencies from a PEP 621-style pyproject.toml file."""
         deps = Package.set(_nested_item(self.cfg, "project.dependencies", list))
 
-        for raw_extras in _nested_item(
-            self.cfg, "project.optional-dependencies", dict
-        ).values():
-            deps.update(Package.set(raw_extras))
+        # for raw_extras in _nested_item(
+        #     self.cfg, "project.optional-dependencies", dict
+        # ).values():
+        #     deps.update(Package.set(raw_extras))
         return deps
 
     def _dev_dependencies(self) -> set[Package]:

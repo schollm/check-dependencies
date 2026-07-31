@@ -155,14 +155,10 @@ def _source_imports_iter(file: Path, project_cfg: ProjectConfig) -> Iterator[Out
     for module, stmt in _imports_iter(parsed.body):
         if module.raw:
             yield UnknownModule(file, stmt, module)
+        elif project_cfg.is_known_module(module, file):
+            yield OkDependency(file, stmt, module)
         else:
-            pkg_ = project_cfg.packages.packages(module)
-            if any(
-                parent in project_cfg.known_missing for parent in module.parents
-            ) or pkg_.intersection(project_cfg.allowed_dependencies):
-                yield OkDependency(file, stmt, module)
-            else:
-                yield MissingModule(file, stmt, module)
+            yield MissingModule(file, stmt, module)
 
 
 def _imports_iter(body: list[ast.stmt]) -> Iterator[tuple[Module, ast.AST]]:

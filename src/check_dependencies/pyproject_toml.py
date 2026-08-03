@@ -44,8 +44,7 @@ class ConfigToml:
     def for_path(cls, path: Path, *, _seen: Collection[Path] = ()) -> ConfigToml:
         """Get a config from a path."""
         logger.debug("Parsing %s", path)
-        with path.open() as f:
-            cfg = tomllib.load(f)
+        cfg = tomllib.loads(path.read_text("utf-8"))
         return ConfigToml(
             cfg=cfg,
             includes_cfg=tuple(

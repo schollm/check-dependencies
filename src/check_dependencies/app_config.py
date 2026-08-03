@@ -18,7 +18,14 @@ from check_dependencies.provides import mappings_for_env
 from check_dependencies.pyproject_toml import ConfigToml, PyProjectToml
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Collection, Iterable, Iterator, Sequence
+    from collections.abc import (
+        Callable,
+        Collection,
+        Iterable,
+        Iterator,
+        Mapping,
+        Sequence,
+    )
 
     from check_dependencies.outputs import Output, SeenT
 
@@ -273,6 +280,9 @@ class ProjectConfig:
     known_extra: Collection[Package]
     packages: Packages
     path: Path
+    optional_dependencies: Mapping[Path, Collection[Package]] = field(
+        default_factory=dict
+    )
 
     @classmethod
     def from_config(cls, app_cfg: AppConfig, pyproject: PyProjectToml) -> ProjectConfig:
@@ -294,6 +304,7 @@ class ProjectConfig:
             known_extra=frozenset({*app_cfg.known_extra, *pyproject.known_extra}),
             packages=app_cfg.provides
             | Packages(pyproject.dependencies, pyproject.provides),
+            optional_dependencies=pyproject.optional_dependencies_cfg,
             path=pyproject.path,
         )
 

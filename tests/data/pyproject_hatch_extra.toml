@@ -1,6 +1,9 @@
 [project]
 name = "check-dependencies"
 
+[project.optional-dependencies]
+test_optional = ["test_extra"]
+
 [tool.hatch.envs.default]
 dependencies = [
     "test_main",

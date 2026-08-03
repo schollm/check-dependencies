@@ -25,6 +25,7 @@ from check_dependencies.lib import Module, Package, Packages
 from check_dependencies.main import (
     InfoMessage,
     Output,
+    RegistryEntry,
     _imports_iter,
     _ProjectRegistry,
     _source_imports_iter,
@@ -440,6 +441,7 @@ class TestYieldWrongImports:
 
     def test_ignore_requirements(self, pyproject_extra: Path) -> None:
         """Ensure ignored requirements are not printed."""
+        extra = " > 0" if pyproject_extra.stem == "pyproject_pep631_extra" else ""
         assert self.fn(overwrite_cfg=pyproject_extra, args="--extra test_extra") == [
             "! missing.bar",
             "! missing.foo",
@@ -447,6 +449,7 @@ class TestYieldWrongImports:
             "! missing_class",
             "! missing",
             "! missing_def",
+            f"+ test_extra{extra}",
         ]
 
     def test_ignore_requirements_still_check_in_src(self) -> None:
@@ -672,20 +675,20 @@ class TestYieldWrongImports:
 
         app_cfg = AppConfig.from_cli_args(file_names=[file_a, file_b])
         registry = _ProjectRegistry(app_cfg)
-        cfg_a, _ = registry.get(proj_a / "foo.py")
-        cfg_a2, _ = registry.get(
+        entry_a = registry.get(proj_a / "foo.py")
+        entry_a2 = registry.get(
             proj_a / "bar.py"
         )  # same project, should get same config
-        cfg_b, _ = registry.get(proj_b / "foo.py")
+        entry_b = registry.get(proj_b / "foo.py")
 
-        assert cfg_a is not cfg_b
-        assert cfg_a is cfg_a2
-        assert cfg_a.path == proj_a / "pyproject.toml"
-        assert cfg_b.path == proj_b / "pyproject.toml"
-        assert Package("dep_a") in cfg_a.allowed_dependencies
-        assert Package("dep_b") in cfg_b.allowed_dependencies
-        assert Package("dep_b") not in cfg_a.allowed_dependencies
-        assert Package("dep_a") not in cfg_b.allowed_dependencies
+        assert entry_a is not entry_b
+        assert entry_a is entry_a2
+        assert entry_a.project_cfg.path == proj_a / "pyproject.toml"
+        assert entry_b.project_cfg.path == proj_b / "pyproject.toml"
+        assert Package("dep_a") in entry_a.project_cfg.allowed_dependencies
+        assert Package("dep_b") in entry_b.project_cfg.allowed_dependencies
+        assert Package("dep_b") not in entry_a.project_cfg.allowed_dependencies
+        assert Package("dep_a") not in entry_b.project_cfg.allowed_dependencies
 
     def test_no_pyproject(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -701,7 +704,7 @@ class TestYieldWrongImports:
         lines, ret_code = run(
             pyproject_toml=Path("pyproject.toml"),
             args=["--verbose"],
-            files=["/foo"],
+            files=["/foo/src.py"],
             comment=True,
         )
         assert lines == [
@@ -750,7 +753,8 @@ def test_missing_import_iter_silent_on_invalid_python_code() -> None:
     my_path = MagicMock()
     my_path.as_posix.return_value = "dummy.py"
     my_path.read_bytes.return_value = b"()foo"
-    res = list(_source_imports_iter(my_path, project_cfg()))
+    entry = RegistryEntry(project_cfg(), [])
+    res = list(_source_imports_iter(my_path, entry))
     assert len(res) == 1
     output = res[0]
     assert isinstance(output, FileError)
@@ -763,7 +767,9 @@ def test_source_imports_iter_non_utf8_encoding(tmp_path: Path) -> None:
     # Write a latin-1 encoded file with an encoding cookie and an import
     content = "# -*- coding: latin-1 -*-\nimport os\nx = 'café'\n"
     py_file.write_bytes(content.encode("latin-1"))
-    outputs = list(_source_imports_iter(py_file, project_cfg()))
+    cfg = project_cfg()
+    current = RegistryEntry(cfg, [])
+    outputs = list(_source_imports_iter(py_file, current))
     assert [
         output.module.name for output in outputs if isinstance(output, WithModule)
     ] == ["os"]
@@ -774,8 +780,11 @@ def test_source_imports_iter() -> None:
     res = list(
         _source_imports_iter(
             Path(SRC),
-            project_cfg(
-                allowed_dependencies=Package.set({"test_0", "test_1", "extra"})
+            RegistryEntry(
+                project_cfg(
+                    allowed_dependencies=Package.set({"test_0", "test_1", "extra"})
+                ),
+                [],
             ),
         )
     )
@@ -869,7 +878,8 @@ def test_source_imports_iter_unicode_file(tmp_path: Path) -> None:
 
     result = list(
         _source_imports_iter(
-            py_file, project_cfg(allowed_dependencies=Package.set({"sys"}))
+            py_file,
+            RegistryEntry(project_cfg(allowed_dependencies=Package.set({"sys"})), []),
         )
     )
     # Extract module names

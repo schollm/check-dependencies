@@ -35,6 +35,9 @@ write = [
     "tomlkit>=0.13.3",
 ]
 
+[tool.check-dependencies.optional-dependencies]
+write = ["src/check_dependencies/writer.py"]
+
 [dependency-groups]
 dev = [
     "poethepoet>=0.30.0",

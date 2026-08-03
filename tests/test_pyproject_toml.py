@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import textwrap
 from pathlib import Path
 from typing import TypeVar
 
@@ -245,8 +246,81 @@ class TestGetPyProjectToml:
         """Test that get_pyproject_toml raises when an OSError occurs."""
         err_msg = "Simulated OS error"
         monkeypatch.setattr(
-            Path, "is_dir", lambda __: (_ for _ in ()).throw(OSError(err_msg))
+            Path, "exists", lambda __: (_ for _ in ()).throw(OSError(err_msg))
         )
         with pytest.raises(NoPyProjectFileError):
             get_pyproject_toml(Path("/foo/inaccessible").absolute())
         assert err_msg in caplog.messages
+
+
+class TestOptionalDependencies:
+    """Test that optional dependencies are handled correctly."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self, tmp_path: Path) -> None:
+        """Fixture setup for pyproject.toml."""
+        self.pp = tmp_path / "pyproject.toml"
+
+    def test(self):
+        """Test that the optional dependencies are handled correctly."""
+        pp_io = self.pp
+        pp_io.write_text(
+            textwrap.dedent("""\
+            [project]
+            dependencies = ["lib1"]
+            [project.optional-dependencies]
+            opt1 = ["dep1"]
+            opt2 = ["dep2"]
+            opt12 = ["dep1", "dep3"]
+
+            [tool.check-dependencies.optional-dependencies]
+            opt1 = ["src1.py"]
+            opt2 = ["src2.py"]
+            opt12 = ["src1.py", "src2.py"]
+            """)
+        )
+        pp = PyProjectToml.for_path(pp_io)
+        assert pp.optional_dependencies_cfg == {
+            Path("src1.py"): Package.set(["dep1", "dep3"]),
+            Path("src2.py"): Package.set(["dep1", "dep2", "dep3"]),
+        }
+
+    def test_no_config(self):
+        """Test that the optional dependencies are handled correctly."""
+        pp_io = self.pp
+        pp_io.write_text(
+            textwrap.dedent("""\
+            [project]
+            dependencies = ["lib1"]
+            [project.optional-dependencies]
+            opt1 = ["dep1"]
+            opt2 = ["dep2"]
+            opt12 = ["dep1", "dep3"]
+            """)
+        )
+        pp = PyProjectToml.for_path(pp_io)
+        assert pp.optional_dependencies_cfg == {
+            self.pp.parent: Package.set(["dep1", "dep2", "dep3"]),
+        }
+
+    def test_unknown_optional_key(self):
+        """Test that an unknown optional key raises a KeyError."""
+        pp_io = self.pp
+        pp_io.write_text(
+            textwrap.dedent("""\
+            [project]
+            dependencies = ["lib1"]
+            [project.optional-dependencies]
+            opt = ["dep2"]
+
+            [tool.check-dependencies.optional-dependencies]
+            unknown = ["src3.py"]
+            """)
+        )
+        pp_cls = PyProjectToml.for_path(pp_io)
+        with pytest.raises(
+            KeyError,
+            match=r"Optional dependency group 'unknown' is not defined in"
+            r" \[project.optional-dependencies\]",
+        ):
+            _ = pp_cls.optional_dependencies_cfg

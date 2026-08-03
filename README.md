@@ -43,7 +43,8 @@ pipx run check-dependencies
 
 Use this repository as a reusable GitHub Action in third-party workflows.
 
-The action inputs are derived from `AppConfig.from_cli_args(...)`.
+The action installs this package in an isolated virtual environment and runs
+`python -m check_dependencies` with the configured inputs.
 
 ### Usage
 
@@ -61,25 +62,28 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
-          python-version: "3.14"  # can be anything that check-dependencies support..
+          python-version: "3.14"  # any Python version supported by check-dependencies
       - uses: schollm/check-dependencies@v1
         with:
+          output-format: github
           file-names: |
             src/
           include-dev: "false"
-          verbose: "false"
-          show-all: "false"
+          known-extra: ""
+          known-missing: ""
+          provides: ""
+          includes: ""
+          provides-from-venv: ""
 ```
 
 ### Inputs
 
 - `file-names` (required): newline-separated paths to files/directories
+- `output-format`: output format (`concise`, `full`, or `github`); default `github`
 - `known-extra`: comma-separated package list
 - `known-missing`: comma-separated module list
 - `provides`: comma-separated `PACKAGE=MODULE` mappings
 - `include-dev`: `true` or `false`
-- `verbose`: `true` or `false`
-- `show-all`: `true` or `false` (maps to CLI `--all`)
 - `includes`: newline-separated list of additional config files
 - `provides-from-venv`: path to venv Python executable
 
@@ -237,6 +241,24 @@ but should not be reported.
     known-missing = [ "numpy" ]
     ```
 
+#### Map optional dependencies to paths
+By default, optional dependencies are checked just like regular dependencies.
+If you want to check them only for certain files, you can configure them in the 
+`pyproject.toml` file under `[tool.check-dependencies.optional-dependencies]` with 
+a mapping of dependency groups to path prefixes.
+
+This is only configurable via `pyproject.toml` and not via CLI arguments.
+
+- 📄 `pyproject.toml`:
+    ```toml
+    [project.optional-dependencies]
+    optional_dependency_group = ["optional_dependency_1", "optional_dependency_2"]
+    another_optional_dependency_group = ["optional_dependency_3"]
+ 
+    [tool.check-dependencies.optional-dependencies]
+     optional_dependency_group = ["src/project/option_1/"]
+     another_optional_dependency_group = ["src/option_2.py"]
+    ```
 
 #### Include additional config file
 

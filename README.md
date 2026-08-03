@@ -96,7 +96,55 @@ the dependencies declared in `pyproject.toml`.
 ### ▶️ Usage
 
 ```text
-usage: 
+usage: check-dependencies [-h] [--version] [--include-dev] [--verbose] [--provides-from-venv PYTHON_EXECUTABLE] [--missing MODULE,...] [--extra PACKAGE,...] [--provides PACKAGE=MODULE,...] [--include INCLUDE]
+                          [--output-format OUTPUT_FORMAT]
+                          file_name [file_name ...]
+
+Find undeclared and unused (or all) imports in Python files
+
+positional arguments:
+  file_name             Python Source file to analyse
+
+options:
+  -h, --help            show this help message and exit
+  --version             show program's version number and exit
+  --include-dev         Include dev dependencies
+  --verbose             Show every import of a package
+  --provides-from-venv PYTHON_EXECUTABLE
+                        Path to the virtual environment's Python executable
+                        (for example, .venv/bin/python) to include all packages
+                        installed in it as provides.
+  --missing MODULE,...  Comma separated list of requirements known to be missing.
+                        
+                        Assume they are part of the requirements.
+                        Can be specified multiple times.
+                        Toml Key: [tool.check-dependencies] known-missing=[]
+  --extra PACKAGE,...   Comma separated list of requirements known to not be imported.
+                        
+                        Assume they are not part of the requirements. This can be plugins or
+                        similar that affect the package but are not imported explicitly.
+                        Can be specified multiple times.
+                        Toml Key: [tool.check-dependencies] known-extra=[]
+  --provides PACKAGE=MODULE,...
+                        Map a package name to its module (import) name for packages whose import
+                        name differs from the package name. Can be specified multiple times.
+                        
+                        E.g. --provides Pillow=PIL --provides PyJWT=jwt.
+                        The package name is normalized (case-insensitive, hyphens and underscores
+                        are equivalent), so Pillow=PIL, pillow=PIL and PIL-ow=PIL are all the same.
+                        Toml Key: [tool.check-dependencies.provides]
+  --include INCLUDE, -I INCLUDE
+                        Additional config files to include.
+                        Can be specified multiple times. E.g. --include check-dependencies.toml.
+                        Toml Key: [tool.check-dependencies] includes=[]
+  --output-format OUTPUT_FORMAT
+                        The format to use for printing diagnostic messages
+                        
+                        Possible values:
+                        - full:     Print all imports, including correct ones.
+                        - concise:  Print only problematic imports (missing or extra)
+                        - github:   Print only problematic imports in a format suitable
+                            for GitHub Actions annotations
 
 ### 📄 Output
 

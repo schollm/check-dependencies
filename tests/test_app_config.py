@@ -99,18 +99,6 @@ def test_app_cfg_from_argv(monkeypatch: pytest.MonkeyPatch) -> None:
     assert cfg.file_names == [Path("src")]
 
 
-def test_app_cfg_from_argv_deprecated_all(
-    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
-) -> None:
-    """Test AppConfig.from_argv() with monkeypatching."""
-    monkeypatch.setattr("sys.argv", ["check-dependencies", "src", "--all"])
-    with caplog.at_level(logging.WARNING):
-        cfg = AppConfig.from_argv()
-    assert cfg.file_names == [Path("src")]
-    assert cfg.output_format == OutputFormat.FULL
-    assert "--all is deprecated, use --output-format full instead." in caplog.text
-
-
 class TestMultiSepAction:
     """Test _MultiSepAction."""
 

@@ -185,10 +185,11 @@ class PyProjectToml(ConfigToml):
     def optional_dependencies_cfg(self) -> Mapping[Path, Collection[Package]]:
         """Get optional packages defined in the pyproject.toml file.
 
-        These are packages that are not required for the main application but can be installed optionally.
-        They are defined under the [project.optional-dependencies] section in the pyproject.toml file.
-        The keys are the paths to the files that trigger the optional dependencies, and the values are
-        the corresponding packages that are defined as optional dependencies.
+        These are packages that are not required for the main application but can be
+        installed optionally. They are defined under the [project.optional-dependencies]
+        section in the pyproject.toml file. The keys are the paths to the files that
+        trigger the optional dependencies, and the values are the corresponding packages
+        that are defined as optional dependencies.
         """
         dep_groups = _nested_item(self.cfg, "project.optional-dependencies", dict)
         path_option_map = _nested_item(self.cfg, _EXTRA_PACKAGES_KEY, dict).items()

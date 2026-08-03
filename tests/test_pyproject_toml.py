@@ -302,3 +302,25 @@ class TestOptionalDependencies:
         assert pp.optional_dependencies_cfg == {
             self.pp.parent: Package.set(["dep1", "dep2", "dep3"]),
         }
+
+    def test_unknown_optional_key(self):
+        """Test that an unknown optional key raises a KeyError."""
+        pp_io = self.pp
+        pp_io.write_text(
+            textwrap.dedent("""\
+            [project]
+            dependencies = ["lib1"]
+            [project.optional-dependencies]
+            opt = ["dep2"]
+
+            [tool.check-dependencies.optional-dependencies]
+            unknown = ["src3.py"]
+            """)
+        )
+        pp_cls = PyProjectToml.for_path(pp_io)
+        with pytest.raises(
+            KeyError,
+            match=r"Optional dependency group 'unknown' is not defined in"
+            r" \[project.optional-dependencies\]",
+        ):
+            _ = pp_cls.optional_dependencies_cfg

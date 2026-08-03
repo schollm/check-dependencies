@@ -223,3 +223,49 @@ def test_dependency_groups_dependencies(
     res, exit_code = run(files.keys(), pp)
 
     assert (sorted(res), exit_code) == expect
+
+
+@pytest.mark.parametrize(
+    "src_files, expect",
+    [
+        (
+            {"src/src1.py": "import foo, both", "src/opt.py": "import both, opt2"},
+            ([], 0),
+        ),
+        (
+            {"src/src1.py": "import foo", "src/opt.py": "import both, opt2"},
+            (["+ both"], 4),
+        ),
+        (
+            {"src/src1.py": "import foo, both", "src/opt.py": "import opt2"},
+            (["+ both"], 4),
+        ),
+    ],
+)
+def test_dependency_groups_dependencies_in_both_main_and_optional(
+    src_files: dict[str, str], expect: tuple[list[str], int], tmp_path: Path
+):
+    """Test tool.check-dependencies.optional-dependencies in pyproject.toml."""
+    pyproject_toml = textwrap.dedent("""\
+        [project]
+        dependencies = ["foo", "both"]
+
+        [project.optional-dependencies]
+        optional1 = ["both", "opt2"]
+        dev = ["dev1"]
+
+        [tool.check-dependencies.optional-dependencies]
+        optional1 = ["src/opt.py"]
+        dev = ["tests/"]
+        """)
+
+    pp = tmp_path / "pyproject.toml"
+    files = {tmp_path / file: content for file, content in src_files.items()}
+    pp.write_text(pyproject_toml)
+    for file, content in files.items():
+        file.parent.mkdir(parents=True, exist_ok=True)
+        file.write_text(content, encoding="utf-8")
+
+    res, exit_code = run(files.keys(), pp)
+
+    assert (sorted(res), exit_code) == expect

@@ -251,7 +251,7 @@ This is only configurable via `pyproject.toml` and not via CLI arguments.
 
 - 📄 `pyproject.toml`:
     ```toml
-    [optional-dependencies]
+    [project.optional-dependencies]
     optional_dependency_group = ["optional_dependency_1", "optional_dependency_2"]
     another_optional_dependency_group = ["optional_dependency_3"]
  

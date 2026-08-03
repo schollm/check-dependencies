@@ -64,7 +64,7 @@ def yield_outputs(app_cfg: AppConfig) -> Generator[Output, None, None]:
         seen.add(src_pth)
         try:
             current = registry.get(src_pth)
-        except NoPyProjectFileError as exc:
+        except NoPyProjectFileError as exc:  # pragma: no cover
             yield NoPyprojectError(str(exc))
             return
 

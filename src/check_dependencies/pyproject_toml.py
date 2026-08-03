@@ -199,12 +199,19 @@ class PyProjectToml(ConfigToml):
                     Package(dep) for deps in dep_groups.values() for dep in deps
                 }
             }
-        opt_to_path = sorted(
-            (Path(p), Package(opt_dep))
-            for opt_name, paths in path_option_map
-            for opt_dep in dep_groups[opt_name]
-            for p in paths
-        )
+        try:
+            opt_to_path = sorted(
+                (Path(p), Package(opt_dep))
+                for opt_name, paths in path_option_map
+                for opt_dep in dep_groups[opt_name]
+                for p in paths
+            )
+        except KeyError as exc:
+            msg = (
+                f"Optional dependency group {exc.args[0]!r} is not defined"
+                " in [project.optional-dependencies]"
+            )
+            raise KeyError(msg) from None
         return {
             path: {pp1[1] for pp1 in pp}
             for path, pp in groupby(opt_to_path, key=itemgetter(0))

@@ -246,7 +246,7 @@ class TestGetPyProjectToml:
         """Test that get_pyproject_toml raises when an OSError occurs."""
         err_msg = "Simulated OS error"
         monkeypatch.setattr(
-            Path, "is_dir", lambda __: (_ for _ in ()).throw(OSError(err_msg))
+            Path, "exists", lambda __: (_ for _ in ()).throw(OSError(err_msg))
         )
         with pytest.raises(NoPyProjectFileError):
             get_pyproject_toml(Path("/foo/inaccessible").absolute())
@@ -280,7 +280,25 @@ class TestOptionalDependencies:
             """)
         )
         pp = PyProjectToml.for_path(pp_io)
-        assert pp.optional_dependencies == {
+        assert pp.optional_dependencies_cfg == {
             Path("src1.py"): Package.set(["dep1", "dep3"]),
             Path("src2.py"): Package.set(["dep1", "dep2", "dep3"]),
+        }
+
+    def test_no_config(self):
+        """Test that the optional dependencies are handled correctly."""
+        pp_io = self.pp
+        pp_io.write_text(
+            textwrap.dedent("""\
+            [project]
+            dependencies = ["lib1"]
+            [project.optional-dependencies]
+            opt1 = ["dep1"]
+            opt2 = ["dep2"]
+            opt12 = ["dep1", "dep3"]
+            """)
+        )
+        pp = PyProjectToml.for_path(pp_io)
+        assert pp.optional_dependencies_cfg == {
+            self.pp.parent: Package.set(["dep1", "dep2", "dep3"]),
         }

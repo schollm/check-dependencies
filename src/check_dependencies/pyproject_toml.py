@@ -183,7 +183,7 @@ class PyProjectToml(ConfigToml):
         )
 
     @property
-    def optional_dependencies(self) -> Mapping[Path, Collection[Package]]:
+    def optional_dependencies_cfg(self) -> Mapping[Path, Collection[Package]]:
         """Get extra packages defined in the pyproject.toml file.
 
         These are packages that are known to not be imported, but are still
@@ -191,12 +191,17 @@ class PyProjectToml(ConfigToml):
         the package but are not imported explicitly.
         """
         dep_groups = _nested_item(self.cfg, "project.optional-dependencies", dict)
+        path_option_map = _nested_item(self.cfg, _EXTRA_PACKAGES_KEY, dict).items()
+        if not path_option_map:
+            return {
+                self.path.parent: {
+                    Package(dep) for deps in dep_groups.values() for dep in deps
+                }
+            }
         opt_to_path = sorted(
             (Path(p), Package(opt_dep))
-            for opt_name, paths in _nested_item(
-                self.cfg, _EXTRA_PACKAGES_KEY, dict
-            ).items()
-            for opt_dep in dep_groups.get(opt_name, [])
+            for opt_name, paths in path_option_map
+            for opt_dep in dep_groups[opt_name]
             for p in paths
         )
         return {
@@ -223,18 +228,12 @@ def get_pyproject_toml(path: Path) -> Path:
     This uses recursion and LRU caching to allow for efficient caching.
     """
     try:
-        if path.is_dir() and (result := path / _PYPROJECT_TOML).exists():
-            return result
+        for parent in chain([path], path.parents):
+            if (result := parent / _PYPROJECT_TOML).exists():
+                return result
     except OSError as exc:
         logger.error(str(exc))  # noqa: TRY400
-
-    if path == path.parent:  # Exit recursion
-        raise NoPyProjectFileError(path)
-    try:
-        return get_pyproject_toml(path.parent)
-    except NoPyProjectFileError:
-        # Get original path for error message, not the resolved and recursed path
-        raise NoPyProjectFileError(path.as_posix()) from None
+    raise NoPyProjectFileError(path.as_posix()) from None
 
 
 @dataclass(frozen=True)
@@ -276,13 +275,7 @@ class _Pep621Dependencies(_BaseDependency):
 
     def _dependencies(self) -> set[Package]:
         """Get dependencies from a PEP 621-style pyproject.toml file."""
-        deps = Package.set(_nested_item(self.cfg, "project.dependencies", list))
-
-        # for raw_extras in _nested_item(
-        #     self.cfg, "project.optional-dependencies", dict
-        # ).values():
-        #     deps.update(Package.set(raw_extras))
-        return deps
+        return Package.set(_nested_item(self.cfg, "project.dependencies", list))
 
     def _dev_dependencies(self) -> set[Package]:
         """Get the dev dependencies from a PEP 621-style pyproject.toml file."""

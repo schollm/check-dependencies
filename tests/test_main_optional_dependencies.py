@@ -40,13 +40,17 @@ def test(tmp_path: Path):
     "src_files, expect",
     [
         (
-            {"src/src1.py": "import foo, opt1", "src/opt.py": "import opt2"},
+            {"src/src1.py": "import foo, opt1", "src/opt.py": "import opt1, opt2"},
             (["! opt1"], 2),
+        ),
+        (
+            {"src/src1.py": "import foo, opt1", "src/opt.py": "import opt2"},
+            (["! opt1", "+ opt1"], 6),
         ),
         (
             {
                 "src/src.py": "import opt1",
-                "src/opt.py": "import opt2",
+                "src/opt.py": "import opt1, opt2",
                 "tests/t.py": "import dev1, foo",
             },
             (["! opt1"], 2),
@@ -63,10 +67,10 @@ def test(tmp_path: Path):
             {"src/src.py": "import foo"},
             ([], 0),
         ),
-    (
-        {"src/opt.py": "import foo"},
-        ([], 0),
-    ),
+        (
+            {"src/opt.py": "import foo"},
+            (["+ opt1", "+ opt2"], 4),
+        ),
     ],
 )
 def test_optional_dependencies(
@@ -103,15 +107,7 @@ def test_optional_dependencies(
     [
         (
             {"src/src1.py": "import foo, opt1", "src/opt.py": "import opt2"},
-            (["! opt1"], 2),
-        ),
-        (
-            {
-                "src/src.py": "import opt1",
-                "src/opt.py": "import opt2",
-                "tests/t.py": "import dev1, foo",
-            },
-            (["! opt1"], 2),
+            (["+ dev1"], 4),
         ),
         (
             {
@@ -123,12 +119,81 @@ def test_optional_dependencies(
         ),
         (
             {"src/src.py": "import foo"},
+            (["+ dev1", "+ opt1", "+ opt2"], 4),
+        ),
+        (
+            {"src/opt.py": "import foo"},
+            (["+ dev1", "+ opt1", "+ opt2"], 4),
+        ),
+    ],
+)
+def test_optional_dependencies_no_config(
+    src_files: dict[str, str], expect: tuple[list[str], int], tmp_path: Path
+):
+    """Test tool.check-dependencies.optional-dependencies in pyproject.toml."""
+    pyproject_toml = textwrap.dedent("""\
+        [project]
+        dependencies = ["foo==*"]
+
+        [project.optional-dependencies]
+        optional1 = ["opt1", "opt2"]
+        dev = ["dev1"]
+        """)
+
+    pp = tmp_path / "pyproject.toml"
+    files = {tmp_path / file: content for file, content in src_files.items()}
+    for file, content in (files | {pp: pyproject_toml}).items():
+        file.parent.mkdir(parents=True, exist_ok=True)
+        file.write_text(content, encoding="utf-8")
+
+    res, exit_code = run(files.keys(), pp)
+
+    assert (res, exit_code) == expect
+
+
+@pytest.mark.parametrize(
+    "src_files, expect",
+    [
+        ({"src/src1.py": "import foo"}, ([], 0)),
+        (
+            {"src/src1.py": "import foo", "src/opt.py": "import opt1, opt2"},
             ([], 0),
         ),
-    (
-        {"src/opt.py": "import foo"},
-        ([], 0),
-    ),
+        (
+            {
+                "src/src.py": "import foo",
+                "src/opt.py": "import foo, opt1, opt2",
+                "tests/t.py": "import dev1, foo",
+            },
+            ([], 0),
+        ),
+        (
+            {
+                "src/src.py": "import foo",
+                "src/opt.py": "import opt1",
+                "tests/t.py": "import dev1, foo",
+            },
+            (["+ opt2"], 4),
+        ),
+        (
+            {
+                "src/opt.py": "import foo",
+                "tests/t.py": "import foo",
+            },
+            (["+ dev1", "+ opt1", "+ opt2"], 4),
+        ),
+        (
+            {
+                "src/opt.py": "",
+                "tests/t.py": "",
+            },
+            (["+ dev1", "+ foo==*", "+ opt1", "+ opt2"], 4),
+        ),
+        (
+            {"src/src.py": "import foo"},
+            ([], 0),
+        ),
+        ({"src/opt.py": "import foo"}, (["+ opt1", "+ opt2"], 4)),
     ],
 )
 def test_dependency_groups_dependencies(
@@ -139,7 +204,7 @@ def test_dependency_groups_dependencies(
         [project]
         dependencies = ["foo==*"]
 
-        [dependency-groups]
+        [project.optional-dependencies]
         optional1 = ["opt1", "opt2"]
         dev = ["dev1"]
 
@@ -157,4 +222,4 @@ def test_dependency_groups_dependencies(
 
     res, exit_code = run(files.keys(), pp)
 
-    assert (res, exit_code) == expect
+    assert (sorted(res), exit_code) == expect

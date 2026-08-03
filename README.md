@@ -245,7 +245,7 @@ but should not be reported.
 By default, optional dependencies are checked just like regular dependencies.
 If you want to check them only for certain files, you can configure them in the 
 `pyproject.toml` file under `[tool.check-dependencies.optional-dependencies]` with 
-a mapping of glob patterns to a list of dependency groups.
+a mapping of dependency groups to path prefixes.
 
 This is only configurable via `pyproject.toml` and not via CLI arguments.
 
@@ -256,8 +256,8 @@ This is only configurable via `pyproject.toml` and not via CLI arguments.
     another_optional_dependency_group = ["optional_dependency_3"]
  
     [tool.check-dependencies.optional-dependencies]
-    "src/project/option_1/" = ["optional_dependency_group"]
-    "src/option_2.py" = ["another_optional_dependency_group"]
+     optional_dependency_group = ["src/project/option_1/"]
+     another_optional_dependency_group = ["src/option_2.py"]
     ```
 
 #### Include additional config file

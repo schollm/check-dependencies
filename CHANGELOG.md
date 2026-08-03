@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Upcoming
 - **CHANGE**: Optional dependencies are now also checked. They can be configured in the pyproject.toml file 
-    under [tool.check_dependencies.optional] with a list of glob patterns and a list of dependency groups.
+    under `[tool.check-dependencies.optional-dependencies]` with a list of glob patterns and a list of dependency groups.
     If any of the files matching the glob patterns are found, the corresponding dependency groups are marked as used.
 - **ADD**: Support GitHub Output Format for GitHub Actions
 - **CHANGE**: Deprecate `--all`; use `--output-format full` instead

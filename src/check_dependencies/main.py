@@ -133,7 +133,7 @@ class RegistryEntry:
         return (option for option in self.optionals if option.handles(path))
 
     def mark_used(self, path: Path) -> None:
-        """Mark all associated dependenciy gorups as used."""
+        """Mark all associated dependency groups as used."""
         for option in self._matched_optionals(path):
             option.mark_used()
 

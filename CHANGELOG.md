@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Planned
 
 ### Upcoming
+
+### [1.8.0]
 - **ADD**: Support GitHub Output Format for GitHub Actions
 - **CHANGE**: Deprecate `--all`; use `--output-format full` instead
 - **CHANGE**: Replace status `!!` with `!E` for files that could not be parsed due to missing pyproject.toml file

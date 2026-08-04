@@ -58,12 +58,6 @@ inputs:
       Maps to AppConfig.from_cli_args(verbose=...).
     required: false
     default: "false"
-  show-all:
-    description: |
-      Show all dependencies including correct ones. (Deprecated and unused; use output-format: full.)
-      Maps to AppConfig.from_cli_args(output_format=full).
-    required: false
-    default: "unused"
 runs:
   using: composite
   steps:
@@ -88,9 +82,6 @@ runs:
         fi
         if [[ "${{ inputs.verbose }}" == "true" ]]; then
           cmd+=(--verbose)
-        fi
-        if [[ "${{ inputs.show-all }}" != "unused" ]]; then
-          echo "Warning: 'show-all' input is deprecated and unused; use 'output-format=full' instead." >&2
         fi
         if [[ -n "${{ inputs.known-extra }}" ]]; then
           cmd+=(--extra "${{ inputs.known-extra }}")

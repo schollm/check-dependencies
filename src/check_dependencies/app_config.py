@@ -8,7 +8,6 @@ import textwrap
 from dataclasses import dataclass, field
 from importlib.metadata import PackageNotFoundError, version
 from itertools import chain
-from logging import getLogger
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeVar
 
@@ -29,7 +28,6 @@ if TYPE_CHECKING:
 
     from check_dependencies.outputs import Output, SeenT
 
-logger = getLogger(__name__)
 _T = TypeVar("_T")
 _DIST_NAME = "check-dependencies"
 
@@ -201,12 +199,6 @@ class AppConfig:
             Toml Key: [tool.check-dependencies] includes=[]
             """),
         )
-        parser.add_argument(
-            "--all",
-            action="store_true",
-            help="(Deprecated) Show all imports (including correct ones). "
-            "Use --output-format full.",
-        )
         full, concise, github = (
             OutputFormat.FULL.value,
             OutputFormat.CONCISE.value,
@@ -227,9 +219,6 @@ class AppConfig:
             default=OutputFormat.CONCISE,
         )
         args = parser.parse_args(sysv)
-        if args.all and args.output_format == OutputFormat.CONCISE:
-            logger.warning("--all is deprecated, use --output-format full instead.")
-            args.output_format = OutputFormat.FULL
 
         return AppConfig.from_cli_args(
             file_names=args.file_name,

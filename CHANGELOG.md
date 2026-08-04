@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Upcoming
 - **CHANGE:** Remove deprecated `--all` option from CLI. Use `--output-format full` instead.
-- **CHANGE**: Optional dependencies are now also checked. They can be configured in the pyproject.toml file 
+- **CHANGE**: Optional dependencies are also checked  now. They can be configured in the pyproject.toml file 
     under `[tool.check-dependencies.optional-dependencies]` with a mapping of dependency groups to path prefixes.
 - **ADD**: Support GitHub Output Format for GitHub Actions
 - **CHANGE**: Deprecate `--all`; use `--output-format full` instead

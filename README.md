@@ -157,7 +157,7 @@ Default status prefixes:
 - `?` - Dynamic import that could not be resolved.
 - `!!` - Could not parse the file (e.g. syntax error)
 - `!E` - Could not find associated pyproject.toml file
-- ` ` - Correct import (only shown with `--all`)
+- ` ` - Correct import (only shown with `--output-format full`)
 
 With `--verbose`, the output includes every matching import together with the
 file name and line number where it appears.
@@ -168,7 +168,7 @@ Verbose status prefixes:
 - `+EXTRA` - Extra dependency, declared in `pyproject.toml` but not used in the code
 - `?UNKNOWN` - Dynamic import that could not be resolved.
 - `!!FILE_ERROR` - Could not parse the file (e.g. syntax error)
-- ` OK` - Correct import (only shown with `--all`)
+- ` OK` - Correct import (only shown with `--output-format full`)
 
 ### 📝 Examples
 
@@ -359,7 +359,7 @@ Example output:
 Show all imports, including correct ones, with file names and line numbers.
 
 ```shell
-check-dependencies --verbose --all project/src/
+check-dependencies --verbose --output-format full project/src/
 ```
 
 Example output:

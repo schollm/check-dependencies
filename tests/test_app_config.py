@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import logging
 import textwrap
 from importlib.metadata import PackageNotFoundError
 from pathlib import Path

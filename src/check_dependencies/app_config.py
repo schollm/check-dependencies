@@ -8,7 +8,6 @@ import textwrap
 from dataclasses import dataclass, field
 from importlib.metadata import PackageNotFoundError, version
 from itertools import chain
-from logging import getLogger
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeVar
 
@@ -29,7 +28,6 @@ if TYPE_CHECKING:
 
     from check_dependencies.outputs import Output, SeenT
 
-logger = getLogger(__name__)
 _T = TypeVar("_T")
 _DIST_NAME = "check-dependencies"
 

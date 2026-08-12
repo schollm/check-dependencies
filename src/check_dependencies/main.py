@@ -153,7 +153,7 @@ class RegistryEntry:
             for dep in option.superfluous_dependencies()
         }
         used = self._seen.union(self.project_cfg.known_extra)
-        # Superfluous dependencies are all expected dependencies (from configs) that are not used
+        # Superfluous dependencies are all unused expected dependencies (from configs)
         return sorted(expected - used)
 
     def _optional_dependencies(self, path: Path) -> list[Package]:

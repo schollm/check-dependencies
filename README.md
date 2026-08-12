@@ -59,11 +59,11 @@ jobs:
   check-dependencies:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.14"  # any Python version supported by check-dependencies
-      - uses: schollm/check-dependencies@v1
+      - uses: schollm/check-dependencies@v2
         with:
           output-format: github
           file-names: |

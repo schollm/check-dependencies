@@ -269,3 +269,32 @@ def test_dependency_groups_dependencies_in_both_main_and_optional(
     res, exit_code = run(files.keys(), pp)
 
     assert (sorted(res), exit_code) == expect
+
+
+def test_optional_dependencies_and_extra(tmp_path: Path) -> None:
+    src_files = {"src/src1.py": "import foo, both", "src/opt.py": "import opt2"}
+    expect = ([], 0)
+    pyproject_toml = textwrap.dedent("""\
+        [project]
+        dependencies = ["foo", "both"]
+
+        [project.optional-dependencies]
+        optional1 = ["opt-extra > 1.0.0", "opt2"]
+
+        [tool.check-dependencies.optional-dependencies]
+        optional1 = ["src/opt.py"]
+        
+        [tool.check-dependencies]
+        known-extra = ["opt-extra"]
+        """)
+
+    pp = tmp_path / "pyproject.toml"
+    files = {tmp_path / file: content for file, content in src_files.items()}
+    pp.write_text(pyproject_toml)
+    for file, content in files.items():
+        file.parent.mkdir(parents=True, exist_ok=True)
+        file.write_text(content, encoding="utf-8")
+
+    res, exit_code = run(files.keys(), pp)
+
+    assert (sorted(res), exit_code) == expect

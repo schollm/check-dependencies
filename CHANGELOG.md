@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Planned
 
 ### Upcoming
+- **FIX:** Fix handling of optional dependencies with extras in pyproject.toml.
 
 ### [2.0.0]
 - **CHANGE:** Remove deprecated `--all` option from CLI. Use `--output-format full` instead.

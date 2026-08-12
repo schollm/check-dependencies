@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Planned
 
 ### Upcoming
+
+### [2.0.1]
 - **FIX:** Fix handling of optional dependencies with extras in pyproject.toml.
 
 ### [2.0.0]

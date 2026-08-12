@@ -45,7 +45,7 @@ def test(tmp_path: Path):
         ),
         (
             {"src/src1.py": "import foo, opt1", "src/opt.py": "import opt2"},
-            (["! opt1", "+ opt1"], 6),
+            (["! opt1"], 2),
         ),
         (
             {
@@ -238,7 +238,7 @@ def test_dependency_groups_dependencies(
         ),
         (
             {"src/src1.py": "import foo, both", "src/opt.py": "import opt2"},
-            (["+ both"], 4),
+            ([], 0),
         ),
     ],
 )

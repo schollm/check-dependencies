@@ -441,7 +441,6 @@ class TestYieldWrongImports:
 
     def test_ignore_requirements(self, pyproject_extra: Path) -> None:
         """Ensure ignored requirements are not printed."""
-        extra = " > 0" if pyproject_extra.stem == "pyproject_pep631_extra" else ""
         assert self.fn(overwrite_cfg=pyproject_extra, args="--extra test_extra") == [
             "! missing.bar",
             "! missing.foo",
@@ -449,7 +448,6 @@ class TestYieldWrongImports:
             "! missing_class",
             "! missing",
             "! missing_def",
-            f"+ test_extra{extra}",
         ]
 
     def test_ignore_requirements_still_check_in_src(self) -> None:

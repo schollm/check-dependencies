@@ -88,7 +88,7 @@ uv build  # Produces `dist/*.tar.gz` and `dist/*.whl`.
   - `src/check_dependencies/main.py` — import scanning, file walking, exit-status logic.
   - `src/check_dependencies/app_config.py` — merges CLI args, included config files, venv-provided mappings.
   - `src/check_dependencies/pyproject_toml.py` — parses dependency metadata from PEP 621 / Poetry / Hatch / legacy uv.
-  - `src/check_dependencies/lib.py` — core `Package`, `Module`, `Packages`, `Dependency` abstractions.
+  - `src/check_dependencies/lib.py` — core `Package`, `Module`, `Packages` abstractions.
   - `src/check_dependencies/provides.py` — derives package→import mappings from installed `.dist-info/RECORD` files.
   - `src/check_dependencies/writer.py` — writer CLI for generating/updating provides mappings.
 - If you change dependency parsing behavior, also inspect:

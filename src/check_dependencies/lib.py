@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from enum import Enum
 from functools import total_ordering
 from itertools import groupby, takewhile
 from operator import itemgetter
@@ -14,16 +13,6 @@ if TYPE_CHECKING:
     from collections.abc import Collection, Iterable
 
 logger = logging.getLogger("check_dependencies.lib")
-
-
-class Dependency(Enum):
-    """Possible dependency state."""
-
-    NA = "!"  # Not Available
-    EXTRA = "+"  # Extra dependency in config file
-    OK = " "  # Correct import (declared in config file)
-    UNKNOWN = "?"  # Unknown import (e.g. dynamic import)
-    FILE_ERROR = "!!"  # Error getting import statement (e.g. io error, syntax error)
 
 
 @dataclass(frozen=True)

@@ -146,12 +146,15 @@ class RegistryEntry:
 
     def get_superfluous_dependencies(self) -> list[Package]:
         """Get the set of superfluous dependencies for this registry entry."""
-        res = set(self.project_cfg.defined_dependencies) - (
-            self._seen | set(self.project_cfg.known_extra)
-        )
-        for option in self.optionals:
-            res |= option.superfluous_dependencies()
-        return sorted(res)
+        # Expected dependencies are all [project.dependencies] + optional dependencies
+        expected = set(self.project_cfg.defined_dependencies) | {
+            dep
+            for option in self.optionals
+            for dep in option.superfluous_dependencies()
+        }
+        used = self._seen.union(self.project_cfg.known_extra)
+        # Superfluous dependencies are all unused expected dependencies (from configs)
+        return sorted(expected - used)
 
     def _optional_dependencies(self, path: Path) -> list[Package]:
         cfg = self.project_cfg

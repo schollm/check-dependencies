@@ -272,6 +272,7 @@ def test_dependency_groups_dependencies_in_both_main_and_optional(
 
 
 def test_optional_dependencies_and_extra(tmp_path: Path) -> None:
+    """Test optional dependencies with extras in pyproject.toml."""
     src_files = {"src/src1.py": "import foo, both", "src/opt.py": "import opt2"}
     expect = ([], 0)
     pyproject_toml = textwrap.dedent("""\
@@ -283,7 +284,7 @@ def test_optional_dependencies_and_extra(tmp_path: Path) -> None:
 
         [tool.check-dependencies.optional-dependencies]
         optional1 = ["src/opt.py"]
-        
+
         [tool.check-dependencies]
         known-extra = ["opt-extra"]
         """)

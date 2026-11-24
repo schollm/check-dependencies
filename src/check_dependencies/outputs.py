@@ -105,17 +105,14 @@ class WithModule(Output, abc.ABC):
                 level=self.level,
             )
 
-    def lineno(self, default: int = 1) -> int:
-        """Get the line number of the statement."""
-        return getattr(self.stmt, "lineno", default)
-
     def to_text(self, *, verbose: bool, show_all: bool, seen: SeenT) -> Iterable[str]:
         """Get the string representation of the WithModule."""
         if not (self.show_default or show_all):
             return
         name = self.name(verbose)
         if verbose:
-            yield f"{name} {self.path.as_posix()}:{self.lineno()} {self.module.name}"
+            lineno = getattr(self.stmt, "lineno", 1)
+            yield f"{name} {self.path.as_posix()}:{lineno} {self.module.name}"
         elif (key := (type(self), self.module)) not in seen:
             seen.add(key)
             yield f"{name} {self.module.name}"

@@ -5,12 +5,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from check_dependencies.app_config import OutputFormat
-from check_dependencies.outputs import SeenT
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
 
-    from check_dependencies.outputs import Output
+    from check_dependencies.outputs import Output, SeenT
 
 
 def make_renderer(

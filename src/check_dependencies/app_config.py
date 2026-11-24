@@ -228,6 +228,7 @@ class AppConfig:
             output_format=args.output_format,
         )
 
+
 @dataclass(frozen=True)
 class ProjectConfig:
     """Project dependencies and related config."""

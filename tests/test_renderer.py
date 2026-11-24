@@ -35,7 +35,9 @@ def _project_cfg() -> ProjectConfig:
 def test_renderer_no_show_all_on_status_ok(stmt: ast.stmt, verbose: bool) -> None:
     """If the import is expected, we do not show it in concise mode."""
     formatter = make_renderer(output_format=OutputFormat.CONCISE, verbose=verbose)
-    lines = formatter(OkDependency(path=Path("src.py"), stmt=stmt, module=Module("foo.bar")))
+    lines = formatter(
+        OkDependency(path=Path("src.py"), stmt=stmt, module=Module("foo.bar"))
+    )
     assert list(lines) == []
 
 
@@ -54,7 +56,7 @@ def test_text_renderer(
     stmt: ast.stmt,
     verbose: bool,
     output_format: OutputFormat,
-    output: type[MissingModule] | type[OkDependency],
+    output: type[MissingModule | OkDependency],
     expected: str,
 ) -> None:
     """Render text output according to verbosity and format."""

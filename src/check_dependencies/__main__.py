@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 
 from check_dependencies.app_config import AppConfig
 from check_dependencies.main import yield_outputs
+from check_dependencies.renderer import make_renderer
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -32,7 +33,10 @@ def main() -> int:
         "%(message)s",
     )
     app_cfg = AppConfig.from_argv()
-    formatter = app_cfg.mk_formatter()
+    formatter = make_renderer(
+        output_format=app_cfg.output_format,
+        verbose=app_cfg.verbose,
+    )
     outputs = yield_outputs(app_cfg)
     exit_code = 0
     for output in outputs:

@@ -18,15 +18,11 @@ from check_dependencies.pyproject_toml import ConfigToml, PyProjectToml
 
 if TYPE_CHECKING:
     from collections.abc import (
-        Callable,
         Collection,
         Iterable,
-        Iterator,
         Mapping,
         Sequence,
     )
-
-    from check_dependencies.outputs import Output, SeenT
 
 _T = TypeVar("_T")
 _DIST_NAME = "check-dependencies"
@@ -230,32 +226,6 @@ class AppConfig:
             includes=args.include,
             provides_from_venv=args.provides_from_venv,
             output_format=args.output_format,
-        )
-
-    def mk_formatter(self) -> Callable[[Output], Iterator[str]]:
-        """Format outputs."""
-        if self.output_format == OutputFormat.GITHUB:
-
-            def formatter(output: Output) -> Iterator[str]:
-                yield from output.as_github()
-
-            return formatter
-        return self._mk_text_formatter()
-
-    def _mk_text_formatter(self) -> Callable[[Output], Iterator[str]]:
-        seen = set()
-
-        def formatter(output: Output) -> Iterator[str]:
-            yield from self.text_formatter(output, seen=seen)
-
-        return formatter
-
-    def text_formatter(self, output: Output, seen: SeenT) -> Iterator[str]:
-        """Return a formatter function for the given output type."""
-        yield from output.to_text(
-            verbose=self.verbose,
-            show_all=self.output_format == OutputFormat.FULL,
-            seen=seen,
         )
 
 

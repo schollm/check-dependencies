@@ -38,6 +38,7 @@ from check_dependencies.outputs import (
     OkDependency,
     WithModule,
 )
+from check_dependencies.renderer import make_renderer
 from tests.conftest import (
     DATA,
     POETRY,
@@ -828,7 +829,10 @@ def test_mk_unused_formatter(verbose: bool, expected: str) -> None:
         packages=Packages([]),
         path=Path(),
     )
-    formatter = app_cfg.mk_formatter()
+    formatter = make_renderer(
+        output_format=app_cfg.output_format,
+        verbose=app_cfg.verbose,
+    )
     assert list(formatter(ExtraPackage(cfg, Package("foo")))) == [expected]
 
 

@@ -10,6 +10,7 @@ import pytest
 from check_dependencies.app_config import AppConfig, OutputFormat
 from check_dependencies.lib import Module, Package, Packages, _canonical
 from check_dependencies.outputs import MissingModule, OkDependency, WithModule
+from check_dependencies.renderer import make_renderer
 
 
 class TestModule:
@@ -234,7 +235,10 @@ class TestMkSrcFormatter:
             verbose=verbose,
             output_format=OutputFormat.CONCISE,
         )
-        formatter = cfg.mk_formatter()
+        formatter = make_renderer(
+            output_format=cfg.output_format,
+            verbose=cfg.verbose,
+        )
         lines = formatter(
             OkDependency(path=Path("src.py"), stmt=stmt, module=Module("foo.bar"))
         )
@@ -268,7 +272,10 @@ class TestMkSrcFormatter:
             verbose=verbose,
             output_format=OutputFormat(output_format),
         )
-        formatter = cfg.mk_formatter()
+        formatter = make_renderer(
+            output_format=cfg.output_format,
+            verbose=cfg.verbose,
+        )
         lines = formatter(cause(path=Path("src.py"), stmt=stmt, module=Module("foo")))
         assert next(lines) == expected
         assert list(lines) == []
@@ -276,7 +283,10 @@ class TestMkSrcFormatter:
     def test_cache(self, stmt: ast.stmt) -> None:
         """Test the cache mechanism for the formatter."""
         cfg = AppConfig(file_names=[Path()])
-        formatter = cfg.mk_formatter()
+        formatter = make_renderer(
+            output_format=cfg.output_format,
+            verbose=cfg.verbose,
+        )
         lines = [
             *formatter(
                 MissingModule(path=Path("src.py"), stmt=stmt, module=Module("foo"))
